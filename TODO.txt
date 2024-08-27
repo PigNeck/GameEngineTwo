@@ -1,0 +1,17 @@
+KEYWORDS:
+- "FIX LATER"
+- "WARNING"
+
+
+TODO:
+- Polish textboxes //
+- Add camera names //
+- Finish buttons //
+- Finish rectangles //
+- Make camera.rect private (because changing camera pos or size should also update camera.mouse_pos)
+- Make text_box text centering in relation to parent_rect offset more intuitive
+
+- Add simple IDE
+- Create server for online games
+- Create online game explorer
+
