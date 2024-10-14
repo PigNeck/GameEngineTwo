@@ -1,34 +1,32 @@
 #include "TextBoxChar.h"
 
-TextBoxChar::TextBoxChar() : font_char(nullptr), char_spacing(0.0), r_mod(0), g_mod(0), b_mod(0) {}
-
-void TextBoxChar::InitWithFontChar(Rectangle* reference_rect, FontChar* param_font_char)
+void TextBoxChar::InitLeast(Rectangle* const reference_rect, FontChar* const param_font_char)
 {
 	font_char = param_font_char;
 
-	rect.data.base_size.width = (double)param_font_char->default_width;
-	rect.data.base_size.height = (double)param_font_char->default_height;
-	rect.data.SetSizeWithSizeScale({ 1.0, 1.0 });
+	rect.base_size.width = (double)param_font_char->default_width;
+	rect.base_size.height = (double)param_font_char->default_height;
+	rect.SetSizeWithSizeScale({ 1.0, 1.0 });
 
-	rect.data.offset.x = (double)param_font_char->default_unscaled_x_offset;
-	rect.data.offset.y = (double)param_font_char->default_unscaled_y_offset;
+	rect.offset.x = (double)param_font_char->default_unscaled_x_offset;
+	rect.offset.y = (double)param_font_char->default_unscaled_y_offset;
 
-	rect.SetReferenceRectangle(reference_rect);
+	rect.reference_rectangle_data = reference_rect;
 
 	char_spacing = (double)param_font_char->default_char_spacing;
 }
-void TextBoxChar::InitWithFontChar(Rectangle* reference_rect, FontChar* param_font_char, Uint8 param_r_mod, Uint8 param_g_mod, Uint8 param_b_mod)
+void TextBoxChar::InitMost(Rectangle* const reference_rect, FontChar* const param_font_char, const Uint8 param_r_mod, const Uint8 param_g_mod, const Uint8 param_b_mod, const Uint8 param_a_mod)
 {
 	font_char = param_font_char;
 
-	rect.data.base_size.width = (double)param_font_char->default_width;
-	rect.data.base_size.height = (double)param_font_char->default_height;
-	rect.data.SetSizeWithSizeScale({ 1.0, 1.0 });
+	rect.base_size.width = (double)param_font_char->default_width;
+	rect.base_size.height = (double)param_font_char->default_height;
+	rect.SetSizeWithSizeScale({ 1.0, 1.0 });
 
-	rect.data.offset.x = (double)param_font_char->default_unscaled_x_offset;
-	rect.data.offset.y = (double)param_font_char->default_unscaled_y_offset;
+	rect.offset.x = (double)param_font_char->default_unscaled_x_offset;
+	rect.offset.y = (double)param_font_char->default_unscaled_y_offset;
 
-	rect.SetReferenceRectangle(reference_rect);
+	rect.reference_rectangle_data = reference_rect;
 
 	char_spacing = (double)param_font_char->default_char_spacing;
 
@@ -36,8 +34,16 @@ void TextBoxChar::InitWithFontChar(Rectangle* reference_rect, FontChar* param_fo
 	r_mod = param_r_mod;
 	g_mod = param_g_mod;
 	b_mod = param_b_mod;
+	a_mod = param_a_mod;
 }
-void TextBoxChar::GetRectangleWithSpacing(bool include_left_spacing, bool include_right_spacing)
+
+void TextBoxChar::GetRectangleWithSpacing(const bool include_left_spacing, const bool include_right_spacing) const
 {
 
+}
+
+void TextBoxChar::CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes, const bool param_white_list)
+{
+	debug_data_container.InitMost(param_owner_debug_data_containers, default_debug_data_container_label_font, param_debug_data_container_label_chars, &rect, param_debug_data_container_active_scenes, param_white_list, 2.0, 2.0);
+	debug_data_container.AddRectangleData(&rect, "Rect");
 }

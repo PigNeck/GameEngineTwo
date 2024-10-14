@@ -25,7 +25,7 @@ struct SimpleTextButton
 	void InitWithMargin(Size2D text_box_size_scale, string text, Font* param_font, Size2D param_scaled_margin_size, double param_scaled_border_width, double param_scaled_drop_amount);
 	void InitWithBaseSize(Size2D text_box_size_scale, string text, Font* param_font, Size2D param_parent_rect_base_size, double param_scaled_border_width, double param_scaled_drop_amount, Size2D param_scaled_margin_size, bool text_wrap);
 
-	void CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes);
+	void CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes, const bool param_white_list);
 };
 
 struct TextButton
@@ -42,7 +42,7 @@ struct TextButton
 	void InitLeast();
 	void InitMost(const Button param_button, const TextBox param_text_box, const Point2D param_additional_offset_released, const Point2D param_additional_offset_hovering, const Point2D param_additional_offset_pressed);
 
-	void CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes);
+	void CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes, const bool param_white_list);
 };
 
 struct TextButtonEx
@@ -56,6 +56,6 @@ struct TextButtonEx
 
 	void Init(const Button param_button, const TextBox param_text_box_released, const TextBox param_text_box_hovering, const TextBox param_text_box_pressed);
 
-	void CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes);
+	void CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes, const bool param_white_list);
 };
 

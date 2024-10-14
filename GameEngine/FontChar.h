@@ -12,14 +12,14 @@ struct FontChar
 
 	char char_value;
 
-	int default_width;
-	int default_height;
+	double default_width;
+	double default_height;
 
-	int default_unscaled_x_offset;
-	int default_unscaled_y_offset;
+	double default_unscaled_x_offset;
+	double default_unscaled_y_offset;
 
-	int default_char_spacing;
+	double default_char_spacing;
 
-	FontChar(Texture* param_texture, char param_char_value, int param_default_char_spacing);
+	FontChar(Texture* param_texture, char param_char_value, double param_default_char_spacing);
 };
 

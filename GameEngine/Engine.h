@@ -10,11 +10,15 @@
 #include "Animation.h"
 #include "DebugDataContainer.h"
 #include "ScrollBar.h"
+#include "MouseLayer.h"
 
 struct Program;
 
 struct Engine {
 	// -----------------   ESSENTIAL WINDOW OBJECTS   -----------------
+
+	Mix_Chunk* click_press_sound;
+	Mix_Chunk* click_release_sound;
 
 	SDL_Window* window;
 	int window_width, window_height;
@@ -26,7 +30,7 @@ struct Engine {
 	Uint32 frame_start, frame_duration;
 	double frame_rate;
 	Uint32 frame_delay;
-	double frame_factor;
+	double frame_factor; //Frame factor is lower the higher the framerate. It equals 60.0 / frame_rate.
 
 	bool running;
 	bool running_game;
@@ -44,6 +48,16 @@ struct Engine {
 	// -----------------   SCENES DATA STRUCTURE   -----------------
 	
 	int scene;
+
+
+
+
+
+
+	// -----------------   DEBUG VIEW OPTIONS   -----------------
+	
+	bool camera_view = 1;
+	bool debug_data_container_view = 1;
 
 
 
@@ -108,7 +122,18 @@ struct Engine {
 	TextBox debug_data_text_box;
 
 	vector<DebugDataContainer*> order;
+
+
 	vector<RectStructOne> saved_label_rects;
+
+	vector<DebugDataContainer*> saved_container_path;
+	vector<size_t> saved_container_name_sizes;
+
+	Rectangle container_path_rectangle; //CURRENTLY CANNOT SCALE WITH RESOLUTION
+	TextBox container_path_text_box; //CURRENTLY CANNOT SCALE WITH RESOLUTION
+
+	RectStructOne saved_highlighted_path_item; //CURRENTLY CANNOT SCALE WITH RESOLUTION
+	bool highlighting_path_item = 0;
 
 
 
@@ -124,8 +149,25 @@ struct Engine {
 	double scroll_bar_thickness;
 	ScrollBar debug_data_scroll_bar;
 
-	bool found_mouse_layer = 0;
-	string current_mouse_layer = "";
+
+
+
+
+
+	// -----------------   MOUSE LAYER FRAMEWORK   -----------------
+
+	vector<MouseLayer*> mouse_layers;
+
+	MouseLayer always_activated_layer;
+	MouseLayer always_deactivated_layer;
+
+	MouseLayer debug_data_container_layer;
+	MouseLayer visual_button_layer;
+	MouseLayer debug_data_scroll_bar_layer;
+	MouseLayer container_path_display_layer;
+
+	//1 for whitelist, 0 for blacklist
+	void DeactivateMouseLayers(const bool white_list, vector<MouseLayer*> target_layers);
 
 	
 
@@ -145,11 +187,11 @@ struct Engine {
 	// -----------------   DEFAULT UPDATE FUNCTIONS   -----------------
 
 	void UpdateTextBox(TextBox* param_text_box);
-	void UpdatePressData(PressData* param_press_data, RectangleData* param_hitbox_data, Camera* camera, const int mouse_layer);
-	void UpdateButton(Button* param_button, Camera* camera, const int mouse_layer);
-	void UpdateTextButton(TextButton* param_text_button, Camera* camera, const int mouse_layer);
-	void UpdateSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera, const int mouse_layer);
-	void UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, const int mouse_layer);
+	void UpdatePressData(PressData* param_press_data, Rectangle* param_hitbox, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
+	void UpdateButton(Button* param_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
+	void UpdateTextButton(TextButton* param_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
+	void UpdateSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
+	void UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
 
 
 
@@ -159,18 +201,21 @@ struct Engine {
 	// -----------------   DRAWING FUNCTIONS   -----------------
 
 	//Draws a solid-color rectangle
-	void DrawRectangle(RectangleData* param_rectangle_data, SDL_Color color, Camera* camera);
-	void DrawRectangleScaledBorder(RectangleData* param_rectangle_data, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
-	void DrawRectangleScaledBorderScaledShadow(RectangleData* param_rectangle_data, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
-	void DrawRectangleScaledShadow(RectangleData* param_rectangle_data, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
-	void DrawRectangleOutline(RectangleData* param_rectangle_data, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
-	void DrawRectangleEx(RectangleData* param_rectangle_data, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void DrawRectangle(Rectangle* param_rectangle, SDL_Color color, Camera* camera);
+	void DrawRectangleScaledBorder(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
+	void DrawRectangleScaledBorderScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void DrawRectangleScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void DrawRectangleOutline(Rectangle* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
+	void DrawRectangleEx(Rectangle* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+
+	void DrawRectStructOne(RectStructOne* param_rect_struct_one, SDL_Color color, Camera* camera);
+
 
 	//Draws a point (used mainly for DEBUG)
 	void DrawPoint(Point2D* param_point, Size2D param_size, SDL_Color color, Camera* camera);
 
 	//Draws a texture that has been mapped onto a rectangle
-	void DrawTexture(Texture* texture, Camera* camera, RectangleData* param_rectangle_data);
+	void DrawTexture(Texture* texture, Camera* camera, Rectangle* param_rectangle);
 
 	//Basic draws a texture using the data from "sprite"
 	void DrawSprite(Sprite* sprite, Camera* camera);
@@ -198,6 +243,7 @@ struct Engine {
 
 	void Run();
 	void LoadEngineTexture(Texture* param_texture, const char path[]);
+	void UnloadEngineSoundChunk(Mix_Chunk** const param_chunk);
 	Camera* NewCamera(const char* const name);
 	Point2D GetMousePos(Camera* reference_camera);
 
@@ -226,13 +272,20 @@ private:  // -----------------   P R I V A T E   S E C T I O N   ---------------
 
 	void LoadEngineTextures();
 	void DeleteEngineTextures();
+	void LoadEngineSounds();
+	void DeleteEngineSounds();
 	void UpdateInput();
 	void MoveDebugCamera();
+	void UpdateCameraLabels();
 	void UpdateDebugData();
 	void DrawDebugData();
 	void DrawDebugDataContainer(DebugDataContainer* const param_debug_data_container);
 
 	void GenerateContainerOrder(const bool generate_colors);
+
+	void UpdateContainerPathTextBox();
+
+	void SetDebugDataScrollBarLength();
 
 
 
@@ -247,22 +300,28 @@ private:  // -----------------   P R I V A T E   S E C T I O N   ---------------
 	void DrawQueue();
 
 	//Basic draws a solid-color rectangle
-	void BasicBasicDrawRectangle(RectangleData* param_rectangle_data, SDL_Color color, Camera* camera);
-	void BasicDrawRectangle(RectangleData* param_rectangle_data, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
-	void BasicDrawRectangleScaledBorder(RectangleData* param_rectangle_data, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
-	void BasicDrawRectangleScaledBorderScaledShadow(RectangleData* param_rectangle_data, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
-	void BasicDrawRectangleScaledShadow(RectangleData* param_rectangle_data, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
-	void BasicDrawRectangleOutline(RectangleData* param_rectangle_data, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
+	void BasicBasicDrawRectangle(Rectangle* param_rectangle, SDL_Color color, Camera* camera);
+	void BasicDrawRectangle(Rectangle* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void BasicDrawRectangleScaledBorder(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
+	void BasicDrawRectangleScaledBorderScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void BasicDrawRectangleScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void BasicDrawRectangleOutline(Rectangle* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
 
+	void BasicDrawRectStructOne(RectStructOne* param_rect_struct_one, SDL_Color color, Camera* camera);
+
+
+	void ScaleDebugLabel(DebugLabel* const param_debug_label);
+	void AlignDebugLabelAndPushbackToSavedLabelRects(DebugLabel* const param_debug_label);
 
 	void UpdateDebugLabelPos(DebugLabel* const param_debug_label);
+	void UpdateDebugLabelPosWithTargetPos(DebugLabel* const param_debug_label, const Point2D param_bottom_left_point);
 	void BasicDrawDebugLabel(DebugLabel* const param_debug_label);
 
 	//Basic draws a point (used mainly for DEBUG)
 	void BasicDrawPoint(Point2D* param_point, Size2D param_size, SDL_Color color, Camera* camera);
 
 	//Basic draws a texture that has been mapped onto a rectangle
-	void BasicDrawTexture(Texture* texture, Camera* camera, RectangleData* param_rectangle_data);
+	void BasicDrawTexture(const Texture* const texture, const Camera* const camera, const Rectangle* const param_rectangle);
 
 	//Basic draws a texture using the data from "sprite"
 	void BasicDrawSprite(Sprite* sprite, Camera* camera);
@@ -289,7 +348,7 @@ private:  // -----------------   P R I V A T E   S E C T I O N   ---------------
 
 	// -----------------   MISCELLANEOUS FUNCTIONS   -----------------
 	
-	//BLANK
+	void ActivateAllMouseLayers();
 
 
 

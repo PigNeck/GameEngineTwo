@@ -70,14 +70,14 @@ struct IndexedSize2D
 };
 struct IndexedRectangleData
 {
-	RectangleData* data_value;
+	Rectangle* data_value;
 	const char* data_name;
 	int index;
 };
 
 struct DebugDataContainer
 {
-	RectangleData* clickable_rectangle_data;
+	Rectangle* clickable_rectangle;
 
 
 	vector<IndexedBool> bools;
@@ -116,6 +116,8 @@ struct DebugDataContainer
 
 	DebugLabel label;
 
+	bool camera_container = 0;
+
 
 
 
@@ -123,7 +125,8 @@ struct DebugDataContainer
 
 	~DebugDataContainer();
 
-	void Init(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, RectangleData* const param_clickable_rectangle_data, const vector<int> param_active_scenes);
+	void InitLeast(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, Rectangle* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list);
+	void InitMost(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, Rectangle* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list, const double param_label_text_scale, const double param_label_scaled_margin_size);
 
 	void AddBool(bool* value, const char* const value_name);
 	void AddChar(char* value, const char* const value_name);
@@ -136,7 +139,7 @@ struct DebugDataContainer
 	void AddRigidCentering(RigidCentering* value, const char* const value_name);
 	void AddPoint2D(Point2D* value, const char* const value_name);
 	void AddSize2D(Size2D* value, const char* const value_name);
-	void AddRectangleData(RectangleData* value, const char* const value_name);
+	void AddRectangleData(Rectangle* value, const char* const value_name);
 
 	bool IsActive(const int current_scene);
 

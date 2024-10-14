@@ -23,7 +23,7 @@ void SimpleTextButton::InitMost(Rectangle param_parent_rect, TextBox param_text_
 }
 void SimpleTextButton::InitWithMargin(Size2D parent_size_scale, string text, Font* param_font, Size2D param_scaled_margin_size, double param_scaled_border_width, double param_scaled_drop_amount)
 {
-	RectangleData temp_rectangle_data;
+	Rectangle temp_rectangle_data;
 
 	text_box.BasicInitTextBox(temp_rectangle_data, param_font, text);
 
@@ -35,22 +35,22 @@ void SimpleTextButton::InitWithMargin(Size2D parent_size_scale, string text, Fon
 	temp_rectangle_data.base_size.height = text_box.GetActualBaseHeight();
 	temp_rectangle_data.size.height = temp_rectangle_data.base_size.height;
 
-	text_box.parent_rect.data = temp_rectangle_data;
-	text_box.parent_rect.SetReferenceRectangle(&parent_rect);
+	text_box.parent_rect = temp_rectangle_data;
+	text_box.parent_rect.reference_rectangle_data = &parent_rect;
 
 	temp_rectangle_data.base_size.width += ((param_scaled_margin_size.width / parent_size_scale.width) * 2.0);
 	temp_rectangle_data.base_size.height += ((param_scaled_margin_size.height / parent_size_scale.height) * 2.0);
 
 	temp_rectangle_data.SetSizeWithSizeScale(parent_size_scale);
 
-	parent_rect.data = temp_rectangle_data;
+	parent_rect = temp_rectangle_data;
 
 	scaled_border_width = param_scaled_border_width;
 	scaled_drop_amount = param_scaled_drop_amount;
 }
 void SimpleTextButton::InitWithBaseSize(Size2D parent_size_scale, string text, Font* param_font, Size2D param_parent_rect_base_size, double param_scaled_border_width, double param_scaled_drop_amount, Size2D param_scaled_margin_size, bool text_wrap)
 {
-	RectangleData temp_rectangle_data;
+	Rectangle temp_rectangle_data;
 	temp_rectangle_data.base_size.width = param_parent_rect_base_size.width - (param_scaled_margin_size.width / parent_size_scale.width);
 	temp_rectangle_data.base_size.height = param_parent_rect_base_size.height - ((param_scaled_margin_size.height + param_scaled_drop_amount) / parent_size_scale.height);
 
@@ -65,24 +65,24 @@ void SimpleTextButton::InitWithBaseSize(Size2D parent_size_scale, string text, F
 	temp_rectangle_data.base_size.height = text_box.GetActualBaseHeight();
 	temp_rectangle_data.size.height = temp_rectangle_data.base_size.height;
 
-	text_box.parent_rect.data = temp_rectangle_data;
-	text_box.parent_rect.SetReferenceRectangle(&parent_rect);
+	text_box.parent_rect = temp_rectangle_data;
+	text_box.parent_rect.reference_rectangle_data = &parent_rect;
 
 	temp_rectangle_data.base_size.width = param_parent_rect_base_size.width;
 	temp_rectangle_data.base_size.height = param_parent_rect_base_size.height;
 
 	temp_rectangle_data.SetSizeWithSizeScale(parent_size_scale);
 
-	parent_rect.data = temp_rectangle_data;
+	parent_rect = temp_rectangle_data;
 
 	scaled_border_width = param_scaled_border_width;
 	scaled_drop_amount = param_scaled_drop_amount;
 }
 
-void SimpleTextButton::CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes)
+void SimpleTextButton::CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes, const bool param_white_list)
 {
-	debug_data_container.Init(param_owner_debug_data_containers, default_debug_data_container_label_font, param_debug_data_container_label_chars, &parent_rect.data, param_debug_data_container_active_scenes);
-	debug_data_container.AddRectangleData(&parent_rect.data, "Parent Rect");
+	debug_data_container.InitLeast(param_owner_debug_data_containers, default_debug_data_container_label_font, param_debug_data_container_label_chars, &parent_rect, param_debug_data_container_active_scenes, param_white_list);
+	debug_data_container.AddRectangleData(&parent_rect, "Parent Rect");
 	//Add stuff like default_font name and so on later
 }
 
@@ -107,10 +107,10 @@ void TextButton::InitMost(const Button param_button, const TextBox param_text_bo
 	additional_offset_pressed = param_additional_offset_pressed;
 }
 
-void TextButton::CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes)
+void TextButton::CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes, const bool param_white_list)
 {
-	debug_data_container.Init(param_owner_debug_data_containers, default_debug_data_container_label_font, param_debug_data_container_label_chars, &button.parent_rect.data, param_debug_data_container_active_scenes);
-	debug_data_container.AddRectangleData(&button.parent_rect.data, "Button Parent Rect");
+	debug_data_container.InitLeast(param_owner_debug_data_containers, default_debug_data_container_label_font, param_debug_data_container_label_chars, &button.parent_rect, param_debug_data_container_active_scenes, param_white_list);
+	debug_data_container.AddRectangleData(&button.parent_rect, "Button Parent Rect");
 	//Add stuff like default_font name and so on later
 }
 
@@ -125,8 +125,8 @@ void TextButtonEx::Init(const Button param_button, const TextBox param_text_box_
 	//FIX LATER
 }
 
-void TextButtonEx::CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes)
+void TextButtonEx::CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes, const bool param_white_list)
 {
-	debug_data_container.Init(param_owner_debug_data_containers, default_debug_data_container_label_font, param_debug_data_container_label_chars, nullptr, param_debug_data_container_active_scenes);
+	debug_data_container.InitLeast(param_owner_debug_data_containers, default_debug_data_container_label_font, param_debug_data_container_label_chars, nullptr, param_debug_data_container_active_scenes, param_white_list);
 	//FIX LATER
 }

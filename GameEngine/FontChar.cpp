@@ -141,12 +141,19 @@ string GetTextureName(char char_value)
 	return name;
 }
 
-FontChar::FontChar(Texture* param_texture, char param_char_value, int param_default_char_spacing)
+FontChar::FontChar(Texture* param_texture, char param_char_value, double param_default_char_spacing)
 {
 	char_value = param_char_value;
 	texture = param_texture;
 
-	SDL_QueryTexture(texture->sdl_texture, NULL, NULL, &default_width, &default_height);
+
+	//Define default_width and default_height
+	int int_width, int_height;
+	SDL_QueryTexture(texture->sdl_texture, NULL, NULL, &int_width, &int_height);
+	default_width = (double)int_width;
+	default_height = (double)int_height;
+
+
 	default_unscaled_x_offset = 0;
 	default_unscaled_y_offset = 0;
 

@@ -104,13 +104,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Dev\SDL2_image\include;C:\Dev\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Dev\SDL2_image\include;C:\Dev\SDL2_mixer\include;C:\Dev\SDL2\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Dev\SDL2_image\lib\x64;C:\Dev\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Dev\SDL2_image\lib\x64;C:\Dev\SDL2_mixer\lib\x64;C:\Dev\SDL2\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,10 +141,10 @@
     <ClCompile Include="Key.cpp" />
     <ClCompile Include="Lowest.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Rectangle.cpp" />
+    <ClCompile Include="MouseLayer.cpp" />
     <ClCompile Include="Program.cpp" />
     <ClCompile Include="QueueSprite.cpp" />
-    <ClCompile Include="RectangleData.cpp" />
+    <ClCompile Include="Rectangle.cpp" />
     <ClCompile Include="ScrollBar.cpp" />
     <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="TextBox.cpp" />
@@ -155,6 +155,7 @@
     <ClCompile Include="TextButton.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Tools.cpp" />
+    <ClCompile Include="TransistorSet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Animation.h" />
@@ -167,10 +168,10 @@
     <ClInclude Include="Input.h" />
     <ClInclude Include="Key.h" />
     <ClInclude Include="Lowest.h" />
-    <ClInclude Include="Rectangle.h" />
+    <ClInclude Include="MouseLayer.h" />
     <ClInclude Include="Program.h" />
     <ClInclude Include="QueueSprite.h" />
-    <ClInclude Include="RectangleData.h" />
+    <ClInclude Include="Rectangle.h" />
     <ClInclude Include="ScrollBar.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="TextBox.h" />
@@ -181,6 +182,7 @@
     <ClInclude Include="TextButton.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Tools.h" />
+    <ClInclude Include="TransistorSet.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

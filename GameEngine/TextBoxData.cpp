@@ -10,11 +10,11 @@ void LineData::Init()
 
 
 
-void TextBoxData::BasicInitTextBox(RectangleData param_parent_rectangle_data, Font* param_font, string param_chars)
+void TextBoxData::BasicInitTextBox(Rectangle param_parent_rectangle, Font* param_font, string param_chars)
 {
 	Clear();
 
-	parent_rectangle_data = param_parent_rectangle_data;
+	parent_rectangle = param_parent_rectangle;
 
 	default_text_box_font = param_font;
 
@@ -23,8 +23,8 @@ void TextBoxData::BasicInitTextBox(RectangleData param_parent_rectangle_data, Fo
 
 	for (int i = 0; i < param_chars.size(); i++)
 	{
-		chars.push_back(TextBoxCharData());
-		chars.back().InitWithFontChar(&parent_rectangle_data, param_font->GetFontChar(param_chars[i]));
+		chars.push_back(new TextBoxCharData());
+		chars.back()->InitLeast(&parent_rectangle, param_font->GetFontChar(param_chars[i]));
 	}
 }
 
@@ -37,15 +37,17 @@ void TextBoxData::InitLeast(Font* const param_default_font)
 	default_line_spacing = default_text_box_font->default_default_line_spacing;
 	default_line_height = default_text_box_font->default_default_line_height;
 }
-void TextBoxData::InitMost(Font* const param_default_font, const RectangleData param_parent_rectangle_data, const char* const param_chars, const RigidCentering param_horizontal_centering, const RigidCentering param_vertical_centering)
+void TextBoxData::InitMost(Font* const param_default_font, const Rectangle param_parent_rectangle, const char* const param_chars, const RigidCentering param_horizontal_centering, const RigidCentering param_vertical_centering)
 {
 	Clear();
 
 	SetDefaultFont(param_default_font);
-	parent_rectangle_data = param_parent_rectangle_data;
+	parent_rectangle = param_parent_rectangle;
 	AddCharPtr(param_chars);
 	horizontal_text_centering = param_horizontal_centering;
 	vertical_text_centering = param_vertical_centering;
+
+	UpdateCharPos();
 }
 
 double TextBoxData::GetLineHeight(int index)
@@ -98,7 +100,7 @@ void TextBoxData::GenerateLine(const int starting_char_index, const int line_ind
 
 	// -----------------   ADD FIRST BLUEPRINT CHAR TO LINE   -----------------
 
-	current_line_width += chars[current_char_index].rectangle_data.size.width;
+	current_line_width += chars[current_char_index]->rectangle.size.width;
 
 	//Increment char index
 	current_char_index++;
@@ -118,25 +120,25 @@ void TextBoxData::GenerateLine(const int starting_char_index, const int line_ind
 			saved_char_index = current_char_index - 1;
 			saved_line_width = current_line_width;
 		}
-		if (chars[current_char_index].font_char->char_value == ' ')
+		if (chars[current_char_index]->font_char->char_value == ' ')
 		{
 			saved_char_index = current_char_index - 1;
 			saved_line_width = current_line_width;
 			space_in_line = 1;
 		}
-		if (chars[current_char_index].font_char->char_value == '\n')
+		if (chars[current_char_index]->font_char->char_value == '\n')
 		{
 			saved_char_index = current_char_index - 1;
 			saved_line_width = current_line_width;
 		}
 
 		//Add current char and spacing to width
-		current_line_width += chars[current_char_index - 1].char_spacing;
-		current_line_width += chars[current_char_index].char_spacing;
-		current_line_width += chars[current_char_index].rectangle_data.size.width;
+		current_line_width += chars[current_char_index - 1]->char_spacing;
+		current_line_width += chars[current_char_index]->char_spacing;
+		current_line_width += chars[current_char_index]->rectangle.size.width;
 
 		//If current_char == '\n'
-		if (chars[current_char_index].font_char->char_value == '\n')
+		if (chars[current_char_index]->font_char->char_value == '\n')
 		{
 			broke_from_loop = 1;
 			new_line_encountered = 1;
@@ -159,15 +161,15 @@ void TextBoxData::GenerateLine(const int starting_char_index, const int line_ind
 		LineData temp_line = LineData();
 
 		//Create a line rect with only width and height data
-		lines.push_back(LineData());
-		lines.back().Init();
+		lines.push_back(new LineData());
+		lines.back()->Init();
 
-		lines.back().rectangle_data.base_size.width = saved_line_width;
-		lines.back().rectangle_data.base_size.height = GetLineHeight(line_index);
-		lines.back().rectangle_data.SetSizeWithSizeScale({ 1.0, 1.0 });
-		lines.back().rectangle_data.reference_rectangle_data = &parent_rectangle_data;
-		lines.back().first_index = starting_char_index;
-		lines.back().last_index = saved_char_index;
+		lines.back()->rectangle.base_size.width = saved_line_width;
+		lines.back()->rectangle.base_size.height = GetLineHeight(line_index);
+		lines.back()->rectangle.SetSizeWithSizeScale({ 1.0, 1.0 });
+		lines.back()->rectangle.reference_rectangle_data = &parent_rectangle;
+		lines.back()->first_index = starting_char_index;
+		lines.back()->last_index = saved_char_index;
 
 		int temp_next_starting_index;
 		if (space_in_line || new_line_encountered)
@@ -195,15 +197,15 @@ void TextBoxData::GenerateLine(const int starting_char_index, const int line_ind
 		LineData temp_line = LineData();
 
 		//Create a line rect with only width and height data
-		lines.push_back(LineData());
-		lines.back().Init();
+		lines.push_back(new LineData());
+		lines.back()->Init();
 
-		lines.back().rectangle_data.base_size.width = current_line_width;
-		lines.back().rectangle_data.base_size.height = GetLineHeight(line_index);
-		lines.back().rectangle_data.SetSizeWithSizeScale({ 1.0, 1.0 });
-		lines.back().rectangle_data.reference_rectangle_data = &parent_rectangle_data;
-		lines.back().first_index = starting_char_index;
-		lines.back().last_index = chars.size() - 1;
+		lines.back()->rectangle.base_size.width = current_line_width;
+		lines.back()->rectangle.base_size.height = GetLineHeight(line_index);
+		lines.back()->rectangle.SetSizeWithSizeScale({ 1.0, 1.0 });
+		lines.back()->rectangle.reference_rectangle_data = &parent_rectangle;
+		lines.back()->first_index = starting_char_index;
+		lines.back()->last_index = chars.size() - 1;
 
 		//No new line
 		*next_starting_index = -1;
@@ -238,19 +240,19 @@ void TextBoxData::GenerateLinePositions()
 	case 0:
 		for (int i = 0; i < lines.size(); i++)
 		{
-			lines[i].rectangle_data.pos.x = (parent_rectangle_data.base_size.width - lines[i].rectangle_data.size.width) / -2.0;
+			lines[i]->rectangle.pos.x = (parent_rectangle.base_size.width - lines[i]->rectangle.size.width) / -2.0;
 		}
 		break;
 	case 1:
 		for (int i = 0; i < lines.size(); i++)
 		{
-			lines[i].rectangle_data.pos.x = 0.0;
+			lines[i]->rectangle.pos.x = 0.0;
 		}
 		break;
 	case 2:
 		for (int i = 0; i < lines.size(); i++)
 		{
-			lines[i].rectangle_data.pos.x = (parent_rectangle_data.base_size.width - lines[i].rectangle_data.size.width) / 2.0;
+			lines[i]->rectangle.pos.x = (parent_rectangle.base_size.width - lines[i]->rectangle.size.width) / 2.0;
 		}
 		break;
 	case 3:
@@ -272,7 +274,7 @@ void TextBoxData::GenerateLinePositions()
 		if (lines.size() > 0)
 		{
 			actual_height = GetActualBaseHeight();
-			temp_line_y = (parent_rectangle_data.base_size.height / -2.0) + actual_height;
+			temp_line_y = (parent_rectangle.base_size.height / -2.0) + actual_height;
 		}
 		break;
 	case 1:
@@ -285,7 +287,7 @@ void TextBoxData::GenerateLinePositions()
 	case 2:
 		if (lines.size() > 0)
 		{
-			temp_line_y = (parent_rectangle_data.base_size.height / 2.0);
+			temp_line_y = (parent_rectangle.base_size.height / 2.0);
 		}
 		break;
 	case 3:
@@ -296,16 +298,16 @@ void TextBoxData::GenerateLinePositions()
 
 	if (lines.size() > 0)
 	{
-		temp_line_y -= (lines[0].rectangle_data.size.height / 2.0);
-		lines[0].rectangle_data.pos.y = temp_line_y;
+		temp_line_y -= (lines[0]->rectangle.size.height / 2.0);
+		lines[0]->rectangle.pos.y = temp_line_y;
 
 		for (int i = 1; i < lines.size(); i++)
 		{
-			temp_line_y -= (lines[i - 1].rectangle_data.size.height / 2.0);
+			temp_line_y -= (lines[i - 1]->rectangle.size.height / 2.0);
 			temp_line_y -= GetLineSpacing(i - 1);
 			temp_line_y -= GetLineSpacing(i);
-			temp_line_y -= (lines[i].rectangle_data.size.height / 2.0);
-			lines[i].rectangle_data.pos.y = temp_line_y;
+			temp_line_y -= (lines[i]->rectangle.size.height / 2.0);
+			lines[i]->rectangle.pos.y = temp_line_y;
 		}
 	}
 }
@@ -313,20 +315,20 @@ void TextBoxData::GenerateCharPositions()
 {
 	for (int i = 0; i < lines.size(); i++)
 	{
-		double temp_char_x = lines[i].rectangle_data.pos.x - (lines[i].rectangle_data.size.width / 2.0);
-		temp_char_x += chars[lines[i].first_index].rectangle_data.size.width / 2.0;
-		chars[lines[i].first_index].rectangle_data.pos.x = temp_char_x;
-		chars[lines[i].first_index].rectangle_data.pos.y = lines[i].rectangle_data.pos.y - ((lines[i].rectangle_data.size.height - chars[lines[i].first_index].rectangle_data.size.height) / 2.0);
+		double temp_char_x = lines[i]->rectangle.pos.x - (lines[i]->rectangle.size.width / 2.0);
+		temp_char_x += chars[lines[i]->first_index]->rectangle.size.width / 2.0;
+		chars[lines[i]->first_index]->rectangle.pos.x = temp_char_x;
+		chars[lines[i]->first_index]->rectangle.pos.y = lines[i]->rectangle.pos.y - ((lines[i]->rectangle.size.height - chars[lines[i]->first_index]->rectangle.size.height) / 2.0);
 
-		for (int j = lines[i].first_index + 1; j <= lines[i].last_index; j++)
+		for (int j = lines[i]->first_index + 1; j <= lines[i]->last_index; j++)
 		{
-			chars[j].rectangle_data.pos.y = lines[i].rectangle_data.pos.y - ((lines[i].rectangle_data.size.height - chars[j].rectangle_data.size.height) / 2.0);
+			chars[j]->rectangle.pos.y = lines[i]->rectangle.pos.y - ((lines[i]->rectangle.size.height - chars[j]->rectangle.size.height) / 2.0);
 
-			temp_char_x += chars[j - 1].rectangle_data.size.width / 2.0;
-			temp_char_x += chars[j - 1].char_spacing;
-			temp_char_x += chars[j].char_spacing;
-			temp_char_x += chars[j].rectangle_data.size.width / 2.0;
-			chars[j].rectangle_data.pos.x = temp_char_x;
+			temp_char_x += chars[j - 1]->rectangle.size.width / 2.0;
+			temp_char_x += chars[j - 1]->char_spacing;
+			temp_char_x += chars[j]->char_spacing;
+			temp_char_x += chars[j]->rectangle.size.width / 2.0;
+			chars[j]->rectangle.pos.x = temp_char_x;
 		}
 	}
 }
@@ -337,20 +339,20 @@ void TextBoxData::AddChar(char param_char)
 {
 	if (default_text_box_font)
 	{
-		chars.push_back(TextBoxCharData());
-		chars.back().InitWithFontChar(&parent_rectangle_data, default_text_box_font->GetFontChar(param_char));
+		chars.push_back(new TextBoxCharData());
+		chars.back()->InitLeast(&parent_rectangle, default_text_box_font->GetFontChar(param_char));
 	}
 	else
 	{
 		cout << "Hmmm bozo, try setting the default_text_box_font first (TextBoxData)\n";
 	}
 }
-void TextBoxData::AddChar(char param_char, Uint8 r_mod, Uint8 g_mod, Uint8 b_mod)
+void TextBoxData::AddChar(char param_char, Uint8 r_mod, Uint8 g_mod, Uint8 b_mod, Uint8 a_mod)
 {
 	if (default_text_box_font)
 	{
-		chars.push_back(TextBoxCharData());
-		chars.back().InitWithFontChar(&parent_rectangle_data, default_text_box_font->GetFontChar(param_char), r_mod, g_mod, b_mod);
+		chars.push_back(new TextBoxCharData());
+		chars.back()->InitMost(&parent_rectangle, default_text_box_font->GetFontChar(param_char), r_mod, g_mod, b_mod, a_mod);
 	}
 	else
 	{
@@ -363,8 +365,8 @@ void TextBoxData::AddString(string param_string)
 	{
 		for (int i = 0; i < param_string.size(); i++)
 		{
-			chars.push_back(TextBoxCharData());
-			chars.back().InitWithFontChar(&parent_rectangle_data, default_text_box_font->GetFontChar(param_string[i]));
+			chars.push_back(new TextBoxCharData());
+			chars.back()->InitLeast(&parent_rectangle, default_text_box_font->GetFontChar(param_string[i]));
 		}
 	}
 	else
@@ -372,14 +374,14 @@ void TextBoxData::AddString(string param_string)
 		cout << "Hmmm bozo, try setting the default_text_box_font first (TextBoxData)\n";
 	}
 }
-void TextBoxData::AddString(string param_string, Uint8 r_mod, Uint8 g_mod, Uint8 b_mod)
+void TextBoxData::AddString(string param_string, Uint8 r_mod, Uint8 g_mod, Uint8 b_mod, Uint8 a_mod)
 {
 	if (default_text_box_font)
 	{
 		for (int i = 0; i < param_string.size(); i++)
 		{
-			chars.push_back(TextBoxCharData());
-			chars.back().InitWithFontChar(&parent_rectangle_data, default_text_box_font->GetFontChar(param_string[i]), r_mod, g_mod, b_mod);
+			chars.push_back(new TextBoxCharData());
+			chars.back()->InitMost(&parent_rectangle, default_text_box_font->GetFontChar(param_string[i]), r_mod, g_mod, b_mod, a_mod);
 		}
 	}
 	else
@@ -401,12 +403,12 @@ void TextBoxData::AddCharPtr(const char* param_char_pointer)
 		cout << "Hmmm bozo, try setting the default_text_box_font first (TextBoxData)\n";
 	}
 }
-void TextBoxData::AddCharPtr(const char* param_char_pointer, Uint8 r_mod, Uint8 g_mod, Uint8 b_mod)
+void TextBoxData::AddCharPtr(const char* param_char_pointer, Uint8 r_mod, Uint8 g_mod, Uint8 b_mod, Uint8 a_mod)
 {
 	if (default_text_box_font)
 	{
 		while (*param_char_pointer != '\0') {
-			AddChar(*param_char_pointer, r_mod, g_mod, b_mod);
+			AddChar(*param_char_pointer, r_mod, g_mod, b_mod, a_mod);
 			param_char_pointer++;
 		}
 	}
@@ -428,9 +430,9 @@ double TextBoxData::GetActualBaseWidth()
 
 	for (int i = 0; i < lines.size(); i++)
 	{
-		if (lines[i].rectangle_data.size.width > highest_width)
+		if (lines[i]->rectangle.size.width > highest_width)
 		{
-			highest_width = lines[i].rectangle_data.size.width;
+			highest_width = lines[i]->rectangle.size.width;
 		}
 	}
 
@@ -442,7 +444,7 @@ double TextBoxData::GetActualBaseHeight()
 	{
 		double temp_height = 0.0;
 
-		temp_height = lines[0].rectangle_data.size.height;
+		temp_height = lines[0]->rectangle.size.height;
 
 		for (int i = 1; i < lines.size(); i++)
 		{
@@ -469,7 +471,7 @@ double TextBoxData::GetLineHeightWithPreviousSpacing(int index)
 		}
 
 		temp_height += GetLineSpacing(index);
-		temp_height += lines[index].rectangle_data.size.height;
+		temp_height += lines[index]->rectangle.size.height;
 
 		return temp_height;
 	}
@@ -481,10 +483,10 @@ double TextBoxData::GetLineHeightWithPreviousSpacing(int index)
 
 TextBoxData::TextBoxData()
 {
-	parent_rectangle_data.base_size = { 100.0, 25.0 };
-	parent_rectangle_data.SetSizeWithSizeScale({ 1.0, 1.0 });
+	parent_rectangle.base_size = { 100.0, 25.0 };
+	parent_rectangle.SetSizeWithSizeScale({ 1.0, 1.0 });
 
-	chars = vector<TextBoxCharData>{};
+	chars = vector<TextBoxCharData*>{};
 
 	default_text_box_font = nullptr;
 
@@ -501,4 +503,151 @@ void TextBoxData::SetDefaultFont(Font* param_default_font)
 
 	default_line_spacing = param_default_font->default_default_line_spacing;
 	default_line_height = param_default_font->default_default_line_height;
+}
+
+
+string TextBoxData::GetText()
+{
+	string temp_string;
+
+	for (size_t i = 0; i < chars.size(); i++)
+	{
+		temp_string += chars[i]->font_char->char_value;
+	}
+
+	return temp_string;
+}
+//Indexed elements ARE INCLUDED
+string TextBoxData::GetText(const size_t begin_index, const size_t end_index)
+{
+	string temp_string;
+
+	if (end_index < chars.size())
+	{
+		if (begin_index >= 0)
+		{
+			for (size_t i = begin_index; i <= end_index; i++)
+			{
+				temp_string += chars[i]->font_char->char_value;
+			}
+		}
+		else
+		{
+			cout << "begin_index too loww (printed from TextBoxData::GetText(const size_t begin_index, const size_t end_index))";
+		}
+	}
+	else
+	{
+		cout << "end_index too highh (printed from TextBoxData::GetText(const size_t begin_index, const size_t end_index))";
+	}
+
+	return temp_string;
+}
+
+vector<RectStructOne>* TextBoxData::GetSegmentHitbox(size_t begin_index, size_t end_index)
+{
+	size_t line_progression = GetLineIndexWithCharIndex(begin_index, 0, 1);
+
+	size_t end_line_index = GetLineIndexWithCharIndex(end_index, 0, 0);
+
+	vector<RectStructOne>* temp_rects = new vector<RectStructOne>();
+
+	while (line_progression <= end_line_index)
+	{
+		RectStructOne temp_rect_struct_one;
+
+		temp_rect_struct_one.uni_bottom_edge = lines[line_progression]->rectangle.GetUniEdge({ 1 });
+		temp_rect_struct_one.uni_top_edge = lines[line_progression]->rectangle.GetUniEdge({ 3 });
+
+		if (begin_index >= lines[line_progression]->first_index)
+		{
+			temp_rect_struct_one.uni_left_edge = chars[begin_index]->rectangle.GetUniEdge({ 2 });
+		}
+		else
+		{
+			temp_rect_struct_one.uni_left_edge = chars[lines[line_progression]->first_index]->rectangle.GetUniEdge({ 2 });
+		}
+
+		if (end_index <= lines[line_progression]->last_index)
+		{
+			temp_rect_struct_one.uni_right_edge = chars[end_index]->rectangle.GetUniEdge({ 0 });
+		}
+		else
+		{
+			temp_rect_struct_one.uni_right_edge = chars[lines[line_progression]->last_index]->rectangle.GetUniEdge({ 0 });
+		}
+
+		temp_rects->push_back(temp_rect_struct_one);
+		line_progression++;
+	}
+
+	return temp_rects;
+}
+
+LineData* TextBoxData::GetLineWithCharIndex(const size_t char_data_index, const bool can_return_nullptr, const bool return_next_line)
+{
+	for (size_t i = 0; i < lines.size(); i++)
+	{
+		if ((!can_return_nullptr) && (return_next_line))
+		{
+			bool check_one;
+			if (i > 0)
+			{
+				check_one = (char_data_index > lines[i - size_t(1)]->last_index);
+			}
+			else
+			{
+				check_one = 1;
+			}
+			const bool check_two = (char_data_index < lines[i]->first_index);
+
+			if (check_one && check_two)
+			{
+				return lines[i];
+			}
+		}
+
+		if ((char_data_index >= lines[i]->first_index) && (char_data_index <= lines[i]->last_index))
+		{
+			return lines[i];
+		}
+
+		if ((!can_return_nullptr) && (!return_next_line))
+		{
+			const bool check_one = char_data_index > lines[i]->last_index;
+			bool check_two;
+			if ((i + size_t(1)) < lines.size())
+			{
+				check_two = (char_data_index < lines[i + size_t(1)]->first_index);
+			}
+			else
+			{
+				check_two = 1;
+			}
+
+			if (check_one && check_two)
+			{
+				return lines[i];
+			}
+		}
+	}
+
+	return nullptr;
+}
+size_t TextBoxData::GetLineIndexWithCharIndex(const size_t char_data_index, const bool can_return_nullptr, const bool return_next_line)
+{
+	return GetLineIndexWithLinePointer(GetLineWithCharIndex(char_data_index, can_return_nullptr, return_next_line));
+}
+
+size_t TextBoxData::GetLineIndexWithLinePointer(const LineData* const line_data_ptr) const
+{
+	for (size_t i = 0; i < lines.size(); i++)
+	{
+		if (lines[i] == line_data_ptr)
+		{
+			return i;
+		}
+	}
+
+	return numeric_limits<size_t>::max();
 }

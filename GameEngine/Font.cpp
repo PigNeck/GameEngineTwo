@@ -1,6 +1,6 @@
 #include "Font.h"
 
-#define TBC(a) new FontChar(LoadCharTexture(renderer, ("images/fonts/" + param_name + "/" + GetTextureName(a)).c_str()), a, default_default_char_spacing)
+#define TBC(a) new FontChar(LoadCharTexture(renderer, ("images/fonts/" + param_name + "/" + GetTextureName(a)).c_str()), a, param_default_default_char_spacing)
 
 Texture* Font::LoadCharTexture(SDL_Renderer* renderer, const char* path)
 {
@@ -118,11 +118,9 @@ Font::Font()
 	all_chars[95] = new_line;
 }
 
-void Font::InitFont(string param_name, SDL_Renderer* renderer)
+void Font::Init(string param_name, SDL_Renderer* renderer, const double param_default_default_char_spacing, const double param_default_default_line_spacing, const double param_default_default_line_height)
 {
 	font_name = param_name;
-
-	default_default_char_spacing = 1;
 
 	NULL_texture = new Texture();
 	NULL_texture->LoadTexture(renderer, ("images/fonts/" + param_name + "/Char_null.png").c_str());
@@ -161,6 +159,7 @@ void Font::InitFont(string param_name, SDL_Renderer* renderer)
 	e = TBC('e');
 	f = TBC('f');
 	g = TBC('g');
+	g->default_unscaled_y_offset = -2.0;
 	h = TBC('h');
 	i = TBC('i');
 	j = TBC('j');
@@ -170,7 +169,9 @@ void Font::InitFont(string param_name, SDL_Renderer* renderer)
 	n = TBC('n');
 	o = TBC('o');
 	p = TBC('p');
+	p->default_unscaled_y_offset = -2.0;
 	q = TBC('q');
+	q->default_unscaled_y_offset = -2.0;
 	r = TBC('r');
 	s = TBC('s');
 	t = TBC('t');
@@ -179,6 +180,7 @@ void Font::InitFont(string param_name, SDL_Renderer* renderer)
 	w = TBC('w');
 	x = TBC('x');
 	y = TBC('y');
+	y->default_unscaled_y_offset = -2.0;
 	z = TBC('z');
 
 	num_0 = TBC('0');
@@ -193,21 +195,29 @@ void Font::InitFont(string param_name, SDL_Renderer* renderer)
 	num_9 = TBC('9');
 
 	acute = TBC('`');
+	acute->default_unscaled_y_offset = 4.0;
 	tilde = TBC('~');
+	tilde->default_unscaled_y_offset = 2.0;
 	exclaimation_point = TBC('!');
 	at_sign = TBC('@');
 	hashtag = TBC('#');
+	hashtag->default_unscaled_y_offset = 1.0;
 	dollar_sign = TBC('$');
 	percent_sign = TBC('%');
 	caret = TBC('^');
+	caret->default_unscaled_y_offset = 2.0;
 	ampersand = TBC('&');
 	asterisk = TBC('*');
+	asterisk->default_unscaled_y_offset = 2.0;
 	open_parenthesis = TBC('(');
 	close_parenthesis = TBC(')');
 	minus_sign = TBC('-');
+	minus_sign->default_unscaled_y_offset = 3.0;
 	underscore = TBC('_');
 	equals_sign = TBC('=');
+	equals_sign->default_unscaled_y_offset = 2.0;
 	plus_sign = TBC('+');
+	plus_sign->default_unscaled_y_offset = 1.0;
 	open_bracket = TBC('[');
 	close_bracket = TBC(']');
 	open_curly_bracket = TBC('{');
@@ -217,18 +227,23 @@ void Font::InitFont(string param_name, SDL_Renderer* renderer)
 	semicolon = TBC(';');
 	colon = TBC(':');
 	single_quote = TBC('\'');
+	single_quote->default_unscaled_y_offset = 3.0;
 	double_quote = TBC('\"');
+	double_quote->default_unscaled_y_offset = 3.0;
 	comma = TBC(',');
+	comma->default_unscaled_y_offset = -1.0;
 	less_than_sign = TBC('<');
+	less_than_sign->default_unscaled_y_offset = 1.0;
 	period = TBC('.');
 	greater_than_sign = TBC('>');
+	greater_than_sign->default_unscaled_y_offset = 1.0;
 	slash = TBC('/');
 	question_mark = TBC('?');
 	space = TBC(' ');
 	new_line = TBC('\n');
 
-	default_default_line_spacing = round(A->default_height / 7);
-	default_default_line_height = A->default_height;
+	default_default_line_spacing = param_default_default_line_spacing;
+	default_default_line_height = param_default_default_line_height;
 }
 
 FontChar* Font::GetFontChar(char char_value)

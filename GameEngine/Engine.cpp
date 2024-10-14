@@ -5,16 +5,16 @@
 #include <string>
 #include <limits>
 
-#define DEBUG_DATA_TEXT_BOX_MARGIN blank_camera->rect.data.base_size.width / 80.0
+#define DEBUG_DATA_TEXT_BOX_MARGIN blank_camera->rect.base_size.width / 80.0
 
-#define DEBUG_DATA_TEXT_COLOR_NAME 0, 0, 0
-#define DEBUG_DATA_TEXT_COLOR_SUB_NAME 100, 100, 100
+#define DEBUG_DATA_TEXT_COLOR_NAME 0, 0, 0, 255
+#define DEBUG_DATA_TEXT_COLOR_SUB_NAME 100, 100, 100, 255
 
-#define DEBUG_DATA_TEXT_COLOR_RIGID_CENTERING 44, 0, 190
-#define DEBUG_DATA_TEXT_COLOR_OTHER 149, 0, 190
-#define DEBUG_DATA_TEXT_COLOR_PRIMARY_TYPE 0, 181, 190
-#define DEBUG_DATA_TEXT_COLOR_POINT2D 10, 190, 0
-#define DEBUG_DATA_TEXT_COLOR_SIZE2D 190, 38, 0
+#define DEBUG_DATA_TEXT_COLOR_RIGID_CENTERING 44, 0, 190, 255
+#define DEBUG_DATA_TEXT_COLOR_OTHER 149, 0, 190, 255
+#define DEBUG_DATA_TEXT_COLOR_PRIMARY_TYPE 0, 181, 190, 255
+#define DEBUG_DATA_TEXT_COLOR_POINT2D 10, 190, 0, 255
+#define DEBUG_DATA_TEXT_COLOR_SIZE2D 190, 38, 0, 255
 
 using namespace std;
 
@@ -50,44 +50,43 @@ void Engine::MoveDebugCamera()
 {
     if (input.w.pressed)
     {
-        debug_camera->rect.data.pos.y += 10.0 * frame_factor * debug_camera->rect.data.GetUniHeightScale();
+        debug_camera->rect.pos.y += 10.0 * frame_factor * debug_camera->rect.GetUniHeightScale();
     }
     if (input.a.pressed)
     {
-        debug_camera->rect.data.pos.x -= 10.0 * frame_factor * debug_camera->rect.data.GetUniWidthScale();
+        debug_camera->rect.pos.x -= 10.0 * frame_factor * debug_camera->rect.GetUniWidthScale();
     }
     if (input.s.pressed)
     {
-        debug_camera->rect.data.pos.y -= 10.0 * frame_factor * debug_camera->rect.data.GetUniHeightScale();
+        debug_camera->rect.pos.y -= 10.0 * frame_factor * debug_camera->rect.GetUniHeightScale();
     }
     if (input.d.pressed)
     {
-        debug_camera->rect.data.pos.x += 10.0 * frame_factor * debug_camera->rect.data.GetUniWidthScale();
+        debug_camera->rect.pos.x += 10.0 * frame_factor * debug_camera->rect.GetUniWidthScale();
     }
 
-    if ((!found_mouse_layer) || (current_mouse_layer == "debug data container layer"))
+    if (debug_data_container_layer.active)
     {
-        Size2D temp_size_scale = debug_camera->rect.data.GetUniSizeScale();
-        debug_camera->rect.data.SetSizeWithUniSizeScale(Size2D{ temp_size_scale.width * pow(0.85, input.mouse_scroll_y), temp_size_scale.height * pow(0.85, input.mouse_scroll_y) });
+        Size2D temp_size_scale = debug_camera->rect.GetUniSizeScale();
+        debug_camera->rect.SetSizeWithUniSizeScale(Size2D{ temp_size_scale.width * pow(0.85, input.mouse_scroll_y), temp_size_scale.height * pow(0.85, input.mouse_scroll_y) });
 
-        found_mouse_layer = 1;
-        current_mouse_layer = "debug data container layer";
+        DeactivateMouseLayers(0, { &debug_data_container_layer });
     }
 }
 
-void Engine::BasicBasicDrawRectangle(RectangleData* param_rectangle_data, SDL_Color color, Camera* camera)
+void Engine::BasicBasicDrawRectangle(Rectangle* param_rectangle, SDL_Color color, Camera* camera)
 {
-    SDL_Rect rect = RectangleDataToSDLRect(param_rectangle_data, camera);
+    SDL_Rect rect = RectangleToSDLRect(param_rectangle, camera);
 
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     SDL_RenderFillRect(renderer, &rect);
 }
-void Engine::BasicDrawRectangle(RectangleData* param_rectangle_data, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::BasicDrawRectangle(Rectangle* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
     // -----------------   INITILIZE NECESSARY LOCAL VARIABLES   -----------------
 
     SDL_Rect sdl_rect;
-    RectangleData temp_rectangle_data = *param_rectangle_data;
+    Rectangle temp_rectangle_data = *param_rectangle;
 
 
 
@@ -101,7 +100,7 @@ void Engine::BasicDrawRectangle(RectangleData* param_rectangle_data, SDL_Color f
 
     const bool has_shadow = !(((shadow_scaled_offset.x == 0.0) && (shadow_scaled_offset.y == 0.0)) || (shadow_color.a == 0));
 
-    const bool has_fill = !((param_rectangle_data->size.width == 0.0) || (param_rectangle_data->size.height == 0.0) || (filling_color.a == 0));
+    const bool has_fill = !((param_rectangle->size.width == 0.0) || (param_rectangle->size.height == 0.0) || (filling_color.a == 0));
 
 
 
@@ -399,43 +398,55 @@ void Engine::BasicDrawRectangle(RectangleData* param_rectangle_data, SDL_Color f
 
     //All done :) (phew)
 }
-void Engine::BasicDrawRectangleScaledBorder(RectangleData* param_rectangle_data, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
+void Engine::BasicDrawRectangleScaledBorder(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
 {
-    BasicDrawRectangle(param_rectangle_data, filling_color, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_color, { 0.0, 0.0 }, { 0, 0, 0, 0 }, camera);
+    BasicDrawRectangle(param_rectangle, filling_color, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_color, { 0.0, 0.0 }, { 0, 0, 0, 0 }, camera);
 }
-void Engine::BasicDrawRectangleScaledBorderScaledShadow(RectangleData* param_rectangle_data, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::BasicDrawRectangleScaledBorderScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
-    BasicDrawRectangle(param_rectangle_data, filling_color, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_color, shadow_scaled_offset, shadow_color, camera);
+    BasicDrawRectangle(param_rectangle, filling_color, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_color, shadow_scaled_offset, shadow_color, camera);
 }
-void Engine::BasicDrawRectangleScaledShadow(RectangleData* param_rectangle_data, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::BasicDrawRectangleScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
-    BasicDrawRectangle(param_rectangle_data, filling_color, 0.0, { 0 }, 0.0, { 0 }, 0.0, { 0 }, 0.0, { 0 }, { 0, 0, 0, 0 }, shadow_scaled_offset, shadow_color, camera);
+    BasicDrawRectangle(param_rectangle, filling_color, 0.0, { 0 }, 0.0, { 0 }, 0.0, { 0 }, 0.0, { 0 }, { 0, 0, 0, 0 }, shadow_scaled_offset, shadow_color, camera);
 }
-void Engine::BasicDrawRectangleOutline(RectangleData* param_rectangle_data, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
+void Engine::BasicDrawRectangleOutline(Rectangle* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
 {
-    BasicDrawRectangle(param_rectangle_data, { 0, 0, 0, 0 }, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_color, { 0.0, 0.0 }, { 0, 0, 0, 0 }, camera);
+    BasicDrawRectangle(param_rectangle, { 0, 0, 0, 0 }, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_color, { 0.0, 0.0 }, { 0, 0, 0, 0 }, camera);
+}
+
+void Engine::BasicDrawRectStructOne(RectStructOne* param_rect_struct_one, SDL_Color color, Camera* camera)
+{
+    SDL_Rect rect = RectStructOneToSDLRect(param_rect_struct_one, camera);
+
+    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    SDL_RenderFillRect(renderer, &rect);
 }
 
 
-void Engine::UpdateDebugLabelPos(DebugLabel* const param_debug_label)
+void Engine::ScaleDebugLabel(DebugLabel* const param_debug_label)
 {
     //Create camera scale const doubles
-    const double cam_width_scale = debug_camera->rect.data.GetWidthScale();
-    const double cam_height_scale = debug_camera->rect.data.GetHeightScale();
+    const double cam_width_scale = debug_camera->rect.GetWidthScale();
+    const double cam_height_scale = debug_camera->rect.GetHeightScale();
 
 
     //Set size scale of text_box_data
-    param_debug_label->text_box_data.parent_rectangle_data.SetSizeWithSizeScale({ param_debug_label->text_scale * cam_width_scale, param_debug_label->text_scale * cam_height_scale});
+    param_debug_label->text_box_data.parent_rectangle.SetSizeWithSizeScale({ param_debug_label->text_scale * cam_width_scale, param_debug_label->text_scale * cam_height_scale });
 
     //Create the label_rectangle_data (serves as the backdrop of the label. It includes margin)
-    param_debug_label->rectangle_data.size.width = (param_debug_label->text_box_data.parent_rectangle_data.size.width) + (param_debug_label->scaled_margin_size * 2.0 * cam_width_scale);
-    param_debug_label->rectangle_data.size.height = (param_debug_label->text_box_data.parent_rectangle_data.size.height) + (param_debug_label->scaled_margin_size * 2.0 * cam_height_scale);
-    param_debug_label->rectangle_data.SetOffsetWithCentering({ 1.0, 1.0 }, 0);
-    param_debug_label->rectangle_data.pos.x = param_debug_label->describing_rectangle_data->GetUniEdge({ 2 });
-    param_debug_label->rectangle_data.pos.y = param_debug_label->describing_rectangle_data->GetUniEdge({ 3 });
+    param_debug_label->rectangle.size.width = (param_debug_label->text_box_data.parent_rectangle.size.width) + (param_debug_label->scaled_margin_size * 2.0 * cam_width_scale);
+    param_debug_label->rectangle.size.height = (param_debug_label->text_box_data.parent_rectangle.size.height) + (param_debug_label->scaled_margin_size * 2.0 * cam_height_scale);
+    param_debug_label->rectangle.SetOffsetWithCentering({ 1.0, 1.0 }, 0);
+}
+void Engine::AlignDebugLabelAndPushbackToSavedLabelRects(DebugLabel* const param_debug_label)
+{
+    //Create camera scale const doubles
+    const double cam_width_scale = debug_camera->rect.GetWidthScale();
+    const double cam_height_scale = debug_camera->rect.GetHeightScale();
 
     //Generate rect_struct_one
-    RectStructOne temp_label_rect_struct_one = param_debug_label->rectangle_data.GetRectStructOne();
+    RectStructOne temp_label_rect_struct_one = RectangleToRectStructOne(&param_debug_label->rectangle);
 
     bool aligned_first_rect_struct_one_to_right = 0;
     bool aligned_first_rect_struct_one_to_bottom = 0;
@@ -479,7 +490,7 @@ void Engine::UpdateDebugLabelPos(DebugLabel* const param_debug_label)
             {
                 if ((first_rect_struct_one_to_right_diff <= first_rect_struct_one_to_bottom_diff) && (first_rect_struct_one_to_right_diff <= first_rect_struct_one_to_left_diff) && (first_rect_struct_one_to_right_diff <= first_rect_struct_one_to_top_diff))
                 {
-                    param_debug_label->rectangle_data.SetPosWithUniEdge(temp_saved_label_rects[j].uni_right_edge, { 2 });
+                    param_debug_label->rectangle.SetPosWithUniEdge(temp_saved_label_rects[j].uni_right_edge, { 2 });
                     aligned_first_rect_struct_one_to_right = 1;
 
                     finished = 1;
@@ -489,7 +500,7 @@ void Engine::UpdateDebugLabelPos(DebugLabel* const param_debug_label)
             {
                 if ((first_rect_struct_one_to_bottom_diff <= first_rect_struct_one_to_right_diff) && (first_rect_struct_one_to_bottom_diff <= first_rect_struct_one_to_left_diff) && (first_rect_struct_one_to_bottom_diff <= first_rect_struct_one_to_top_diff))
                 {
-                    param_debug_label->rectangle_data.SetPosWithUniEdge(temp_saved_label_rects[j].uni_bottom_edge, { 3 });
+                    param_debug_label->rectangle.SetPosWithUniEdge(temp_saved_label_rects[j].uni_bottom_edge, { 3 });
                     aligned_first_rect_struct_one_to_bottom = 1;
 
                     finished = 1;
@@ -499,7 +510,7 @@ void Engine::UpdateDebugLabelPos(DebugLabel* const param_debug_label)
             {
                 if ((first_rect_struct_one_to_left_diff <= first_rect_struct_one_to_right_diff) && (first_rect_struct_one_to_left_diff <= first_rect_struct_one_to_bottom_diff) && (first_rect_struct_one_to_left_diff <= first_rect_struct_one_to_top_diff))
                 {
-                    param_debug_label->rectangle_data.SetPosWithUniEdge(temp_saved_label_rects[j].uni_left_edge, { 0 });
+                    param_debug_label->rectangle.SetPosWithUniEdge(temp_saved_label_rects[j].uni_left_edge, { 0 });
                     aligned_first_rect_struct_one_to_left = 1;
 
                     finished = 1;
@@ -507,74 +518,88 @@ void Engine::UpdateDebugLabelPos(DebugLabel* const param_debug_label)
             }
             if (!(aligned_first_rect_struct_one_to_bottom || finished))
             {
-                param_debug_label->rectangle_data.SetPosWithUniEdge(temp_saved_label_rects[j].uni_top_edge, { 1 });
+                param_debug_label->rectangle.SetPosWithUniEdge(temp_saved_label_rects[j].uni_top_edge, { 1 });
                 aligned_first_rect_struct_one_to_top = 1;
 
                 finished = 1;
             }
 
-            temp_label_rect_struct_one = param_debug_label->rectangle_data.GetRectStructOne();
+            temp_label_rect_struct_one = RectangleToRectStructOne(&param_debug_label->rectangle);
 
             temp_saved_label_rects.erase(temp_saved_label_rects.begin() + j);
             j = -1;
         }
     }
 
-
-    //Actually draw the hecking thing
-    //BasicBasicDrawRectangle(&param_debug_label->rectangle_data, { 255, 255, 255, 180 }, debug_camera);
-
-    param_debug_label->text_box_data.parent_rectangle_data.pos.x = param_debug_label->rectangle_data.pos.x + (param_debug_label->scaled_margin_size * cam_width_scale);
-    param_debug_label->text_box_data.parent_rectangle_data.pos.y = param_debug_label->rectangle_data.pos.y + (param_debug_label->scaled_margin_size * cam_height_scale);
-    //BasicDrawTextBoxData(&param_debug_label->text_box_data, debug_camera);
+    param_debug_label->text_box_data.parent_rectangle.pos.x = param_debug_label->rectangle.pos.x + (param_debug_label->scaled_margin_size * cam_width_scale);
+    param_debug_label->text_box_data.parent_rectangle.pos.y = param_debug_label->rectangle.pos.y + (param_debug_label->scaled_margin_size * cam_height_scale);
 
     //Add the current rect_struct_one to the saved_label_rects vector
     saved_label_rects.push_back(temp_label_rect_struct_one);
 }
+
+void Engine::UpdateDebugLabelPos(DebugLabel* const param_debug_label)
+{
+    ScaleDebugLabel(param_debug_label);
+
+    param_debug_label->rectangle.pos.x = param_debug_label->describing_rectangle->GetUniEdge({ 2 });
+    param_debug_label->rectangle.pos.y = param_debug_label->describing_rectangle->GetUniEdge({ 3 });
+
+    AlignDebugLabelAndPushbackToSavedLabelRects(param_debug_label);
+}
+void Engine::UpdateDebugLabelPosWithTargetPos(DebugLabel* const param_debug_label, const Point2D param_bottom_left_point)
+{
+    ScaleDebugLabel(param_debug_label);
+
+    param_debug_label->rectangle.pos.x = param_bottom_left_point.x;
+    param_debug_label->rectangle.pos.y = param_bottom_left_point.y;
+
+    AlignDebugLabelAndPushbackToSavedLabelRects(param_debug_label);
+}
 void Engine::BasicDrawDebugLabel(DebugLabel* const param_debug_label)
 {
-    BasicBasicDrawRectangle(&param_debug_label->rectangle_data, { 255, 255, 255, 180 }, debug_camera);
+    BasicBasicDrawRectangle(&param_debug_label->rectangle, { 255, 255, 255, 180 }, debug_camera);
     BasicDrawTextBoxData(&param_debug_label->text_box_data, debug_camera);
 }
 
 
 void Engine::BasicDrawPoint(Point2D* param_point, Size2D param_size, SDL_Color color, Camera* camera)
 {
-    RectangleData temp_rectangle_data;
+    Rectangle temp_rectangle;
 
-    temp_rectangle_data.base_size = param_size;
-    temp_rectangle_data.SetSizeWithSizeScale({ 1.0, 1.0 });
+    temp_rectangle.base_size = param_size;
+    temp_rectangle.SetSizeWithSizeScale({ 1.0, 1.0 });
 
-    SDL_Rect rect = RectangleDataToSDLRect(&temp_rectangle_data, camera);
+    SDL_Rect rect = RectangleToSDLRect(&temp_rectangle, camera);
 
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     SDL_RenderFillRect(renderer, &rect);
 }
-void Engine::BasicDrawTexture(Texture* texture, Camera* camera, RectangleData* param_rectangle_data)
+void Engine::BasicDrawTexture(const Texture* const texture, const Camera* const camera, const Rectangle* const param_rectangle)
 {
-    SDL_Rect temp_rect = RectangleDataToSDLRect(param_rectangle_data, camera);
+    SDL_Rect temp_rect = RectangleToSDLRect(param_rectangle, camera);
 
-    if ((param_rectangle_data->flip.value == 0) && (param_rectangle_data->rotation == 0.0))
+    if ((param_rectangle->flip.value == 0) && (param_rectangle->rotation == 0.0))
     {
         SDL_RenderCopy(renderer, texture->sdl_texture, NULL, &temp_rect);
     }
     else
     {
-        SDL_Point sdl_center = RectangleDataToSDLCenterOfRotation(param_rectangle_data, camera);
+        SDL_Point sdl_center = RectangleToSDLCenterOfRotation(param_rectangle, camera);
 
-        switch (param_rectangle_data->flip.value)
+        switch (param_rectangle->flip.value)
         {
         case 0:
-            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle_data->GetUniRotation(), &sdl_center, SDL_FLIP_NONE);
+            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation(), &sdl_center, SDL_FLIP_NONE);
             break;
         case 1:
-            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle_data->GetUniRotation(), &sdl_center, SDL_FLIP_HORIZONTAL);
+            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation(), &sdl_center, SDL_FLIP_HORIZONTAL);
             break;
         case 2:
-            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle_data->GetUniRotation(), &sdl_center, SDL_FLIP_VERTICAL);
+            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation(), &sdl_center, SDL_FLIP_VERTICAL);
             break;
         case 3:
-            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle_data->GetUniRotation() + 180.0, &sdl_center, SDL_FLIP_NONE);
+            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation() + 180.0, &sdl_center, SDL_FLIP_NONE);
             break;
         }
     }
@@ -586,27 +611,39 @@ void Engine::BasicDrawSprite(Sprite* sprite, Camera* camera)
         sprite->texture = sprite->animation->GetCurrentFrame()->texture;
     }
 
-    BasicDrawTexture(sprite->texture, camera, &sprite->rect.data);
+    BasicDrawTexture(sprite->texture, camera, &sprite->rect);
 }
 void Engine::BasicDrawTextBoxData(TextBoxData* param_text_box, Camera* camera)
 {
     for (int i = 0; i < param_text_box->lines.size(); i++)
     {
-        for (int j = param_text_box->lines[i].first_index; j <= param_text_box->lines[i].last_index; j++)
+        for (int j = param_text_box->lines[i]->first_index; j <= param_text_box->lines[i]->last_index; j++)
         {
-            SDL_SetTextureColorMod(param_text_box->chars[j].font_char->texture->sdl_texture, param_text_box->chars[j].r_mod, param_text_box->chars[j].g_mod, param_text_box->chars[j].b_mod);
-            BasicDrawTexture(param_text_box->chars[j].font_char->texture, camera, &param_text_box->chars[j].rectangle_data);
+            const TextBoxCharData* const current_char = param_text_box->chars[j];
+            const Texture* const current_texture = current_char->font_char->texture;
+            if (current_char->a_mod != 0)
+            {
+                SDL_SetTextureColorMod(current_texture->sdl_texture, current_char->r_mod, current_char->g_mod, current_char->b_mod);
+                SDL_SetTextureAlphaMod(current_texture->sdl_texture, current_char->a_mod);
+                BasicDrawTexture(current_texture, camera, &current_char->rectangle);
+            }
         }
     }
 }
 void Engine::BasicDrawTextBox(TextBox* param_text_box, Camera* camera)
 {
-    for (int i = 0; i < param_text_box->lines.size(); i++)
+    for (size_t i = 0; i < param_text_box->lines.size(); i++)
     {
-        for (int j = param_text_box->lines[i].first_index; j <= param_text_box->lines[i].last_index; j++)
+        for (size_t j = param_text_box->lines[i]->first_index; j <= param_text_box->lines[i]->last_index; j++)
         {
-            SDL_SetTextureColorMod(param_text_box->chars[j].font_char->texture->sdl_texture, param_text_box->chars[j].r_mod, param_text_box->chars[j].g_mod, param_text_box->chars[j].b_mod);
-            BasicDrawTexture(param_text_box->chars[j].font_char->texture, camera, &param_text_box->chars[j].rect.data);
+            const TextBoxChar* const current_char = param_text_box->chars[j];
+            const Texture* const current_texture = current_char->font_char->texture;
+            if (current_char->a_mod != 0)
+            {
+                SDL_SetTextureColorMod(current_texture->sdl_texture, current_char->r_mod, current_char->g_mod, current_char->b_mod);
+                SDL_SetTextureAlphaMod(current_texture->sdl_texture, current_char->a_mod);
+                BasicDrawTexture(current_texture, camera, &current_char->rect);
+            }
         }
     }
 }
@@ -645,7 +682,7 @@ void Engine::BasicDrawTextButton(TextButton* param_text_button, Camera* camera)
 }
 void Engine::BasicDrawSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera)
 {
-    RectangleData temp_rect_data = param_simple_text_button->parent_rect.data;
+    Rectangle temp_rect_data = param_simple_text_button->parent_rect;
 
     if (!param_simple_text_button->press_data.pressed)
     {
@@ -687,76 +724,81 @@ void Engine::BasicDrawScrollBar(ScrollBar* param_scroll_bar, Camera* camera)
 {
     if (param_scroll_bar->horizontal_scroll_bar)
     {
-        if (!(param_scroll_bar->bar_rect.data.size.width == param_scroll_bar->full_bar_rect.data.base_size.width))
+        if (!(param_scroll_bar->bar_rect.size.width == param_scroll_bar->full_bar_rect.base_size.width))
         {
-            BasicBasicDrawRectangle(&param_scroll_bar->full_bar_rect.data, { 175, 175, 175, 255 }, camera);
-            BasicBasicDrawRectangle(&param_scroll_bar->bar_rect.data, { 120, 120, 120, 255 }, camera);
+            BasicBasicDrawRectangle(&param_scroll_bar->full_bar_rect, { 175, 175, 175, 255 }, camera);
+            BasicBasicDrawRectangle(&param_scroll_bar->bar_rect, { 120, 120, 120, 255 }, camera);
         }
     }
     else
     {
-        if (!(param_scroll_bar->bar_rect.data.size.height == param_scroll_bar->full_bar_rect.data.base_size.height))
+        if (!(param_scroll_bar->bar_rect.size.height == param_scroll_bar->full_bar_rect.base_size.height))
         {
-            BasicBasicDrawRectangle(&param_scroll_bar->full_bar_rect.data, { 175, 175, 175, 255 }, camera);
-            BasicBasicDrawRectangle(&param_scroll_bar->bar_rect.data, { 120, 120, 120, 255 }, camera);
+            BasicBasicDrawRectangle(&param_scroll_bar->full_bar_rect, { 175, 175, 175, 255 }, camera);
+            BasicBasicDrawRectangle(&param_scroll_bar->bar_rect, { 120, 120, 120, 255 }, camera);
         }
     }
 }
 
 
-void Engine::DrawRectangle(RectangleData* param_rectangle_data, SDL_Color color, Camera* camera)
+void Engine::DrawRectangle(Rectangle* param_rectangle, SDL_Color color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
     if (debug_mode) { temp_cam_pointer = debug_camera; }
     else { temp_cam_pointer = camera; }
 
-    BasicBasicDrawRectangle(param_rectangle_data, color, temp_cam_pointer);
+    BasicBasicDrawRectangle(param_rectangle, color, temp_cam_pointer);
 }
-void Engine::DrawRectangleScaledBorder(RectangleData* param_rectangle_data, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
+void Engine::DrawRectangleScaledBorder(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
     if (debug_mode) { temp_cam_pointer = debug_camera; }
     else { temp_cam_pointer = camera; }
 
-    BasicDrawRectangleScaledBorder(param_rectangle_data, filling_color, border_scaled_size, border_centering, border_color, temp_cam_pointer);
+    BasicDrawRectangleScaledBorder(param_rectangle, filling_color, border_scaled_size, border_centering, border_color, temp_cam_pointer);
 }
-void Engine::DrawRectangleScaledBorderScaledShadow(RectangleData* param_rectangle_data, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::DrawRectangleScaledBorderScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
     if (debug_mode) { temp_cam_pointer = debug_camera; }
     else { temp_cam_pointer = camera; }
 
-    BasicDrawRectangleScaledBorderScaledShadow(param_rectangle_data, filling_color, border_scaled_size, border_centering, border_color, shadow_scaled_offset, shadow_color, temp_cam_pointer);
+    BasicDrawRectangleScaledBorderScaledShadow(param_rectangle, filling_color, border_scaled_size, border_centering, border_color, shadow_scaled_offset, shadow_color, temp_cam_pointer);
 }
-void Engine::DrawRectangleEx(RectangleData* param_rectangle_data, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::DrawRectangleEx(Rectangle* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
     if (debug_mode) { temp_cam_pointer = debug_camera; }
     else { temp_cam_pointer = camera; }
 
-    BasicDrawRectangle(param_rectangle_data, filling_color, right_border_scaled_size, right_border_centering, bottom_border_scaled_size, bottom_border_centering, left_border_scaled_size, left_border_centering, top_border_scaled_size, top_border_centering, border_color, shadow_scaled_offset, shadow_color, temp_cam_pointer);
+    BasicDrawRectangle(param_rectangle, filling_color, right_border_scaled_size, right_border_centering, bottom_border_scaled_size, bottom_border_centering, left_border_scaled_size, left_border_centering, top_border_scaled_size, top_border_centering, border_color, shadow_scaled_offset, shadow_color, temp_cam_pointer);
 }
-void Engine::DrawRectangleScaledShadow(RectangleData* param_rectangle_data, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::DrawRectangleScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
     if (debug_mode) { temp_cam_pointer = debug_camera; }
     else { temp_cam_pointer = camera; }
 
-    BasicDrawRectangleScaledShadow(param_rectangle_data, filling_color, shadow_scaled_offset, shadow_color, temp_cam_pointer);
+    BasicDrawRectangleScaledShadow(param_rectangle, filling_color, shadow_scaled_offset, shadow_color, temp_cam_pointer);
 }
-void Engine::DrawRectangleOutline(RectangleData* param_rectangle_data, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
+void Engine::DrawRectangleOutline(Rectangle* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
     if (debug_mode) { temp_cam_pointer = debug_camera; }
     else { temp_cam_pointer = camera; }
 
-    BasicDrawRectangleOutline(param_rectangle_data, border_scaled_size, border_centering, border_color, temp_cam_pointer);
+    BasicDrawRectangleOutline(param_rectangle, border_scaled_size, border_centering, border_color, temp_cam_pointer);
+}
+
+void Engine::DrawRectStructOne(RectStructOne* param_rect_struct_one, SDL_Color color, Camera* camera)
+{
+    BasicDrawRectStructOne(param_rect_struct_one, color, camera);
 }
 
 
@@ -780,21 +822,21 @@ void Engine::DrawSprite(Sprite* sprite, Camera* camera)
 
     if (boundary_view)
     {
-        BasicBasicDrawRectangle(&sprite->rect.data, SDL_Color{ 0, 0, 255, 50 }, temp_cam_pointer);
+        BasicBasicDrawRectangle(&sprite->rect, SDL_Color{ 0, 0, 255, 50 }, temp_cam_pointer);
     }
 }
-void Engine::DrawTexture(Texture* texture, Camera* camera, RectangleData* param_rectangle_data)
+void Engine::DrawTexture(Texture* texture, Camera* camera, Rectangle* param_rectangle)
 {
     Camera* temp_cam_pointer = nullptr;
 
     if (debug_mode) { temp_cam_pointer = debug_camera; }
     else { temp_cam_pointer = camera; }
 
-    BasicDrawTexture(texture, temp_cam_pointer, param_rectangle_data);
+    BasicDrawTexture(texture, temp_cam_pointer, param_rectangle);
 
     if (boundary_view)
     {
-        BasicBasicDrawRectangle(param_rectangle_data, SDL_Color{ 255, 0, 0, 50 }, temp_cam_pointer);
+        BasicBasicDrawRectangle(param_rectangle, SDL_Color{ 255, 0, 0, 50 }, temp_cam_pointer);
     }
 }
 void Engine::DrawTextBox(TextBox* param_text_box, Camera* camera)
@@ -806,13 +848,13 @@ void Engine::DrawTextBox(TextBox* param_text_box, Camera* camera)
 
     if (debug_mode && boundary_view)
     {
-        RectangleData parent_rectangle_data_copy = param_text_box->parent_rect.data;
+        Rectangle parent_rectangle_data_copy = param_text_box->parent_rect;
 
-        if (param_text_box->parent_rect.data.GetUniWidth() < 4.0)
+        if (param_text_box->parent_rect.GetUniWidth() < 4.0)
         {
             parent_rectangle_data_copy.SetWidthWithUniWidth(4.0);
         }
-        if (param_text_box->parent_rect.data.GetUniHeight() < 4.0)
+        if (param_text_box->parent_rect.GetUniHeight() < 4.0)
         {
             parent_rectangle_data_copy.SetHeightWithUniHeight(4.0);
         }
@@ -820,13 +862,13 @@ void Engine::DrawTextBox(TextBox* param_text_box, Camera* camera)
 
 
 
-        for (int i = 0; i < param_text_box->lines.size(); i++)
+        for (size_t i = 0; i < param_text_box->lines.size(); i++)
         {
-            BasicBasicDrawRectangle(&param_text_box->lines[i].rect.data, { 0, 0, 0, 50 }, temp_cam_pointer);
+            BasicBasicDrawRectangle(&param_text_box->lines[i]->rect, { 0, 0, 0, 50 }, temp_cam_pointer);
 
-            for (int j = param_text_box->lines[i].first_index; j <= param_text_box->lines[i].last_index; j++)
+            for (size_t j = param_text_box->lines[i]->first_index; j <= param_text_box->lines[i]->last_index; j++)
             {
-                BasicBasicDrawRectangle(&param_text_box->chars[j].rect.data, { 0, 0, 0, 50 }, temp_cam_pointer);
+                BasicBasicDrawRectangle(&param_text_box->chars[j]->rect, { 0, 0, 0, 50 }, temp_cam_pointer);
             }
         }
     }
@@ -853,34 +895,34 @@ void Engine::DrawTextButton(TextButton* param_text_button, Camera* camera)
     {
         if (param_text_button->button.press_data.pressed)
         {
-            param_text_button->text_box.parent_rect.data.offset.x += param_text_button->additional_offset_pressed.x;
-            param_text_button->text_box.parent_rect.data.offset.y += param_text_button->additional_offset_pressed.y;
+            param_text_button->text_box.parent_rect.offset.x += param_text_button->additional_offset_pressed.x;
+            param_text_button->text_box.parent_rect.offset.y += param_text_button->additional_offset_pressed.y;
 
             BasicDrawTextButton(param_text_button, temp_cam_pointer);
 
-            param_text_button->text_box.parent_rect.data.offset.x -= param_text_button->additional_offset_pressed.x;
-            param_text_button->text_box.parent_rect.data.offset.y -= param_text_button->additional_offset_pressed.y;
+            param_text_button->text_box.parent_rect.offset.x -= param_text_button->additional_offset_pressed.x;
+            param_text_button->text_box.parent_rect.offset.y -= param_text_button->additional_offset_pressed.y;
         }
         else
         {
-            param_text_button->text_box.parent_rect.data.offset.x += param_text_button->additional_offset_hovering.x;
-            param_text_button->text_box.parent_rect.data.offset.y += param_text_button->additional_offset_hovering.y;
+            param_text_button->text_box.parent_rect.offset.x += param_text_button->additional_offset_hovering.x;
+            param_text_button->text_box.parent_rect.offset.y += param_text_button->additional_offset_hovering.y;
 
             BasicDrawTextButton(param_text_button, temp_cam_pointer);
 
-            param_text_button->text_box.parent_rect.data.offset.x -= param_text_button->additional_offset_hovering.x;
-            param_text_button->text_box.parent_rect.data.offset.y -= param_text_button->additional_offset_hovering.y;
+            param_text_button->text_box.parent_rect.offset.x -= param_text_button->additional_offset_hovering.x;
+            param_text_button->text_box.parent_rect.offset.y -= param_text_button->additional_offset_hovering.y;
         }
     }
     else
     {
-        param_text_button->text_box.parent_rect.data.offset.x += param_text_button->additional_offset_released.x;
-        param_text_button->text_box.parent_rect.data.offset.y += param_text_button->additional_offset_released.y;
+        param_text_button->text_box.parent_rect.offset.x += param_text_button->additional_offset_released.x;
+        param_text_button->text_box.parent_rect.offset.y += param_text_button->additional_offset_released.y;
 
         BasicDrawTextButton(param_text_button, temp_cam_pointer);
 
-        param_text_button->text_box.parent_rect.data.offset.x -= param_text_button->additional_offset_released.x;
-        param_text_button->text_box.parent_rect.data.offset.y -= param_text_button->additional_offset_released.y;
+        param_text_button->text_box.parent_rect.offset.x -= param_text_button->additional_offset_released.x;
+        param_text_button->text_box.parent_rect.offset.y -= param_text_button->additional_offset_released.y;
     }
 }
 void Engine::DrawSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera)
@@ -909,11 +951,11 @@ void Engine::DrawQueueSprite(QueueSprite* param_sprite)
     if (debug_mode) { temp_cam_pointer = debug_camera; }
     else { temp_cam_pointer = param_sprite->camera; }
 
-    DrawTexture(param_sprite->texture, temp_cam_pointer, &param_sprite->rect.data);
+    DrawTexture(param_sprite->texture, temp_cam_pointer, &param_sprite->rect);
 
     if (boundary_view)
     {
-        DrawRectangle(&param_sprite->rect.data, SDL_Color{ 0, 0, 255, 50 }, temp_cam_pointer);
+        DrawRectangle(&param_sprite->rect, SDL_Color{ 0, 0, 255, 50 }, temp_cam_pointer);
     }
 }
 void Engine::DrawQueue()
@@ -943,14 +985,14 @@ void Engine::DrawQueue()
 Camera* Engine::NewCamera(const char* const name)
 {
     Camera* temp_cam = new Camera();
-    temp_cam->rect.data.base_size.width = (double)window_width;
-    temp_cam->rect.data.base_size.height = (double)window_height;
-    temp_cam->rect.data.SetSizeWithSizeScale(Size2D{ 1.0, 1.0 });
+    temp_cam->rect.base_size.width = (double)window_width;
+    temp_cam->rect.base_size.height = (double)window_height;
+    temp_cam->rect.SetSizeWithSizeScale(Size2D{ 1.0, 1.0 });
 
-    temp_cam->debug_data_container.Init({ &engine_debug_data_container }, &default_font, name, &temp_cam->rect.data, {});
-    temp_cam->debug_data_container.white_list = 0;
+    temp_cam->debug_data_container.InitLeast({ &engine_debug_data_container }, &default_font, name, &temp_cam->rect, {}, 0);
+    temp_cam->debug_data_container.camera_container = 1;
 
-    temp_cam->debug_data_container.AddRectangleData(&temp_cam->rect.data, "Rectangle");
+    temp_cam->debug_data_container.AddRectangleData(&temp_cam->rect, "Rectangle");
     
 
     cameras.push_back(temp_cam);
@@ -1019,6 +1061,22 @@ void Engine::DeleteEngineTextures() {
     }
 }
 
+void Engine::UnloadEngineSoundChunk(Mix_Chunk** const param_chunk)
+{
+    Mix_FreeChunk(*param_chunk);
+    *param_chunk = nullptr;
+}
+void Engine::LoadEngineSounds()
+{
+    click_press_sound = Mix_LoadWAV("sounds/click_press.wav");
+    click_release_sound = Mix_LoadWAV("sounds/click_release.wav");
+}
+void Engine::DeleteEngineSounds()
+{
+    UnloadEngineSoundChunk(&click_press_sound);
+    UnloadEngineSoundChunk(&click_release_sound);
+}
+
 
 void Engine::UpdateTextBox(TextBox* param_text_box)
 {
@@ -1050,15 +1108,15 @@ void Engine::UpdateTextBox(TextBox* param_text_box)
         }
     }
 }
-void Engine::UpdatePressData(PressData* param_press_data, RectangleData* param_hitbox_data, Camera* camera, const int mouse_layer)
+void Engine::UpdatePressData(PressData* param_press_data, Rectangle* param_hitbox, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
 {
     param_press_data->previous_frame_hovering = param_press_data->hovering;
     param_press_data->previous_frame_pressed = param_press_data->pressed;
 
-    if (!found_mouse_layer)
+    if (mouse_layer->active)
     {
         Point2D mouse_pos = GetMousePos(camera);
-        bool temp_hovering = OverlapPoint2DWithRectangleData(&mouse_pos, param_hitbox_data, 1);
+        bool temp_hovering = OverlapPoint2DWithRectangle(&mouse_pos, param_hitbox, 1);
 
         if (param_press_data->hoverable)
         {
@@ -1087,8 +1145,7 @@ void Engine::UpdatePressData(PressData* param_press_data, RectangleData* param_h
     
         if (temp_hovering)
         {
-            found_mouse_layer = 1;
-            current_mouse_layer = mouse_layer;
+            DeactivateMouseLayers(mouse_layer_removal_white_list, mouse_layer_removal_target_layers);
         }
     }
     else
@@ -1103,35 +1160,35 @@ void Engine::UpdatePressData(PressData* param_press_data, RectangleData* param_h
     param_press_data->first_frame_pressed = (param_press_data->pressed && (!param_press_data->previous_frame_pressed));
     param_press_data->first_frame_released = ((!param_press_data->pressed) && param_press_data->previous_frame_pressed);
 }
-void Engine::UpdateButton(Button* param_button, Camera* camera, const int mouse_layer)
+void Engine::UpdateButton(Button* param_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
 {
-    UpdatePressData(&param_button->press_data, &param_button->hitbox.data, camera, mouse_layer);
+    UpdatePressData(&param_button->press_data, &param_button->hitbox, camera, mouse_layer, mouse_layer_removal_white_list, mouse_layer_removal_target_layers);
 }
-void Engine::UpdateTextButton(TextButton* param_text_button, Camera* camera, const int mouse_layer)
+void Engine::UpdateTextButton(TextButton* param_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
 {
-    UpdateButton(&param_text_button->button, camera, mouse_layer);
+    UpdateButton(&param_text_button->button, camera, mouse_layer, mouse_layer_removal_white_list, mouse_layer_removal_target_layers);
 }
-void Engine::UpdateSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera, const int mouse_layer)
+void Engine::UpdateSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
 {
-    UpdatePressData(&param_simple_text_button->press_data, &param_simple_text_button->parent_rect.data, camera, mouse_layer);
+    UpdatePressData(&param_simple_text_button->press_data, &param_simple_text_button->parent_rect, camera, mouse_layer, mouse_layer_removal_white_list, mouse_layer_removal_target_layers);
     if (param_simple_text_button->press_data.pressed)
     {
-        param_simple_text_button->text_box.parent_rect.data.pos.y = (param_simple_text_button->scaled_drop_amount / param_simple_text_button->parent_rect.data.GetHeightScale()) / -2.0;
+        param_simple_text_button->text_box.parent_rect.pos.y = (param_simple_text_button->scaled_drop_amount / param_simple_text_button->parent_rect.GetHeightScale()) / -2.0;
     }
     else
     {
-        param_simple_text_button->text_box.parent_rect.data.pos.y = (param_simple_text_button->scaled_drop_amount / param_simple_text_button->parent_rect.data.GetHeightScale()) / 2.0;
+        param_simple_text_button->text_box.parent_rect.pos.y = (param_simple_text_button->scaled_drop_amount / param_simple_text_button->parent_rect.GetHeightScale()) / 2.0;
     }
 }
-void Engine::UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, const int mouse_layer)
+void Engine::UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
 {
     if (param_scroll_bar->total_scroll_length != 0.0)
     {
-        if (!found_mouse_layer)
+        if (mouse_layer->active)
         {
             Point2D mouse_pos = GetMousePos(camera);
 
-            if (OverlapPoint2DWithRectangleData(&mouse_pos, &param_scroll_bar->scroll_area.data, 1))
+            if (OverlapPoint2DWithRectangle(&mouse_pos, &param_scroll_bar->scroll_area, 1))
             {
                 if (input.mouse_scroll_y != 0)
                 {
@@ -1159,11 +1216,11 @@ void Engine::UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, const 
                 {
                     if (param_scroll_bar->horizontal_scroll_bar)
                     {
-                        param_scroll_bar->bar_rect.data.pos.x = mouse_pos.x + param_scroll_bar->saved_mouse_y_bar_rect_y_diff;
+                        param_scroll_bar->bar_rect.pos.x = mouse_pos.x + param_scroll_bar->saved_mouse_y_bar_rect_y_diff;
                     }
                     else
                     {
-                        param_scroll_bar->bar_rect.data.pos.y = mouse_pos.y + param_scroll_bar->saved_mouse_y_bar_rect_y_diff;
+                        param_scroll_bar->bar_rect.pos.y = mouse_pos.y + param_scroll_bar->saved_mouse_y_bar_rect_y_diff;
                     }
 
                     param_scroll_bar->SetScrollValueWithBarRectPos();
@@ -1193,19 +1250,18 @@ void Engine::UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, const 
                 {
                     if (param_scroll_bar->horizontal_scroll_bar)
                     {
-                        param_scroll_bar->saved_mouse_y_bar_rect_y_diff = param_scroll_bar->bar_rect.data.pos.x - mouse_pos.x;
+                        param_scroll_bar->saved_mouse_y_bar_rect_y_diff = param_scroll_bar->bar_rect.pos.x - mouse_pos.x;
                     }
                     else
                     {
-                        param_scroll_bar->saved_mouse_y_bar_rect_y_diff = param_scroll_bar->bar_rect.data.pos.y - mouse_pos.y;
+                        param_scroll_bar->saved_mouse_y_bar_rect_y_diff = param_scroll_bar->bar_rect.pos.y - mouse_pos.y;
                     }
                     param_scroll_bar->clicked_on_bar = 1;
                 }
 
 
 
-                found_mouse_layer = 1;
-                current_mouse_layer = mouse_layer;
+                DeactivateMouseLayers(mouse_layer_removal_white_list, mouse_layer_removal_target_layers);
             }
         }
     }
@@ -1216,15 +1272,78 @@ void Engine::UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, const 
 }
 
 
+void Engine::UpdateCameraLabels()
+{
+    for (int i = 0; i < cameras.size(); i++)
+    {
+        Point2D temp_point;
+        temp_point.x = cameras[i]->rect.GetUniEdge({ 2 }) + (100.0 * debug_camera->rect.GetWidthScale());
+        temp_point.y = cameras[i]->rect.GetUniEdge({ 3 });
+
+        UpdateDebugLabelPosWithTargetPos(&cameras[i]->debug_data_container.label, temp_point);
+    }
+}
 void Engine::UpdateDebugData()
 {
-    saved_label_rects.clear();
+    Point2D temp_blank_mouse_pos = GetMousePos(blank_camera);
+
+
+
+    highlighting_path_item = 0;
+
+    if (container_path_display_layer.active)
+    {
+        RectStructOne temp = RectangleToRectStructOne(&container_path_rectangle);
+
+        if (OverlapPoint2DWithRectStructOne(&temp_blank_mouse_pos, &temp, 1))
+        {
+            DeactivateMouseLayers(0, { &container_path_display_layer });
+
+            size_t char_index = 6;
+            for (size_t i = 0; i < saved_container_name_sizes.size(); i++)
+            {
+                RectStructOne temp_name_rect_struct_one = container_path_text_box.GetSegmentHitbox(char_index, char_index + saved_container_name_sizes[i] - 1)->at(0); //CURRENTLY CANNOT SCALE WITH RESOLUTION
+
+                temp_name_rect_struct_one.uni_bottom_edge -= 6.0;
+                temp_name_rect_struct_one.uni_left_edge -= 6.0;
+                temp_name_rect_struct_one.uni_top_edge += 6.0;
+                temp_name_rect_struct_one.uni_right_edge += 6.0;
+
+                if (OverlapPoint2DWithRectStructOne(&temp_blank_mouse_pos, &temp_name_rect_struct_one, 1))
+                {
+                    saved_highlighted_path_item = temp_name_rect_struct_one;
+                    highlighting_path_item = 1;
+
+                    if (input.mouse_left.first_frame_pressed)
+                    {
+                        selected_debug_data_container = saved_container_path[i];
+
+                        saved_container_path.resize(i + 1);
+                        saved_container_name_sizes.resize(i + 1);
+
+                        first_frame_selected_debug_data_container = 1;
+                        UpdateContainerPathTextBox();
+
+                        break;
+                    }
+                }
+
+                char_index += saved_container_name_sizes[i] + 4;
+            }
+        }
+    }
+
+
+
+
+
+    const size_t saved_saved_label_rects_size = saved_label_rects.size();
 
     first_frame_selected_debug_data_container = 0;
 
     Point2D temp_mouse_pos = GetMousePos(debug_camera);
 
-    if ((!found_mouse_layer) || (current_mouse_layer == "debug data container layer"))
+    if (debug_data_container_layer.active)
     {
         if (input.mouse_left.first_frame_pressed)
         {
@@ -1232,21 +1351,50 @@ void Engine::UpdateDebugData()
 
             for (int i = 0; i < order.size(); i++)
             {
-                UpdateDebugLabelPos(&order[i]->label);
+                if (!(camera_view && order[i]->camera_container))
+                {
+                    UpdateDebugLabelPos(&order[i]->label);
+                }
 
-                if (OverlapPoint2DWithRectangleData(&temp_mouse_pos, &order[i]->label.rectangle_data, 1))
+                if (OverlapPoint2DWithRectangle(&temp_mouse_pos, &order[i]->label.rectangle, 1))
                 {
                     if (order[i] == saved_selected_debug_data_container)
                     {
                         selected_debug_data_container = &engine_debug_data_container;
+
+                        saved_container_path.clear();
+                        saved_container_path.push_back(&engine_debug_data_container);
+                        saved_container_name_sizes.clear();
+                        saved_container_name_sizes.push_back(27);
+
+                        UpdateContainerPathTextBox();
                     }
                     else
                     {
                         selected_debug_data_container = order[i];
+
+                        //Check to see if user is "stepping-back" in the path
+                        DebugDataContainer* second_to_last = nullptr;
+                        if (saved_container_path.size() > 1)
+                        {
+                            second_to_last = saved_container_path[saved_container_path.size() - 2];
+                        }
+
+                        if (selected_debug_data_container == second_to_last)
+                        {
+                            saved_container_path.pop_back();
+                            saved_container_name_sizes.pop_back();
+                        }
+                        else
+                        {
+                            saved_container_path.push_back(order[i]);
+                            saved_container_name_sizes.push_back(order[i]->label.text_box_data.chars.size());
+                        }
+
+                        UpdateContainerPathTextBox();
                     }
                     first_frame_selected_debug_data_container = 1;
-                    found_mouse_layer = 1;
-                    current_mouse_layer = "debug data container layer";
+                    DeactivateMouseLayers(0, { &debug_data_container_layer });
 
                     break;
                 }
@@ -1261,15 +1409,15 @@ void Engine::UpdateDebugData()
                 {
                     if (order[i] != saved_selected_debug_data_container)
                     {
-                        if (OverlapPoint2DWithRectangleData(&temp_mouse_pos, order[i]->clickable_rectangle_data, 1))
+                        if (OverlapPoint2DWithRectangle(&temp_mouse_pos, order[i]->clickable_rectangle, 1))
                         {
-                            const double current_area = order[i]->clickable_rectangle_data->size.width * order[i]->clickable_rectangle_data->size.height;
+                            const double current_area = order[i]->clickable_rectangle->size.width * order[i]->clickable_rectangle->size.height;
 
                             if ((current_area) < saved_area)
                             {
                                 first_frame_selected_debug_data_container = 1;
-                                found_mouse_layer = 1;
-                                current_mouse_layer = "debug data container layer";
+                                DeactivateMouseLayers(0, { &debug_data_container_layer });
+
                                 selected_debug_data_container = order[i];
 
                                 saved_area = current_area;
@@ -1277,13 +1425,41 @@ void Engine::UpdateDebugData()
                         }
                     }
                 }
-            }
 
 
+                if (first_frame_selected_debug_data_container)
+                {
+                    //Check to see if user is "stepping-back" in the path
+                    DebugDataContainer* second_to_last = nullptr;
+                    if (saved_container_path.size() > 1)
+                    {
+                        second_to_last = saved_container_path[saved_container_path.size() - 2];
+                    }
 
-            if (!first_frame_selected_debug_data_container)
-            {
-                selected_debug_data_container = &engine_debug_data_container;
+                    if (selected_debug_data_container == second_to_last)
+                    {
+                        saved_container_path.pop_back();
+                        saved_container_name_sizes.pop_back();
+                    }
+                    else
+                    {
+                        saved_container_path.push_back(selected_debug_data_container);
+                        saved_container_name_sizes.push_back(selected_debug_data_container->label.text_box_data.chars.size());
+                    }
+
+                    UpdateContainerPathTextBox();
+                }
+                else
+                {
+                    selected_debug_data_container = &engine_debug_data_container;
+
+                    saved_container_path.clear();
+                    saved_container_path.push_back(&engine_debug_data_container);
+                    saved_container_name_sizes.clear();
+                    saved_container_name_sizes.push_back(27);
+
+                    UpdateContainerPathTextBox();
+                }
             }
 
 
@@ -1649,8 +1825,6 @@ void Engine::UpdateDebugData()
                 }
 
 
-
-
                 break;
             }
 
@@ -1660,32 +1834,40 @@ void Engine::UpdateDebugData()
         else
         {
             selected_debug_data_container = &engine_debug_data_container;
+
+            saved_container_path.clear();
+            saved_container_path.push_back(&engine_debug_data_container);
+            saved_container_name_sizes.clear();
+            saved_container_name_sizes.push_back(27);
+
+            UpdateContainerPathTextBox();
         }
     }
 
     GenerateContainerOrder(1);
 
-
-    saved_label_rects.clear();
+    saved_label_rects.resize(saved_saved_label_rects_size);
     for (int i = 0; i < order.size(); i++)
     {
-        UpdateDebugLabelPos(&order[i]->label);
+        if (!(camera_view && order[i]->camera_container))
+        {
+            UpdateDebugLabelPos(&order[i]->label);
+        }
+
+        order[i]->hovering = 0;
     }
 
-    if ((!found_mouse_layer) || (current_mouse_layer == "debug data container layer"))
+    if (debug_data_container_layer.active)
     {
         bool hovering_over_label = 0;
 
         for (int i = 0; i < order.size(); i++)
         {
-            order[i]->hovering = 0;
-
-            if (OverlapPoint2DWithRectangleData(&temp_mouse_pos, &order[i]->label.rectangle_data, 1))
+            if (OverlapPoint2DWithRectangle(&temp_mouse_pos, &order[i]->label.rectangle, 1))
             {
                 order[i]->hovering = 1;
 
-                found_mouse_layer = 1;
-                current_mouse_layer = "debug data container layer";
+                DeactivateMouseLayers(0, { &debug_data_container_layer });
 
                 hovering_over_label = 1;
 
@@ -1704,16 +1886,15 @@ void Engine::UpdateDebugData()
             {
                 if (order[i] != selected_debug_data_container)
                 {
-                    if (OverlapPoint2DWithRectangleData(&temp_mouse_pos, order[i]->clickable_rectangle_data, 1))
+                    if (OverlapPoint2DWithRectangle(&temp_mouse_pos, order[i]->clickable_rectangle, 1))
                     {
-                        const double current_area = order[i]->clickable_rectangle_data->size.width * order[i]->clickable_rectangle_data->size.height;
+                        const double current_area = order[i]->clickable_rectangle->size.width * order[i]->clickable_rectangle->size.height;
 
                         if ((current_area) < saved_area)
                         {
                             order[i]->hovering = 1;
 
-                            found_mouse_layer = 1;
-                            current_mouse_layer = "debug data container layer";
+                            DeactivateMouseLayers(0, { &debug_data_container_layer });
 
                             saved_area = current_area;
 
@@ -1730,28 +1911,68 @@ void Engine::UpdateDebugData()
         }
     }
 }
+void Engine::SetDebugDataScrollBarLength()
+{
+    if (selected_debug_data_container != &engine_debug_data_container)
+    {
+        if (first_frame_selected_debug_data_container)
+        {
+            const double temp_margin = DEBUG_DATA_TEXT_BOX_MARGIN;
+
+            double temp_total_scroll_height = debug_data_text_box.GetActualBaseHeight() * debug_data_text_box.parent_rect.GetUniHeightScale();
+            double temp_text_box_uni_height = debug_data_text_box.parent_rect.GetUniHeight();
+            if (temp_total_scroll_height < temp_text_box_uni_height)
+            {
+                temp_total_scroll_height = temp_text_box_uni_height;
+            }
+
+            temp_total_scroll_height += temp_margin;
+            temp_text_box_uni_height += temp_margin;
+
+            debug_data_scroll_bar.SetScrollLength(temp_total_scroll_height, temp_text_box_uni_height, temp_text_box_uni_height);
+        }
+
+        debug_data_text_box.parent_rect.pos.y = debug_data_scroll_bar.scroll_value;
+    }
+}
 void Engine::DrawDebugData()
 {
     //Draw the debug_data_containers in "order" (the vector)
-    for (int i = order.size() - 1; i >= 0; i--)
+    for (size_t i = order.size() - 1; i != SIZE_MAX; i--)
     {
         DrawDebugDataContainer(order[i]);
     }
 
-    for (int i = order.size() - 1; i >= 0; i--)
+    for (size_t i = order.size() - 1; i != SIZE_MAX; i--)
     {
-        BasicDrawDebugLabel(&order[i]->label);
+        if (!(camera_view && order[i]->camera_container))
+        {
+            BasicDrawDebugLabel(&order[i]->label);
+        }
     }
+
+    //Draw container path display
+    container_path_rectangle.size.width = container_path_text_box.GetActualBaseWidth() * container_path_text_box.parent_rect.GetWidthScale();
+    container_path_rectangle.size.width += 12.0;
+    container_path_rectangle.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 2 }), { 2 });
+    BasicDrawRectangleScaledBorder(&container_path_rectangle, { 225, 225, 225, 255 }, 2.0, { 2 }, { 0, 0, 0, 255 }, blank_camera);
+
+    if (highlighting_path_item)
+    {
+        BasicDrawRectStructOne(&saved_highlighted_path_item, { 255, 255, 255, 255 }, blank_camera);
+    }
+
+    BasicDrawTextBox(&container_path_text_box, blank_camera);
 
     //Draw debug_data_sidebar if applicable
     if (selected_debug_data_container != &engine_debug_data_container)
     {
-        RectangleData temp_rectangle_data;
+        Rectangle temp_rectangle_data;
 
-        temp_rectangle_data.size.height = blank_camera->rect.data.base_size.height;
-        temp_rectangle_data.size.width = blank_camera->rect.data.base_size.width / 4.0;
+        temp_rectangle_data.size.height = blank_camera->rect.base_size.height;
+        temp_rectangle_data.size.width = blank_camera->rect.base_size.width / 4.0;
         temp_rectangle_data.SetBaseSizeWithSizeScale({ 1.0, 1.0 });
-        temp_rectangle_data.SetPosWithUniEdge(blank_camera->rect.data.GetUniEdge({ 0 }), { 0 });
+        temp_rectangle_data.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 0 }), { 0 });
 
         BasicDrawRectangleScaledBorder(&temp_rectangle_data, { 220, 220, 220, 255 }, 8.0, { 2 }, { 0, 0, 0, 255 }, blank_camera);
 
@@ -1760,13 +1981,13 @@ void Engine::DrawDebugData()
 }
 void Engine::DrawDebugDataContainer(DebugDataContainer* const param_debug_data_container)
 {
-    if (param_debug_data_container->clickable_rectangle_data)
+    if (param_debug_data_container->clickable_rectangle)
     {
-        Size2D temp_debug_camera_uni_size_scale = debug_camera->rect.data.GetUniSizeScale();
+        Size2D temp_debug_camera_uni_size_scale = debug_camera->rect.GetUniSizeScale();
 
         if (param_debug_data_container == selected_debug_data_container)
         {
-            BasicDrawRectangleScaledBorder(param_debug_data_container->clickable_rectangle_data, param_debug_data_container->fill_color, 4.0 * temp_debug_camera_uni_size_scale.width, { 0 }, param_debug_data_container->outline_color, debug_camera);
+            BasicDrawRectangleScaledBorder(param_debug_data_container->clickable_rectangle, param_debug_data_container->fill_color, 4.0 * temp_debug_camera_uni_size_scale.width, { 0 }, param_debug_data_container->outline_color, debug_camera);
         }
         else
         {
@@ -1775,25 +1996,25 @@ void Engine::DrawDebugDataContainer(DebugDataContainer* const param_debug_data_c
                 SDL_Color temp_fill_color = param_debug_data_container->fill_color;
                 temp_fill_color.a /= 2;
 
-                BasicDrawRectangleScaledBorder(param_debug_data_container->clickable_rectangle_data, temp_fill_color, 4.0 * temp_debug_camera_uni_size_scale.width, { 0 }, param_debug_data_container->outline_color, debug_camera);
+                BasicDrawRectangleScaledBorder(param_debug_data_container->clickable_rectangle, temp_fill_color, 4.0 * temp_debug_camera_uni_size_scale.width, { 0 }, param_debug_data_container->outline_color, debug_camera);
             }
             else
             {
-                BasicDrawRectangleOutline(param_debug_data_container->clickable_rectangle_data, 4.0 * temp_debug_camera_uni_size_scale.width, { 0 }, param_debug_data_container->outline_color, debug_camera);
+                BasicDrawRectangleOutline(param_debug_data_container->clickable_rectangle, 4.0 * temp_debug_camera_uni_size_scale.width, { 0 }, param_debug_data_container->outline_color, debug_camera);
             }
         }
 
 
         /*
-        debug_data_container_name_text_box.parent_rect.data.SetSizeWithSizeScale({ 4.0 * temp_debug_camera_uni_size_scale.width, 4.0 * temp_debug_camera_uni_size_scale.height });
-        debug_data_container_name_text_box.parent_rect.data.SetPosWithUniEdge(param_debug_data_container->clickable_rectangle_data->GetUniEdge({ 2 }), { 2 });
-        debug_data_container_name_text_box.parent_rect.data.SetPosWithUniEdge(param_debug_data_container->clickable_rectangle_data->GetUniEdge({ 3 }), { 1 });
+        debug_data_container_name_text_box.parent_rect.SetSizeWithSizeScale({ 4.0 * temp_debug_camera_uni_size_scale.width, 4.0 * temp_debug_camera_uni_size_scale.height });
+        debug_data_container_name_text_box.parent_rect.SetPosWithUniEdge(param_debug_data_container->clickable_rectangle_data->GetUniEdge({ 2 }), { 2 });
+        debug_data_container_name_text_box.parent_rect.SetPosWithUniEdge(param_debug_data_container->clickable_rectangle_data->GetUniEdge({ 3 }), { 1 });
 
         debug_data_container_name_text_box.Clear();
         debug_data_container_name_text_box.AddString(param_debug_data_container->name);
         debug_data_container_name_text_box.UpdateCharPos();
 
-        RectangleData temp_back_rectangle_data = debug_data_container_name_text_box.lines[0].rect.data;
+        Rectangle temp_back_rectangle_data = debug_data_container_name_text_box.lines[0].rect;
 
         BasicBasicDrawRectangle(&temp_back_rectangle_data, { 255, 255, 255, 175 }, debug_camera);
         BasicDrawTextBox(&debug_data_container_name_text_box, debug_camera);
@@ -1806,7 +2027,7 @@ void Engine::GenerateContainerOrder(const bool generate_colors)
     order.clear();
 
     //Add owned data to order
-    for (int i = selected_debug_data_container->owned_data.size() - 1; i >= 0; i--)
+    for (size_t i = selected_debug_data_container->owned_data.size() - 1; i != SIZE_MAX; i--)
     {
         if (generate_colors)
         {
@@ -1838,10 +2059,10 @@ void Engine::GenerateContainerOrder(const bool generate_colors)
     while (true)
     {
         //Loops through each element in current_layer
-        for (int i = current_layer.size() - 1; i >= 0; i--)
+        for (size_t i = current_layer.size() - 1; i != SIZE_MAX; i--)
         {
             //Loops through all the owners of current_layer[i]
-            for (int j = current_layer[i]->owners.size() - 1; j >= 0; j--)
+            for (size_t j = current_layer[i]->owners.size() - 1; j != SIZE_MAX; j--)
             {
                 //Runs code if current_data_container->owners[i] isn't part of order
                 if (find(order.begin(), order.end(), current_layer[i]->owners[j]) == order.end())
@@ -1851,7 +2072,7 @@ void Engine::GenerateContainerOrder(const bool generate_colors)
                         if (generate_colors)
                         {
                             const double g_value = 255.0 / pow(1.5, layer_count + 1);
-                            const int int_g_value = round(g_value);
+                            const int int_g_value = (int)round(g_value);
                             const unsigned char unsigned_char_g_value = (unsigned char)int_g_value;
                             current_layer[i]->owners[j]->outline_color = { 255, unsigned_char_g_value, 0, 255};
                             current_layer[i]->owners[j]->fill_color = { 255, unsigned_char_g_value, 0, 50 };
@@ -1876,10 +2097,54 @@ void Engine::GenerateContainerOrder(const bool generate_colors)
     }
 }
 
+void Engine::UpdateContainerPathTextBox()
+{
+    container_path_text_box.Clear();
+    container_path_text_box.AddCharPtr("Path: engine_debug_data_container");
+
+    for (int i = 1; i < saved_container_path.size(); i++)
+    {
+        container_path_text_box.AddCharPtr(" -> ");
+        container_path_text_box.AddString(saved_container_path[i]->label.text_box_data.GetText());
+    }
+
+    container_path_text_box.UpdateCharPos();
+}
+
+
+void Engine::DeactivateMouseLayers(const bool white_list, vector<MouseLayer*> target_layers)
+{
+    for (int i = 0; i < mouse_layers.size(); i++)
+    {
+        auto found_layer = std::find(target_layers.begin(), target_layers.end(), mouse_layers[i]);
+
+        if (white_list)
+        {
+            if (found_layer != target_layers.end())
+            {
+                mouse_layers[i]->active = 0;
+            }
+        }
+        else
+        {
+            if (found_layer == target_layers.end())
+            {
+                mouse_layers[i]->active = 0;
+            }
+        }
+
+        if (found_layer != target_layers.end())
+        {
+            target_layers.erase(found_layer);
+        }
+    }
+}
+
 
 Engine::Engine() : p(nullptr), RunPointer(nullptr) {
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     IMG_Init(IMG_INIT_PNG);
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
 
     window = SDL_CreateWindow("GameEngine",
         SDL_WINDOWPOS_CENTERED,
@@ -1895,6 +2160,21 @@ Engine::Engine() : p(nullptr), RunPointer(nullptr) {
 
 
     scene = 1;
+
+    // -----------------   MOUSE LAYER FRAMEWORK   -----------------
+
+    always_activated_layer.active = 1;
+    always_deactivated_layer.active = 0;
+
+    debug_data_container_layer.Init(&mouse_layers);
+    visual_button_layer.Init(&mouse_layers);
+    debug_data_scroll_bar_layer.Init(&mouse_layers);
+    container_path_display_layer.Init(&mouse_layers);
+
+
+
+
+
 
     // -----------------   DEFINE SCROLL BAR THICKNESS   -----------------
 
@@ -1913,7 +2193,7 @@ Engine::Engine() : p(nullptr), RunPointer(nullptr) {
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-    default_font.InitFont("default_white", renderer);
+    default_font.Init("default_white", renderer, 1.0, 1.0, 7.0);
 
     input = {};
     input.FormatKeys();
@@ -1931,18 +2211,19 @@ Engine::Engine() : p(nullptr), RunPointer(nullptr) {
     blank_camera = NewCamera("blank_camera");
 
     debug_camera = new Camera();
-    debug_camera->rect.data.base_size.width = (double)window_width;
-    debug_camera->rect.data.base_size.height = (double)window_height;
-    debug_camera->rect.data.SetSizeWithSizeScale({ 1.0, 1.0 });
-    //debug_camera->debug_data_container.Init({ &engine_debug_data_container }, &default_font, "debug_camera", &debug_camera->rect.data, {});
+    debug_camera->rect.base_size.width = (double)window_width;
+    debug_camera->rect.base_size.height = (double)window_height;
+    debug_camera->rect.SetSizeWithSizeScale({ 1.0, 1.0 });
+    //debug_camera->debug_data_container.InitLeast({ &engine_debug_data_container }, &default_font, "debug_camera", &debug_camera->rect, {});
 
     LoadEngineTextures();
+    LoadEngineSounds();
 
     boundary_view_button.InitWithTexturesAndSizeScale(boundary_view_released_t, boundary_view_hovering_t, boundary_view_pressed_t, Size2D{4.0, 4.0});
-    boundary_view_button.pressed_sprite.rect.data.pos.y = -2.0;
+    boundary_view_button.pressed_sprite.rect.pos.y = -2.0;
 
-    boundary_view_button.parent_rect.data.SetPosWithUniEdge(blank_camera->rect.data.GetUniEdge({ 0 }), { 0 });
-    boundary_view_button.parent_rect.data.SetPosWithUniEdge(blank_camera->rect.data.GetUniEdge({ 3 }), { 3 });
+    boundary_view_button.parent_rect.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 0 }), { 0 });
+    boundary_view_button.parent_rect.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 3 }), { 3 });
 
 
 
@@ -1951,7 +2232,7 @@ Engine::Engine() : p(nullptr), RunPointer(nullptr) {
 
     // -----------------   CREATE ENGINE DEBUG DATA CONTAINER   -----------------
 
-    engine_debug_data_container.Init({}, &default_font, "Engine Debug Data Container", nullptr, {});
+    engine_debug_data_container.InitLeast({}, &default_font, "Engine Debug Data Container", nullptr, {}, 1);
     selected_debug_data_container = &engine_debug_data_container;
     GenerateContainerOrder(1);
 
@@ -1965,13 +2246,13 @@ Engine::Engine() : p(nullptr), RunPointer(nullptr) {
     const double temp_margin = DEBUG_DATA_TEXT_BOX_MARGIN;
 
     debug_data_text_box.InitLeast(&default_font);
-    debug_data_text_box.parent_rect.data.size.height = blank_camera->rect.data.base_size.height - temp_margin;
-    debug_data_text_box.parent_rect.data.size.width = (blank_camera->rect.data.base_size.width / 4.0);
-    debug_data_text_box.parent_rect.data.SetPosWithUniEdge(blank_camera->rect.data.GetUniEdge({ 0 }), { 0 });
-    debug_data_text_box.parent_rect.data.size.width -= temp_margin;
-    debug_data_text_box.parent_rect.data.size.width -= scroll_bar_thickness;
-    debug_data_text_box.parent_rect.data.pos.x -= (scroll_bar_thickness / 2.0);
-    debug_data_text_box.parent_rect.data.SetBaseSizeWithSizeScale({ 2.8, 2.8 });
+    debug_data_text_box.parent_rect.size.height = blank_camera->rect.base_size.height - temp_margin;
+    debug_data_text_box.parent_rect.size.width = (blank_camera->rect.base_size.width / 4.0);
+    debug_data_text_box.parent_rect.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 0 }), { 0 });
+    debug_data_text_box.parent_rect.size.width -= temp_margin;
+    debug_data_text_box.parent_rect.size.width -= scroll_bar_thickness;
+    debug_data_text_box.parent_rect.pos.x -= (scroll_bar_thickness / 2.0);
+    debug_data_text_box.parent_rect.SetBaseSizeWithSizeScale({ 2.8, 2.8 });
     debug_data_text_box.horizontal_text_centering = { 0 };
     debug_data_text_box.vertical_text_centering = { 2 };
     debug_data_text_box.text_wrap = 1;
@@ -1986,8 +2267,8 @@ Engine::Engine() : p(nullptr), RunPointer(nullptr) {
     debug_data_container_name_text_box.InitLeast(&default_font);
     debug_data_container_name_text_box.horizontal_text_centering = { 0 };
     debug_data_container_name_text_box.vertical_text_centering = { 0 };
-    debug_data_container_name_text_box.parent_rect.data.base_size = { 1.0, 1.0 };
-    debug_data_container_name_text_box.parent_rect.data.offset = { 0.5, 0.5 };
+    debug_data_container_name_text_box.parent_rect.base_size = { 1.0, 1.0 };
+    debug_data_container_name_text_box.parent_rect.offset = { 0.5, 0.5 };
 
 
 
@@ -1996,21 +2277,53 @@ Engine::Engine() : p(nullptr), RunPointer(nullptr) {
 
     // -----------------   CREATE DEBUG DATA SCROLL BAR   -----------------
 
-    RectangleData temp_rectangle_data;
+    Rectangle temp_rectangle_data;
 
-    temp_rectangle_data.size.height = blank_camera->rect.data.base_size.height;
-    temp_rectangle_data.size.width = blank_camera->rect.data.base_size.width / 4.0;
+    temp_rectangle_data.size.height = blank_camera->rect.base_size.height;
+    temp_rectangle_data.size.width = blank_camera->rect.base_size.width / 4.0;
     temp_rectangle_data.SetBaseSizeWithSizeScale({ 1.0, 1.0 });
-    temp_rectangle_data.SetPosWithUniEdge(blank_camera->rect.data.GetUniEdge({ 0 }), { 0 });
+    temp_rectangle_data.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 0 }), { 0 });
 
-    debug_data_scroll_bar.InitBasic(blank_camera->rect.data.base_size.height, blank_camera->rect.data.base_size.height, temp_rectangle_data, scroll_bar_thickness, 0);
+    debug_data_scroll_bar.InitBasic(blank_camera->rect.base_size.height, blank_camera->rect.base_size.height, temp_rectangle_data, scroll_bar_thickness, 0);
+
+
+
+
+
+
+    // -----------------   CREATE CONTAINER PATH TEXT BOX AND RECTANGLE   -----------------
+
+    container_path_rectangle.size.width = blank_camera->rect.size.width;
+    container_path_rectangle.size.height = 2.0;
+    container_path_rectangle.SetBaseSizeWithSizeScale({ 2.0, 2.0 });
+    container_path_rectangle.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 1 }), { 1 });
+    container_path_rectangle.pos.x += 6.0;
+    container_path_rectangle.pos.y += 6.0;
+
+    container_path_text_box.InitMost(&default_font, container_path_rectangle, "Path: engine_debug_data_container", { 0 }, { 0 }, 0);
+
+    container_path_rectangle.size.height = 26.0;
+    container_path_rectangle.base_size = { 1.0, 1.0 };
+    container_path_rectangle.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 1 }), { 1 });
+
+
+
+
+
+
+    // -----------------   INITIALIZE SAVED CONTAINER PATH AND SIZES   -----------------
+
+    saved_container_path = { &engine_debug_data_container };
+    saved_container_name_sizes = { 27 };
 }
 Engine::~Engine()
 {
     DeleteEngineTextures();
+    DeleteEngineSounds();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     IMG_Quit();
+    Mix_CloseAudio();
     SDL_Quit();
 }
 
@@ -2019,55 +2332,60 @@ void Engine::DrawScreen()
 {
     if (debug_mode)
     {
-        for (int i = 0; i < cameras.size(); i++)
+        if (camera_view)
         {
-            Size2D temp_size_scale = debug_camera->rect.data.GetUniSizeScale();
+            for (int i = 0; i < cameras.size(); i++)
+            {
+                Size2D temp_size_scale = debug_camera->rect.GetUniSizeScale();
 
 
-            RectangleData temp_rectangle_data = {};
-            temp_rectangle_data.base_size = corner_outline_t->size;
-            temp_rectangle_data.SetSizeWithSizeScale(Size2D{ 4.0 * temp_size_scale.width, 4.0 * temp_size_scale.height });
+                Rectangle temp_rectangle_data = {};
+                temp_rectangle_data.base_size = corner_outline_t->size;
+                temp_rectangle_data.SetSizeWithSizeScale(Size2D{ 4.0 * temp_size_scale.width, 4.0 * temp_size_scale.height });
 
-            temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.data.GetUniEdge({ 2 }), { 2 });
-            temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.data.GetUniEdge({ 3 }), { 3 });
-            temp_rectangle_data.flip = { 0 };
-            BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
+                temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.GetUniEdge({ 2 }), { 2 });
+                temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.GetUniEdge({ 3 }), { 3 });
+                temp_rectangle_data.flip = { 0 };
+                BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
 
-            temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.data.GetUniEdge({ 0 }), { 0 });
-            temp_rectangle_data.flip = { 1 };
-            BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
+                temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.GetUniEdge({ 0 }), { 0 });
+                temp_rectangle_data.flip = { 1 };
+                BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
 
-            temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.data.GetUniEdge({ 1 }), { 1 });
-            temp_rectangle_data.flip = { 3 };
-            BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
+                temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.GetUniEdge({ 1 }), { 1 });
+                temp_rectangle_data.flip = { 3 };
+                BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
 
-            temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.data.GetUniEdge({ 2 }), { 2 });
-            temp_rectangle_data.flip = { 2 };
-            BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
+                temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.GetUniEdge({ 2 }), { 2 });
+                temp_rectangle_data.flip = { 2 };
+                BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
 
-            //Draw camera icon
-            /*
-            temp_rectangle_data.base_size = camera_icon_t->size;
-            temp_rectangle_data.SetSizeWithSizeScale(Size2D{ 4.0 * temp_size_scale.width, 4.0 * temp_size_scale.height });
-            Point2D temp_cam_point;
-            temp_cam_point.x = cameras[i]->rect.data.GetUniEdge({ 2 });
-            temp_cam_point.y = cameras[i]->rect.data.GetUniEdge({ 3 });
-            temp_rectangle_data.SetPosWithUniEdge(temp_cam_point.x, { 2 });
-            temp_rectangle_data.SetPosWithUniEdge(temp_cam_point.y + (4.0 * temp_size_scale.height), { 1 });
-            temp_rectangle_data.flip = { 0 };
-            BasicDrawTexture(camera_icon_t, debug_camera, &temp_rectangle_data);
-            */
+                //Draw camera icon
+                temp_rectangle_data.base_size = camera_icon_t->size;
+                temp_rectangle_data.SetSizeWithSizeScale(Size2D{ 4.0 * temp_size_scale.width, 4.0 * temp_size_scale.height });
+                Point2D temp_cam_point;
+                temp_cam_point.x = cameras[i]->rect.GetUniEdge({ 2 });
+                temp_cam_point.y = cameras[i]->rect.GetUniEdge({ 3 });
+                temp_rectangle_data.SetPosWithUniEdge(temp_cam_point.x, { 2 });
+                temp_rectangle_data.SetPosWithUniEdge(temp_cam_point.y + (4.0 * temp_size_scale.height), { 1 });
+                temp_rectangle_data.flip = { 0 };
+                BasicDrawTexture(camera_icon_t, debug_camera, &temp_rectangle_data);
+
+
+
+                BasicDrawDebugLabel(&cameras[i]->debug_data_container.label);
+            }
         }
 
         if (running_game)
         {
-            RectangleData temp_rectangle_data = {};
+            Rectangle temp_rectangle_data = {};
             temp_rectangle_data.base_size = play_icon_t->size;
             temp_rectangle_data.SetSizeWithSizeScale(Size2D{ 4.0, 4.0 });
 
             Point2D temp_blank_cam_point;
-            temp_blank_cam_point.x = blank_camera->rect.data.GetUniEdge( { 2 });
-            temp_blank_cam_point.y = blank_camera->rect.data.GetUniEdge({ 3 });
+            temp_blank_cam_point.x = blank_camera->rect.GetUniEdge( { 2 });
+            temp_blank_cam_point.y = blank_camera->rect.GetUniEdge({ 3 });
             temp_rectangle_data.SetPosWithUniEdge(temp_blank_cam_point.x + 12.0, { 2 });
             temp_rectangle_data.SetPosWithUniEdge(temp_blank_cam_point.y - 12.0, { 3 });
 
@@ -2075,13 +2393,13 @@ void Engine::DrawScreen()
         }
         else
         {
-            RectangleData temp_rectangle_data = {};
+            Rectangle temp_rectangle_data = {};
             temp_rectangle_data.base_size = pause_icon_t->size;
             temp_rectangle_data.SetSizeWithSizeScale(Size2D{ 4.0, 4.0 });
 
             Point2D temp_blank_cam_point;
-            temp_blank_cam_point.x = blank_camera->rect.data.GetUniEdge({ 2 });
-            temp_blank_cam_point.y = blank_camera->rect.data.GetUniEdge({ 3 });
+            temp_blank_cam_point.x = blank_camera->rect.GetUniEdge({ 2 });
+            temp_blank_cam_point.y = blank_camera->rect.GetUniEdge({ 3 });
             temp_rectangle_data.SetPosWithUniEdge(temp_blank_cam_point.x + 12.0, { 2 });
             temp_rectangle_data.SetPosWithUniEdge(temp_blank_cam_point.y - 12.0, { 3 });
 
@@ -2514,6 +2832,14 @@ void Engine::UpdateInput()
     SDL_GetMouseState(&input.mouse_x, &input.mouse_y);
 }
 
+void Engine::ActivateAllMouseLayers()
+{
+    for (int i = 0; i < mouse_layers.size(); i++)
+    {
+        mouse_layers[i]->active = 1;
+    }
+}
+
 void Engine::Run()
 {
     running = true;
@@ -2525,27 +2851,39 @@ void Engine::Run()
 
         UpdateInput();
 
-        found_mouse_layer = 0;
-        current_mouse_layer = "";
+        ActivateAllMouseLayers();
 
 
         if (boundary_view_button.press_data.first_frame_released) { boundary_view = !boundary_view; }
 
-        if (input.zero.first_frame_pressed) {debug_mode = !debug_mode;}
+        if (input.p.first_frame_pressed) {debug_mode = !debug_mode;}
 
         if (debug_mode)
         {
-            if (input.nine.first_frame_pressed) { running_game = !running_game; }
+            if (input.o.first_frame_pressed) { running_game = !running_game; }
         }
 
         if (debug_mode)
         {
             if (selected_debug_data_container != &engine_debug_data_container)
             {
-                UpdateScrollBar(&debug_data_scroll_bar, blank_camera, 3);
+                UpdateScrollBar(&debug_data_scroll_bar, blank_camera, &debug_data_scroll_bar_layer, 0, { &debug_data_scroll_bar_layer });
             }
 
-            UpdateButton(&boundary_view_button, blank_camera, 2);
+            UpdateButton(&boundary_view_button, blank_camera, &visual_button_layer, 0, { &visual_button_layer });
+
+
+            saved_label_rects.clear();
+
+            if (camera_view)
+            {
+                UpdateCameraLabels();
+            }
+
+            UpdateDebugData();
+
+            SetDebugDataScrollBarLength();
+
 
             if (!running_game)
             {
@@ -2580,33 +2918,6 @@ void Engine::Run()
         else
         {
             (p->*PostDrawRunPointer)();
-        }
-
-        if (debug_mode)
-        {
-            UpdateDebugData();
-
-            if (selected_debug_data_container != &engine_debug_data_container)
-            {
-                if (first_frame_selected_debug_data_container)
-                {
-                    const double temp_margin = DEBUG_DATA_TEXT_BOX_MARGIN;
-
-                    double temp_total_scroll_height = debug_data_text_box.GetActualBaseHeight() * debug_data_text_box.parent_rect.data.GetUniHeightScale();
-                    double temp_text_box_uni_height = debug_data_text_box.parent_rect.data.GetUniHeight();
-                    if (temp_total_scroll_height < temp_text_box_uni_height)
-                    {
-                        temp_total_scroll_height = temp_text_box_uni_height;
-                    }
-
-                    temp_total_scroll_height += temp_margin;
-                    temp_text_box_uni_height += temp_margin;
-
-                    debug_data_scroll_bar.SetScrollLength(temp_total_scroll_height, temp_text_box_uni_height, temp_text_box_uni_height);
-                }
-
-                debug_data_text_box.parent_rect.data.pos.y = debug_data_scroll_bar.scroll_value;
-            }
         }
 
         DrawScreen();

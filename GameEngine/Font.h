@@ -15,18 +15,14 @@ public:
 
 	Texture* NULL_texture = nullptr;
 
-	//TextBoxCharData* empty_char;
-	//TextBoxCharData* char_not_avaliable;
-	
-	int default_default_char_spacing = 0;
-	int default_default_line_spacing = 0;
-	int default_default_line_height = 0;
+	double default_default_line_spacing = 0.0;
+	double default_default_line_height = 0.0;
 
 	Font();
 
 	Texture* LoadCharTexture(SDL_Renderer* renderer, const char* path);
 	FontChar* GetFontChar(char char_value);
 
-	void InitFont(string param_name, SDL_Renderer* renderer);
+	void Init(string param_name, SDL_Renderer* renderer, const double param_default_default_char_spacing, const double param_default_default_line_spacing, const double param_default_default_line_height);
 };
 

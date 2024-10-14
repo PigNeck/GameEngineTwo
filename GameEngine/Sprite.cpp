@@ -3,8 +3,8 @@
 void Sprite::LoadTexture(Texture* param_texture)
 {
 	texture = param_texture;
-	rect.data.base_size = param_texture->size;
-	rect.data.size = param_texture->size;
+	rect.base_size = param_texture->size;
+	rect.size = param_texture->size;
 }
 
 void Sprite::LoadAnimation(Animation* param_animation)
@@ -13,11 +13,11 @@ void Sprite::LoadAnimation(Animation* param_animation)
 
 	animation = param_animation;
 
-	Size2D temp_size_scale = rect.data.GetSizeScale();
-	rect.data.base_size = param_animation->dimentions;
-	rect.data.SetSizeWithSizeScale(temp_size_scale);
+	Size2D temp_size_scale = rect.GetSizeScale();
+	rect.base_size = param_animation->dimentions;
+	rect.SetSizeWithSizeScale(temp_size_scale);
 
-	rect.data.offset = param_animation->offset;
+	rect.offset = param_animation->offset;
 }
 
 Sprite::Sprite()

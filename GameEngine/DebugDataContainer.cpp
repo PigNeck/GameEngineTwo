@@ -2,7 +2,7 @@
 
 DebugDataContainer::DebugDataContainer()
 {
-	clickable_rectangle_data = nullptr;
+	clickable_rectangle = nullptr;
 
 	bools = vector<IndexedBool>{};
 	chars = vector<IndexedChar>{};
@@ -21,6 +21,10 @@ DebugDataContainer::DebugDataContainer()
 
 	white_list = 1;
 	active_scenes = vector<int>{};
+
+
+	fill_color = {};
+	outline_color = {};
 
 
 	current_length = 0;
@@ -42,13 +46,34 @@ DebugDataContainer::~DebugDataContainer()
 	owners.clear();
 }
 
-void DebugDataContainer::Init(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, RectangleData* const param_clickable_rectangle_data, const vector<int> param_active_scenes)
+void DebugDataContainer::InitLeast(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, Rectangle* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list)
 {
-	owners = param_owners;
+	clickable_rectangle = param_clickable_rectangle;
 
-	clickable_rectangle_data = param_clickable_rectangle_data;
+	bools.clear();
+	chars.clear();
+	ints.clear();
+	floats.clear();
+	doubles.clear();
+	const_chars.clear();
+	strings.clear();
+
+	rigid_centerings.clear();
+	point_2ds.clear();
+	size_2ds.clear();
+	rectangle_datas.clear();
 
 	active_scenes = param_active_scenes;
+	white_list = param_white_list;
+
+	current_length = 0;
+
+	fill_color = {};
+	outline_color = {};
+
+	hovering = 0;
+
+	owners = param_owners;
 
 
 	for (int i = 0; i < owners.size(); i++)
@@ -57,9 +82,50 @@ void DebugDataContainer::Init(const vector<DebugDataContainer*> param_owners, Fo
 	}
 
 
-	if (default_label_font && param_label_chars && clickable_rectangle_data)
+	if (default_label_font && param_label_chars && clickable_rectangle)
 	{
-		label.InitWithDescribingRectangleData(default_label_font, clickable_rectangle_data, param_label_chars, 4.0, 4.0);
+		label.InitWithDescribingRectangleData(default_label_font, clickable_rectangle, param_label_chars, 4.0, 4.0);
+	}
+}
+void DebugDataContainer::InitMost(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, Rectangle* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list, const double param_label_text_scale, const double param_label_scaled_margin_size)
+{
+	clickable_rectangle = param_clickable_rectangle;
+
+	bools.clear();
+	chars.clear();
+	ints.clear();
+	floats.clear();
+	doubles.clear();
+	const_chars.clear();
+	strings.clear();
+
+	rigid_centerings.clear();
+	point_2ds.clear();
+	size_2ds.clear();
+	rectangle_datas.clear();
+
+	active_scenes = param_active_scenes;
+	white_list = param_white_list;
+
+	current_length = 0;
+
+	fill_color = {};
+	outline_color = {};
+
+	hovering = 0;
+
+	owners = param_owners;
+
+
+	for (int i = 0; i < owners.size(); i++)
+	{
+		owners[i]->owned_data.push_back(this);
+	}
+
+
+	if (default_label_font && param_label_chars && clickable_rectangle)
+	{
+		label.InitWithDescribingRectangleData(default_label_font, clickable_rectangle, param_label_chars, param_label_text_scale, param_label_scaled_margin_size);
 	}
 }
 
@@ -124,7 +190,7 @@ void DebugDataContainer::AddSize2D(Size2D* value, const char* const value_name)
 
 	current_length++;
 }
-void DebugDataContainer::AddRectangleData(RectangleData* value, const char* const value_name)
+void DebugDataContainer::AddRectangleData(Rectangle* value, const char* const value_name)
 {
 	rectangle_datas.push_back({ value, value_name, current_length });
 

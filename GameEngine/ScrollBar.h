@@ -25,7 +25,7 @@ struct ScrollBar
 	void SetBarRectPosWithScrollValue();
 	void SetScrollValueWithBarRectPos();
 
-	void InitBasic(const double param_total_scroll_length, const double param_scroll_length_limiter, RectangleData param_scroll_area_rectangle_data, const double param_bar_thickness, const bool param_horizontal_scroll_bar);
+	void InitBasic(const double param_total_scroll_length, const double param_scroll_length_limiter, Rectangle param_scroll_area_rectangle_data, const double param_bar_thickness, const bool param_horizontal_scroll_bar);
 
 	void SetScrollLength(const double param_total_scroll_length, const double param_scroll_length_limiter, const double param_scroll_area_length);
 };

@@ -1,21 +1,20 @@
 #pragma once
-#include "RectangleData.h"
+#include "Rectangle.h"
 #include "FontChar.h"
 
 
 struct TextBoxCharData
 {
-	FontChar* font_char;
-	RectangleData rectangle_data;
-	double char_spacing;
+	FontChar* font_char = nullptr;
+	Rectangle rectangle;
+	double char_spacing = 0.0;
 
-	Uint8 r_mod;
-	Uint8 g_mod;
-	Uint8 b_mod;
+	Uint8 r_mod = 0;
+	Uint8 g_mod = 0;
+	Uint8 b_mod = 0;
+	Uint8 a_mod = 255;
 
-	TextBoxCharData();
-
-	void InitWithFontChar(RectangleData* reference_rectangle_data, FontChar* param_font_char);
-	void InitWithFontChar(RectangleData* reference_rectangle_data, FontChar* param_font_char, Uint8 param_r_mod, Uint8 param_g_mod, Uint8 param_b_mod);
-	void GetRectangleWithSpacing(bool include_left_spacing, bool include_right_spacing);
+	void InitLeast(Rectangle* const reference_rectangle, FontChar* const param_font_char);
+	void InitMost(Rectangle* const reference_rectangle, FontChar* const param_font_char, const Uint8 param_r_mod, const Uint8 param_g_mod, const Uint8 param_b_mod, const Uint8 param_a_mod);
+	void GetRectangleWithSpacing(const bool include_left_spacing, const bool include_right_spacing) const;
 };
