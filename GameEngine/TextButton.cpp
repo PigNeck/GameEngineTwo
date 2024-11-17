@@ -14,12 +14,14 @@ void SimpleTextButton::InitLeast()
 {
 	//Do nothing lmao
 }
-void SimpleTextButton::InitMost(Rectangle param_parent_rect, TextBox param_text_box, double param_scaled_border_width, double param_scaled_drop_amount)
+void SimpleTextButton::InitMost(Rectangle param_parent_rect, TextBox param_text_box, double param_scaled_border_width, double param_scaled_drop_amount, const ButtonSoundData param_sounds)
 {
 	parent_rect = param_parent_rect;
 	text_box = param_text_box;
 	scaled_border_width = param_scaled_border_width;
 	scaled_drop_amount = param_scaled_drop_amount;
+
+	sounds = param_sounds;
 }
 void SimpleTextButton::InitWithMargin(Size2D parent_size_scale, string text, Font* param_font, Size2D param_scaled_margin_size, double param_scaled_border_width, double param_scaled_drop_amount)
 {
@@ -36,7 +38,7 @@ void SimpleTextButton::InitWithMargin(Size2D parent_size_scale, string text, Fon
 	temp_rectangle_data.size.height = temp_rectangle_data.base_size.height;
 
 	text_box.parent_rect = temp_rectangle_data;
-	text_box.parent_rect.reference_rectangle_data = &parent_rect;
+	text_box.parent_rect.reference_rectangle = &parent_rect;
 
 	temp_rectangle_data.base_size.width += ((param_scaled_margin_size.width / parent_size_scale.width) * 2.0);
 	temp_rectangle_data.base_size.height += ((param_scaled_margin_size.height / parent_size_scale.height) * 2.0);
@@ -66,7 +68,7 @@ void SimpleTextButton::InitWithBaseSize(Size2D parent_size_scale, string text, F
 	temp_rectangle_data.size.height = temp_rectangle_data.base_size.height;
 
 	text_box.parent_rect = temp_rectangle_data;
-	text_box.parent_rect.reference_rectangle_data = &parent_rect;
+	text_box.parent_rect.reference_rectangle = &parent_rect;
 
 	temp_rectangle_data.base_size.width = param_parent_rect_base_size.width;
 	temp_rectangle_data.base_size.height = param_parent_rect_base_size.height;

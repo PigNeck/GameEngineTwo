@@ -7,11 +7,15 @@ TODO:
 - Polish textboxes //
 - Add camera names //
 - Finish buttons //
-- Finish rectangles //
-- Make camera.rect private (because changing camera pos or size should also update camera.mouse_pos)
+- Finish rectangles (add rotation support, make flip of type SDL_RendererFlip, make single white pixel to accomplish this)
+
+- Make camera.rect private (because changing camera pos or size should also update camera.mouse_pos) (I don't think I'm doing this anymore)
 - Make text_box text centering in relation to parent_rect offset more intuitive
 
 - Add simple IDE
 - Create server for online games
 - Create online game explorer
+
+
+Finish this by the year 2090
 

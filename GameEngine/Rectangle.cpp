@@ -124,7 +124,7 @@ void RectStructOne::PrintProperties()
 
 Rectangle::Rectangle() {}
 
-Rectangle::Rectangle(Rectangle* param_reference_rectangle_data) : reference_rectangle_data(param_reference_rectangle_data) {}
+Rectangle::Rectangle(Rectangle* param_reference_rectangle_data) : reference_rectangle(param_reference_rectangle_data) {}
 
 
 
@@ -140,9 +140,9 @@ Point2D Rectangle::GetUniPos() const
 double Rectangle::GetUniX() const
 {
     double ref_uni_x;
-    if (reference_rectangle_data && relativity_rules.relative_x)
+    if (reference_rectangle && relativity_rules.relative_x)
     {
-        ref_uni_x = reference_rectangle_data->GetUniX();
+        ref_uni_x = reference_rectangle->GetUniX();
     }
     else
     {
@@ -150,9 +150,9 @@ double Rectangle::GetUniX() const
     }
 
     double ref_center_offset_x;
-    if (reference_rectangle_data && relativity_rules.origin_at_ref_rect_center_x)
+    if (reference_rectangle && relativity_rules.origin_at_ref_rect_center_x)
     {
-        ref_center_offset_x = reference_rectangle_data->offset.x;
+        ref_center_offset_x = reference_rectangle->offset.x;
     }
     else
     {
@@ -160,9 +160,9 @@ double Rectangle::GetUniX() const
     }
 
     double ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_x && relativity_rules.scale_x)
+    if (reference_rectangle && relativity_rules.relative_x && relativity_rules.scale_x)
     {
-        ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -174,9 +174,9 @@ double Rectangle::GetUniX() const
 double Rectangle::GetUniY() const
 {
     double ref_uni_y;
-    if (reference_rectangle_data && relativity_rules.relative_y)
+    if (reference_rectangle && relativity_rules.relative_y)
     {
-        ref_uni_y = reference_rectangle_data->GetUniY();
+        ref_uni_y = reference_rectangle->GetUniY();
     }
     else
     {
@@ -184,9 +184,9 @@ double Rectangle::GetUniY() const
     }
 
     double ref_center_offset_y;
-    if (reference_rectangle_data && relativity_rules.origin_at_ref_rect_center_y)
+    if (reference_rectangle && relativity_rules.origin_at_ref_rect_center_y)
     {
-        ref_center_offset_y = reference_rectangle_data->offset.y;
+        ref_center_offset_y = reference_rectangle->offset.y;
     }
     else
     {
@@ -194,9 +194,9 @@ double Rectangle::GetUniY() const
     }
 
     double ref_uni_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_y && relativity_rules.scale_y)
+    if (reference_rectangle && relativity_rules.relative_y && relativity_rules.scale_y)
     {
-        ref_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        ref_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -216,9 +216,9 @@ void Rectangle::SetPosWithUniPos(Point2D param_uni_pos)
 void Rectangle::SetXWithUniX(double param_uni_x)
 {
     double ref_uni_x;
-    if (reference_rectangle_data && relativity_rules.relative_x)
+    if (reference_rectangle && relativity_rules.relative_x)
     {
-        ref_uni_x = reference_rectangle_data->GetUniX();
+        ref_uni_x = reference_rectangle->GetUniX();
     }
     else
     {
@@ -226,9 +226,9 @@ void Rectangle::SetXWithUniX(double param_uni_x)
     }
 
     double ref_center_offset_x;
-    if (reference_rectangle_data && relativity_rules.origin_at_ref_rect_center_x)
+    if (reference_rectangle && relativity_rules.origin_at_ref_rect_center_x)
     {
-        ref_center_offset_x = reference_rectangle_data->offset.x;
+        ref_center_offset_x = reference_rectangle->offset.x;
     }
     else
     {
@@ -236,9 +236,9 @@ void Rectangle::SetXWithUniX(double param_uni_x)
     }
 
     double ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_x && relativity_rules.scale_x)
+    if (reference_rectangle && relativity_rules.relative_x && relativity_rules.scale_x)
     {
-        ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -251,9 +251,9 @@ void Rectangle::SetXWithUniX(double param_uni_x)
 void Rectangle::SetYWithUniY(double param_uni_y)
 {
     double temp_ref_y;
-    if (reference_rectangle_data && relativity_rules.relative_y)
+    if (reference_rectangle && relativity_rules.relative_y)
     {
-        temp_ref_y = reference_rectangle_data->GetUniY();
+        temp_ref_y = reference_rectangle->GetUniY();
     }
     else
     {
@@ -261,9 +261,9 @@ void Rectangle::SetYWithUniY(double param_uni_y)
     }
 
     double ref_center_offset_y;
-    if (reference_rectangle_data && relativity_rules.origin_at_ref_rect_center_y)
+    if (reference_rectangle && relativity_rules.origin_at_ref_rect_center_y)
     {
-        ref_center_offset_y = reference_rectangle_data->offset.y;
+        ref_center_offset_y = reference_rectangle->offset.y;
     }
     else
     {
@@ -271,9 +271,9 @@ void Rectangle::SetYWithUniY(double param_uni_y)
     }
 
     double temp_ref_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_y && relativity_rules.scale_y)
+    if (reference_rectangle && relativity_rules.relative_y && relativity_rules.scale_y)
     {
-        temp_ref_height_scale = reference_rectangle_data->GetUniHeightScale();
+        temp_ref_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -303,9 +303,9 @@ Size2D Rectangle::GetUniSize() const
 double Rectangle::GetUniWidth() const
 {
     double temp_ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_width)
+    if (reference_rectangle && relativity_rules.relative_width)
     {
-        temp_ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        temp_ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -317,9 +317,9 @@ double Rectangle::GetUniWidth() const
 double Rectangle::GetUniHeight() const
 {
     double temp_ref_uni_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_height)
+    if (reference_rectangle && relativity_rules.relative_height)
     {
-        temp_ref_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        temp_ref_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -339,9 +339,9 @@ void Rectangle::SetSizeWithUniSize(Size2D param_uni_size)
 void Rectangle::SetWidthWithUniWidth(double param_uni_width)
 {
     double temp_ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_width)
+    if (reference_rectangle && relativity_rules.relative_width)
     {
-        temp_ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        temp_ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -354,9 +354,9 @@ void Rectangle::SetWidthWithUniWidth(double param_uni_width)
 void Rectangle::SetHeightWithUniHeight(double param_uni_height)
 {
     double temp_ref_uni_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_height)
+    if (reference_rectangle && relativity_rules.relative_height)
     {
-        temp_ref_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        temp_ref_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -374,9 +374,9 @@ Size2D Rectangle::GetUniBaseSize()
 double Rectangle::GetUniBaseWidth()
 {
     double temp_ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_width)
+    if (reference_rectangle && relativity_rules.relative_width)
     {
-        temp_ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        temp_ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -388,9 +388,9 @@ double Rectangle::GetUniBaseWidth()
 double Rectangle::GetUniBaseHeight()
 {
     double temp_ref_uni_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_height)
+    if (reference_rectangle && relativity_rules.relative_height)
     {
-        temp_ref_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        temp_ref_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -410,9 +410,9 @@ void Rectangle::SetBaseSizeWithUniBaseSize(Size2D param_uni_base_size)
 void Rectangle::SetBaseWidthWithUniBaseWidth(double param_uni_base_width)
 {
     double temp_ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_width)
+    if (reference_rectangle && relativity_rules.relative_width)
     {
-        temp_ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        temp_ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -425,9 +425,9 @@ void Rectangle::SetBaseWidthWithUniBaseWidth(double param_uni_base_width)
 void Rectangle::SetBaseHeightWithUniBaseHeight(double param_uni_base_height)
 {
     double temp_ref_uni_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_height)
+    if (reference_rectangle && relativity_rules.relative_height)
     {
-        temp_ref_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        temp_ref_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -446,9 +446,9 @@ double Rectangle::GetUniXOffset()
 {
     double temp_reference_uni_width_scale;
 
-    if (reference_rectangle_data && relativity_rules.relative_width)
+    if (reference_rectangle && relativity_rules.relative_width)
     {
-        temp_reference_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        temp_reference_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -461,9 +461,9 @@ double Rectangle::GetUniYOffset()
 {
     double temp_reference_uni_height_scale;
 
-    if (reference_rectangle_data && relativity_rules.relative_height)
+    if (reference_rectangle && relativity_rules.relative_height)
     {
-        temp_reference_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        temp_reference_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -812,9 +812,9 @@ Size2D Rectangle::GetUniSizeScale() const
 double Rectangle::GetUniWidthScale() const
 {
     double temp_ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_width)
+    if (reference_rectangle && relativity_rules.relative_width)
     {
-        temp_ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        temp_ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -826,9 +826,9 @@ double Rectangle::GetUniWidthScale() const
 double Rectangle::GetUniHeightScale() const
 {
     double temp_ref_uni_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_height)
+    if (reference_rectangle && relativity_rules.relative_height)
     {
-        temp_ref_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        temp_ref_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -848,9 +848,9 @@ void Rectangle::SetSizeWithUniSizeScale(Size2D param_uni_size_scale)
 void Rectangle::SetWidthWithUniWidthScale(double param_uni_width_scale)
 {
     double temp_ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_width)
+    if (reference_rectangle && relativity_rules.relative_width)
     {
-        temp_ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        temp_ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -863,9 +863,9 @@ void Rectangle::SetWidthWithUniWidthScale(double param_uni_width_scale)
 void Rectangle::SetHeightWithUniHeightScale(double param_uni_height_scale)
 {
     double temp_ref_uni_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_height)
+    if (reference_rectangle && relativity_rules.relative_height)
     {
-        temp_ref_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        temp_ref_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -885,9 +885,9 @@ void Rectangle::SetBaseSizeWithUniSizeScale(Size2D param_uni_size_scale)
 void Rectangle::SetBaseWidthWithUniWidthScale(double param_uni_width_scale)
 {
     double temp_ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_width)
+    if (reference_rectangle && relativity_rules.relative_width)
     {
-        temp_ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        temp_ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -900,9 +900,9 @@ void Rectangle::SetBaseWidthWithUniWidthScale(double param_uni_width_scale)
 void Rectangle::SetBaseHeightWithUniHeightScale(double param_uni_height_scale)
 {
     double temp_ref_uni_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_height)
+    if (reference_rectangle && relativity_rules.relative_height)
     {
-        temp_ref_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        temp_ref_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -958,9 +958,9 @@ Point2D Rectangle::GetScaledPointFromUniPoint(Point2D param_uni_point)
 double Rectangle::GetScaledXFromUniX(double param_uni_x)
 {
     double ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_width)
+    if (reference_rectangle && relativity_rules.relative_width)
     {
-        ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -972,9 +972,9 @@ double Rectangle::GetScaledXFromUniX(double param_uni_x)
 double Rectangle::GetScaledYFromUniY(double param_uni_y)
 {
     double ref_uni_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_height)
+    if (reference_rectangle && relativity_rules.relative_height)
     {
-        ref_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        ref_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -1005,9 +1005,9 @@ Point2D Rectangle::GetUniPointFromScaledPoint(const Point2D param_scaled_point) 
 double Rectangle::GetUniXFromScaledX(const double param_scaled_x) const
 {
     double ref_uni_width_scale;
-    if (reference_rectangle_data && relativity_rules.relative_width)
+    if (reference_rectangle && relativity_rules.relative_width)
     {
-        ref_uni_width_scale = reference_rectangle_data->GetUniWidthScale();
+        ref_uni_width_scale = reference_rectangle->GetUniWidthScale();
     }
     else
     {
@@ -1019,9 +1019,9 @@ double Rectangle::GetUniXFromScaledX(const double param_scaled_x) const
 double Rectangle::GetUniYFromScaledY(const double param_scaled_y) const
 {
     double ref_uni_height_scale;
-    if (reference_rectangle_data && relativity_rules.relative_height)
+    if (reference_rectangle && relativity_rules.relative_height)
     {
-        ref_uni_height_scale = reference_rectangle_data->GetUniHeightScale();
+        ref_uni_height_scale = reference_rectangle->GetUniHeightScale();
     }
     else
     {

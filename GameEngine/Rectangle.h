@@ -122,7 +122,7 @@ struct Rectangle
     double rotation = 0.0;
 
     RelativityRules relativity_rules;
-    Rectangle* reference_rectangle_data = nullptr;
+    Rectangle* reference_rectangle = nullptr;
 
 
 

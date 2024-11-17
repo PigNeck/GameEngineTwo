@@ -6,6 +6,7 @@
 #include "SDL_mixer.h"
 #include <iostream>
 #include <algorithm>
+#include <random>
 
 using namespace std;
 

@@ -11,7 +11,7 @@ void TextBoxChar::InitLeast(Rectangle* const reference_rect, FontChar* const par
 	rect.offset.x = (double)param_font_char->default_unscaled_x_offset;
 	rect.offset.y = (double)param_font_char->default_unscaled_y_offset;
 
-	rect.reference_rectangle_data = reference_rect;
+	rect.reference_rectangle = reference_rect;
 
 	char_spacing = (double)param_font_char->default_char_spacing;
 }
@@ -26,7 +26,7 @@ void TextBoxChar::InitMost(Rectangle* const reference_rect, FontChar* const para
 	rect.offset.x = (double)param_font_char->default_unscaled_x_offset;
 	rect.offset.y = (double)param_font_char->default_unscaled_y_offset;
 
-	rect.reference_rectangle_data = reference_rect;
+	rect.reference_rectangle = reference_rect;
 
 	char_spacing = (double)param_font_char->default_char_spacing;
 

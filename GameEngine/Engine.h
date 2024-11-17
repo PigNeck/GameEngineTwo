@@ -30,7 +30,8 @@ struct Engine {
 	Uint32 frame_start, frame_duration;
 	double frame_rate;
 	Uint32 frame_delay;
-	double frame_factor; //Frame factor is lower the higher the framerate. It equals 60.0 / frame_rate.
+	double frame_factor; // = frame_rate / 60.0
+	double frame_factor_inverse; // = 60.0 / frame_rate
 
 	bool running;
 	bool running_game;
@@ -188,6 +189,7 @@ struct Engine {
 
 	void UpdateTextBox(TextBox* param_text_box);
 	void UpdatePressData(PressData* param_press_data, Rectangle* param_hitbox, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
+	void UpdateButtonSounds(PressData* const press_data, ButtonSoundData* const sounds) const;
 	void UpdateButton(Button* param_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
 	void UpdateTextButton(TextButton* param_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
 	void UpdateSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
@@ -237,6 +239,21 @@ struct Engine {
 
 
 
+
+
+	// -----------------   RANDOM STUFFS   -----------------
+
+	std::random_device rd;
+	std::mt19937 gen; // Standard mersenne_twister_engine seeded with rd()
+
+	//Includes both min and max in the range of possible return values
+	double GetRandDouble(const double min, double max);
+	//Includes both min and max in the range of possible return values
+	int GetRandInt(const int min, const int max);
+
+
+
+	
 
 
 	// -----------------   MISCELLANEOUS FUNCTIONS   -----------------

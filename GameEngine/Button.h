@@ -2,6 +2,7 @@
 #include "Sprite.h"
 #include "Rectangle.h"
 #include "DebugDataContainer.h"
+#include "SDL_mixer.h"
 
 struct PressData
 {
@@ -19,11 +20,22 @@ struct PressData
 	bool pressable = 1;
 };
 
+struct ButtonSoundData
+{
+	Mix_Chunk* hover_sound = nullptr;
+	Mix_Chunk* no_hover_sound = nullptr;
+	Mix_Chunk* press_sound = nullptr;
+	Mix_Chunk* release_sound = nullptr;
+	int channel = -1;
+};
+
 struct Button
 {
 	Sprite released_sprite;
 	Sprite hovering_sprite;
 	Sprite pressed_sprite;
+
+	ButtonSoundData sounds;
 
 	Rectangle hitbox;
 
@@ -36,7 +48,7 @@ struct Button
 	bool visable = 1;
 
 	void InitLeast();
-	void InitMost(const Rectangle param_parent_rect, const Rectangle param_hitbox, const Sprite param_released_sprite, const Sprite param_hovering_sprite, const Sprite param_pressed_sprite);
+	void InitMost(const Rectangle param_parent_rect, const Rectangle param_hitbox, const Sprite param_released_sprite, const Sprite param_hovering_sprite, const Sprite param_pressed_sprite, const ButtonSoundData param_sounds);
 	void InitWithTexturesAndSizeScale(Texture* param_released_texture, Texture* param_hovering_texture, Texture* param_pressed_texture, Size2D texture_size_scale);
 
 	void CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_data_containers, Font* default_debug_data_container_label_font, const char* const param_debug_data_container_label_chars, const vector<int> param_debug_data_container_active_scenes, const bool param_white_list);

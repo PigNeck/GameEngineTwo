@@ -26,7 +26,7 @@ struct Cell
 	void Click(const bool target_state);
 
 	//Clicks should be done BEFORE Update() is called
-	void Update(const double frame_factor);
+	void Update(const double frame_factor_inverse);
 };
 
 struct CellSet

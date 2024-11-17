@@ -6,7 +6,7 @@ void Cell::Click(const bool target_state)
 	animation_color_percent = 101.0;
 	animation_movement_percent = 101.0;
 }
-void Cell::Update(const double frame_factor)
+void Cell::Update(const double frame_factor_inverse)
 {
 	// Update animation_color_percent
 	if (animation_color_percent > 100.0)
@@ -19,11 +19,11 @@ void Cell::Update(const double frame_factor)
 		{
 			if (state == 1)
 			{
-				animation_color_percent *= pow(0.96, frame_factor);
+				animation_color_percent *= pow(0.96, frame_factor_inverse);
 			}
 			else
 			{
-				animation_color_percent *= pow(0.9, frame_factor);
+				animation_color_percent *= pow(0.9, frame_factor_inverse);
 			}
 		}
 		else
@@ -41,7 +41,7 @@ void Cell::Update(const double frame_factor)
 	{
 		if (animation_movement_percent > 0.01)
 		{
-			animation_movement_percent *= pow(0.87, frame_factor);
+			animation_movement_percent *= pow(0.87, frame_factor_inverse);
 		}
 		else
 		{

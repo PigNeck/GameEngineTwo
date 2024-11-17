@@ -4,31 +4,33 @@ void Button::InitLeast()
 {
 	//Do nothing lmao
 }
-void Button::InitMost(const Rectangle param_parent_rect, const Rectangle param_hitbox, const Sprite param_released_sprite, const Sprite param_hovering_sprite, const Sprite param_pressed_sprite)
+void Button::InitMost(const Rectangle param_parent_rect, const Rectangle param_hitbox, const Sprite param_released_sprite, const Sprite param_hovering_sprite, const Sprite param_pressed_sprite, const ButtonSoundData param_sounds)
 {
 	parent_rect = param_parent_rect;
 	hitbox = param_hitbox;
 	released_sprite = param_released_sprite;
 	hovering_sprite = param_hovering_sprite;
 	pressed_sprite = param_pressed_sprite;
+
+	sounds = param_sounds;
 }
 void Button::InitWithTexturesAndSizeScale(Texture* param_released_texture, Texture* param_hovering_texture, Texture* param_pressed_texture, Size2D texture_size_scale)
 {
 	released_sprite.LoadTexture(param_released_texture);
 	released_sprite.rect.SetSizeWithSizeScale(texture_size_scale);
-	released_sprite.rect.reference_rectangle_data = &parent_rect;
+	released_sprite.rect.reference_rectangle = &parent_rect;
 
 	hovering_sprite.LoadTexture(param_hovering_texture);
 	hovering_sprite.rect.SetSizeWithSizeScale(texture_size_scale);
-	hovering_sprite.rect.reference_rectangle_data = &parent_rect;
+	hovering_sprite.rect.reference_rectangle = &parent_rect;
 
 	pressed_sprite.LoadTexture(param_pressed_texture);
 	pressed_sprite.rect.SetSizeWithSizeScale(texture_size_scale);
-	pressed_sprite.rect.reference_rectangle_data = &parent_rect;
+	pressed_sprite.rect.reference_rectangle = &parent_rect;
 
 	hitbox.base_size = released_sprite.rect.base_size;
 	hitbox.size = released_sprite.rect.size;
-	hitbox.reference_rectangle_data = &parent_rect;
+	hitbox.reference_rectangle = &parent_rect;
 
 	parent_rect.base_size = released_sprite.rect.size;
 	parent_rect.size = released_sprite.rect.size;

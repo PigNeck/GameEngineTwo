@@ -46,23 +46,39 @@ std::string FloatToString(float value, int precision) {
     return str;
 }
 
+double Engine::GetRandDouble(const double min, double max)
+{
+    max += numeric_limits<double>::epsilon();
+
+    // Create a random device to seed the random number generator
+    std::uniform_real_distribution<> dist(min, max); // Range [min, max)
+
+    return dist(gen);
+}
+int Engine::GetRandInt(const int min, const int max)
+{
+    std::uniform_int_distribution<> dist(min, max); // Range [min, max]
+
+    return dist(gen);
+}
+
 void Engine::MoveDebugCamera()
 {
     if (input.w.pressed)
     {
-        debug_camera->rect.pos.y += 10.0 * frame_factor * debug_camera->rect.GetUniHeightScale();
+        debug_camera->rect.pos.y += 10.0 * frame_factor_inverse * debug_camera->rect.GetUniHeightScale();
     }
     if (input.a.pressed)
     {
-        debug_camera->rect.pos.x -= 10.0 * frame_factor * debug_camera->rect.GetUniWidthScale();
+        debug_camera->rect.pos.x -= 10.0 * frame_factor_inverse * debug_camera->rect.GetUniWidthScale();
     }
     if (input.s.pressed)
     {
-        debug_camera->rect.pos.y -= 10.0 * frame_factor * debug_camera->rect.GetUniHeightScale();
+        debug_camera->rect.pos.y -= 10.0 * frame_factor_inverse * debug_camera->rect.GetUniHeightScale();
     }
     if (input.d.pressed)
     {
-        debug_camera->rect.pos.x += 10.0 * frame_factor * debug_camera->rect.GetUniWidthScale();
+        debug_camera->rect.pos.x += 10.0 * frame_factor_inverse * debug_camera->rect.GetUniWidthScale();
     }
 
     if (debug_data_container_layer.active)
@@ -77,8 +93,10 @@ void Engine::MoveDebugCamera()
 void Engine::BasicBasicDrawRectangle(Rectangle* param_rectangle, SDL_Color color, Camera* camera)
 {
     SDL_Rect rect = RectangleToSDLRect(param_rectangle, camera);
+    const SDL_Point center_of_rotation = RectangleToSDLCenterOfRotation(param_rectangle, camera);
 
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+    //SDL_RenderCopyEx(renderer, nullptr, nullptr, &rect, param_rectangle->rotation, &center_of_rotation, SDL_FLIP_NONE);
     SDL_RenderFillRect(renderer, &rect);
 }
 void Engine::BasicDrawRectangle(Rectangle* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
@@ -147,10 +165,10 @@ void Engine::BasicDrawRectangle(Rectangle* param_rectangle, SDL_Color filling_co
     double temp_ref_uni_width_scale;
     double temp_ref_uni_height_scale;
 
-    if (temp_rectangle_data.reference_rectangle_data)
+    if (temp_rectangle_data.reference_rectangle)
     {
-        temp_ref_uni_width_scale = temp_rectangle_data.reference_rectangle_data->GetUniWidthScale();
-        temp_ref_uni_height_scale = temp_rectangle_data.reference_rectangle_data->GetUniHeightScale();
+        temp_ref_uni_width_scale = temp_rectangle_data.reference_rectangle->GetUniWidthScale();
+        temp_ref_uni_height_scale = temp_rectangle_data.reference_rectangle->GetUniHeightScale();
     }
     else
     {
@@ -706,18 +724,24 @@ void Engine::BasicDrawSimpleTextButton(SimpleTextButton* param_simple_text_butto
     temp_rect_data.size.width -= (param_simple_text_button->scaled_border_width * 2.0);
     temp_rect_data.size.height -= (param_simple_text_button->scaled_border_width * 2.0);
 
-    SDL_Color temp_color;
+    SDL_Color temp_rect_fill_color;
     if (param_simple_text_button->press_data.hovering)
     {
-        temp_color = { 255, 255, 255, 255 };
+        temp_rect_fill_color = { 255, 255, 255, 255 };
     }
     else
     {
-        temp_color = { 205, 205, 205, 255 };
+        if (param_simple_text_button->press_data.hoverable)
+        {
+            temp_rect_fill_color = { 205, 205, 205, 255 };
+        }
+        else
+        {
+            temp_rect_fill_color = { 150, 150, 150, 255 };
+        }
     }
 
-    BasicBasicDrawRectangle(&temp_rect_data, temp_color, camera);
-
+    BasicBasicDrawRectangle(&temp_rect_data, temp_rect_fill_color, camera);
     BasicDrawTextBox(&param_simple_text_button->text_box, camera);
 }
 void Engine::BasicDrawScrollBar(ScrollBar* param_scroll_bar, Camera* camera)
@@ -1160,13 +1184,36 @@ void Engine::UpdatePressData(PressData* param_press_data, Rectangle* param_hitbo
     param_press_data->first_frame_pressed = (param_press_data->pressed && (!param_press_data->previous_frame_pressed));
     param_press_data->first_frame_released = ((!param_press_data->pressed) && param_press_data->previous_frame_pressed);
 }
+void Engine::UpdateButtonSounds(PressData* const press_data, ButtonSoundData* const sounds) const
+{
+    if (press_data->first_frame_hovering && sounds->hover_sound)
+    {
+        Mix_PlayChannel(sounds->channel, sounds->hover_sound, 0);
+    }
+    if (press_data->first_frame_not_hovering && sounds->no_hover_sound)
+    {
+        Mix_PlayChannel(sounds->channel, sounds->no_hover_sound, 0);
+    }
+    if (press_data->first_frame_pressed && sounds->press_sound)
+    {
+        Mix_PlayChannel(sounds->channel, sounds->press_sound, 0);
+    }
+    if (press_data->first_frame_released && sounds->release_sound)
+    {
+        Mix_PlayChannel(sounds->channel, sounds->release_sound, 0);
+    }
+}
 void Engine::UpdateButton(Button* param_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
 {
     UpdatePressData(&param_button->press_data, &param_button->hitbox, camera, mouse_layer, mouse_layer_removal_white_list, mouse_layer_removal_target_layers);
+
+    UpdateButtonSounds(&param_button->press_data, &param_button->sounds);
 }
 void Engine::UpdateTextButton(TextButton* param_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
 {
     UpdateButton(&param_text_button->button, camera, mouse_layer, mouse_layer_removal_white_list, mouse_layer_removal_target_layers);
+
+    UpdateButtonSounds(&param_text_button->button.press_data, &param_text_button->button.sounds);
 }
 void Engine::UpdateSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
 {
@@ -1179,6 +1226,8 @@ void Engine::UpdateSimpleTextButton(SimpleTextButton* param_simple_text_button, 
     {
         param_simple_text_button->text_box.parent_rect.pos.y = (param_simple_text_button->scaled_drop_amount / param_simple_text_button->parent_rect.GetHeightScale()) / 2.0;
     }
+
+    UpdateButtonSounds(&param_simple_text_button->press_data, &param_simple_text_button->sounds);
 }
 void Engine::UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
 {
@@ -2141,7 +2190,7 @@ void Engine::DeactivateMouseLayers(const bool white_list, vector<MouseLayer*> ta
 }
 
 
-Engine::Engine() : p(nullptr), RunPointer(nullptr) {
+Engine::Engine() : p(nullptr), RunPointer(nullptr), rd(), gen(rd()) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     IMG_Init(IMG_INIT_PNG);
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
@@ -2193,13 +2242,14 @@ Engine::Engine() : p(nullptr), RunPointer(nullptr) {
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-    default_font.Init("default_white", renderer, 1.0, 1.0, 7.0);
+    default_font.Init("default_white", renderer, 1.0, 2.0, 7.0);
 
     input = {};
     input.FormatKeys();
 
     frame_rate = 144.0;
-    frame_factor = (60.0 / frame_rate);
+    frame_factor = frame_rate / 60.0;
+    frame_factor_inverse = (60.0 / frame_rate);
     frame_delay = (Uint32)(1000.0 / frame_rate);
 
     debug_mode = 0;

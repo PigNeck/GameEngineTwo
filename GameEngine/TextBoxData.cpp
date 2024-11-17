@@ -167,7 +167,7 @@ void TextBoxData::GenerateLine(const int starting_char_index, const int line_ind
 		lines.back()->rectangle.base_size.width = saved_line_width;
 		lines.back()->rectangle.base_size.height = GetLineHeight(line_index);
 		lines.back()->rectangle.SetSizeWithSizeScale({ 1.0, 1.0 });
-		lines.back()->rectangle.reference_rectangle_data = &parent_rectangle;
+		lines.back()->rectangle.reference_rectangle = &parent_rectangle;
 		lines.back()->first_index = starting_char_index;
 		lines.back()->last_index = saved_char_index;
 
@@ -203,7 +203,7 @@ void TextBoxData::GenerateLine(const int starting_char_index, const int line_ind
 		lines.back()->rectangle.base_size.width = current_line_width;
 		lines.back()->rectangle.base_size.height = GetLineHeight(line_index);
 		lines.back()->rectangle.SetSizeWithSizeScale({ 1.0, 1.0 });
-		lines.back()->rectangle.reference_rectangle_data = &parent_rectangle;
+		lines.back()->rectangle.reference_rectangle = &parent_rectangle;
 		lines.back()->first_index = starting_char_index;
 		lines.back()->last_index = chars.size() - 1;
 

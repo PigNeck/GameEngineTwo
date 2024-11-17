@@ -73,7 +73,7 @@ void ScrollBar::SetScrollLength(const double param_total_scroll_length, const do
 			bar_rect.base_size.width = param_scroll_area_length;
 		}
 		bar_rect.SetWidthWithWidthScale({ 1.0 });
-		bar_rect.reference_rectangle_data = &full_bar_rect;
+		bar_rect.reference_rectangle = &full_bar_rect;
 
 		total_scroll_length = param_total_scroll_length;
 		scroll_length_limiter = param_scroll_length_limiter;
@@ -91,7 +91,7 @@ void ScrollBar::SetScrollLength(const double param_total_scroll_length, const do
 			bar_rect.base_size.height = param_scroll_area_length;
 		}
 		bar_rect.SetHeightWithHeightScale({ 1.0 });
-		bar_rect.reference_rectangle_data = &full_bar_rect;
+		bar_rect.reference_rectangle = &full_bar_rect;
 
 		total_scroll_length = param_total_scroll_length;
 		scroll_length_limiter = param_scroll_length_limiter;
