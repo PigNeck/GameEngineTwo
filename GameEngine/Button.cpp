@@ -1,5 +1,19 @@
 #include "Button.h"
 
+void PressData::Reset()
+{
+	previous_frame_pressed = 0;
+	first_frame_pressed = 0;
+	first_frame_released = 0;
+	pressed = 0;
+
+	previous_frame_hovering = 0;
+	first_frame_hovering = 0;
+	first_frame_not_hovering = 0;
+	hovering = 0;
+}
+
+
 void Button::InitLeast()
 {
 	//Do nothing lmao

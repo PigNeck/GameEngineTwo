@@ -350,41 +350,18 @@ Rectangle RectStructOneToRectangle(const RectStructOne* const param_rect_struct_
 
 // -----------------   COLLISION FUNCTIONS   -----------------
 
-bool OverlapPoint2DWithRectangle(const Point2D* const param_point, const Rectangle* const param_rectangle, const bool include_edge)
+bool OverlapPoint2DWithRectangleEx(const Point2D* const param_point, const Rectangle* const param_rectangle, const bool include_rectangle_right_edge, const bool include_rectangle_bottom_edge, const bool include_rectangle_left_edge, const bool include_rectangle_top_edge)
 {
 	RectStructOne temp_rect_struct_one = RectangleToRectStructOne(param_rectangle);
 
-	return OverlapPoint2DWithRectStructOne(param_point, &temp_rect_struct_one, include_edge);
-
-	/*
-	if (include_edge)
-	{
-		const double left_edge = param_rectangle->GetUniEdge({ 2 });
-		const double right_edge = param_rectangle->GetUniEdge({ 0 });;
-		const double bottom_edge = param_rectangle->GetUniEdge({ 1 });;
-		const double top_edge = param_rectangle->GetUniEdge({ 3 });;
-
-		const bool x_overlap = (param_point->x >= left_edge) && (param_point->x <= right_edge);
-		const bool y_overlap = (param_point->y >= bottom_edge) && (param_point->y <= top_edge);
-
-		return (x_overlap && y_overlap);
-	}
-	else
-	{
-		const double left_edge = param_rectangle->GetUniEdge({ 2 });
-		const double right_edge = param_rectangle->GetUniEdge({ 0 });;
-		const double bottom_edge = param_rectangle->GetUniEdge({ 1 });;
-		const double top_edge = param_rectangle->GetUniEdge({ 3 });;
-
-		const bool x_overlap = (param_point->x > left_edge) && (param_point->x < right_edge);
-		const bool y_overlap = (param_point->y > bottom_edge) && (param_point->y < top_edge);
-
-		return (x_overlap && y_overlap);
-	}
-	*/
+	return OverlapPoint2DWithRectStructOneEx(param_point, &temp_rect_struct_one, include_rectangle_right_edge, include_rectangle_bottom_edge, include_rectangle_left_edge, include_rectangle_top_edge);
+}
+bool OverlapPoint2DWithRectangle(const Point2D* const param_point, const Rectangle* const param_rectangle, const bool include_edge)
+{
+	return OverlapPoint2DWithRectangleEx(param_point, param_rectangle, include_edge, include_edge, include_edge, include_edge);
 }
 
-bool OverlapPoint2DWithRectStructOneEx(const Point2D* const param_point, const RectStructOne* const param_rect_struct_one, const bool include_edge_on_rect_struct_one_right, const bool include_edge_on_rect_struct_one_bottom, const bool include_edge_on_rect_struct_one_left, const bool include_edge_on_rect_struct_one_top)
+bool OverlapPoint2DWithRectStructOneEx(const Point2D* const param_point, const RectStructOne* const param_rect_struct_one, const bool include_rect_struct_one_right_edge, const bool include_rect_struct_one_bottom_edge, const bool include_rect_struct_one_left_edge, const bool include_rect_struct_one_top_edge)
 {
 	//Initialize all check bools. If all are true by the end of the function, rects are overlaping!
 	bool right_edge_check;
@@ -393,7 +370,7 @@ bool OverlapPoint2DWithRectStructOneEx(const Point2D* const param_point, const R
 	bool top_edge_check;
 
 	//Determining value of right_edge_check
-	if (include_edge_on_rect_struct_one_right)
+	if (include_rect_struct_one_right_edge)
 	{
 		right_edge_check = (param_point->x <= param_rect_struct_one->uni_right_edge);
 	}
@@ -403,7 +380,7 @@ bool OverlapPoint2DWithRectStructOneEx(const Point2D* const param_point, const R
 	}
 
 	//Determining value of bottom_edge_check
-	if (include_edge_on_rect_struct_one_bottom)
+	if (include_rect_struct_one_bottom_edge)
 	{
 		bottom_edge_check = (param_point->y >= param_rect_struct_one->uni_bottom_edge);
 	}
@@ -413,7 +390,7 @@ bool OverlapPoint2DWithRectStructOneEx(const Point2D* const param_point, const R
 	}
 
 	//Determining value of left_edge_check
-	if (include_edge_on_rect_struct_one_left)
+	if (include_rect_struct_one_left_edge)
 	{
 		left_edge_check = (param_point->x >= param_rect_struct_one->uni_left_edge);
 	}
@@ -423,7 +400,7 @@ bool OverlapPoint2DWithRectStructOneEx(const Point2D* const param_point, const R
 	}
 
 	//Determining value of top_edge_check
-	if (include_edge_on_rect_struct_one_top)
+	if (include_rect_struct_one_top_edge)
 	{
 		top_edge_check = (param_point->y <= param_rect_struct_one->uni_top_edge);
 	}
@@ -440,7 +417,7 @@ bool OverlapPoint2DWithRectStructOne(const Point2D* const param_point, const Rec
 	return OverlapPoint2DWithRectStructOneEx(param_point, param_rect_struct_one, include_edge, include_edge, include_edge, include_edge);
 }
 
-bool OverlapRectStructOneWithRectStructOneEx(const RectStructOne* const first_rect_struct_one, const RectStructOne* const second_rect_struct_one, const bool include_edge_on_first_rect_struct_right, const bool include_edge_on_first_rect_struct_bottom, const bool include_edge_on_first_rect_struct_left, const bool include_edge_on_first_rect_struct_top)
+bool OverlapRectStructOneWithRectStructOneEx(const RectStructOne* const first_rect_struct_one, const RectStructOne* const second_rect_struct_one, const bool include_first_rect_struct_one_right_edge, const bool include_first_rect_struct_one_bottom_edge, const bool include_first_rect_struct_one_left_edge, const bool include_first_rect_struct_one_top_edge)
 {
 	//Initialize all check bools. If all are true by the end of the function, rects are overlaping!
 	bool first_rect_struct_right_check;
@@ -449,7 +426,7 @@ bool OverlapRectStructOneWithRectStructOneEx(const RectStructOne* const first_re
 	bool first_rect_struct_top_check;
 
 	//Determining value of first_rect_struct_right_check
-	if (include_edge_on_first_rect_struct_right)
+	if (include_first_rect_struct_one_right_edge)
 	{
 		first_rect_struct_right_check = (first_rect_struct_one->uni_right_edge >= second_rect_struct_one->uni_left_edge);
 	}
@@ -459,7 +436,7 @@ bool OverlapRectStructOneWithRectStructOneEx(const RectStructOne* const first_re
 	}
 
 	//Determining value of first_rect_struct_bottom_check
-	if (include_edge_on_first_rect_struct_bottom)
+	if (include_first_rect_struct_one_bottom_edge)
 	{
 		first_rect_struct_bottom_check = (first_rect_struct_one->uni_bottom_edge <= second_rect_struct_one->uni_top_edge);
 	}
@@ -469,7 +446,7 @@ bool OverlapRectStructOneWithRectStructOneEx(const RectStructOne* const first_re
 	}
 
 	//Determining value of first_rect_struct_left_check
-	if (include_edge_on_first_rect_struct_left)
+	if (include_first_rect_struct_one_left_edge)
 	{
 		first_rect_struct_left_check = (first_rect_struct_one->uni_left_edge <= second_rect_struct_one->uni_right_edge);
 	}
@@ -479,7 +456,7 @@ bool OverlapRectStructOneWithRectStructOneEx(const RectStructOne* const first_re
 	}
 
 	//Determining value of first_rect_struct_top_check
-	if (include_edge_on_first_rect_struct_top)
+	if (include_first_rect_struct_one_top_edge)
 	{
 		first_rect_struct_top_check = (first_rect_struct_one->uni_top_edge >= second_rect_struct_one->uni_bottom_edge);
 	}

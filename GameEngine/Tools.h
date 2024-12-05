@@ -82,12 +82,13 @@ Rectangle RectStructOneToRectangle(const RectStructOne* const param_rect_struct_
 
 // -----------------   COLLISION FUNCTIONS   -----------------
 
+bool OverlapPoint2DWithRectangleEx(const Point2D* const param_point, const Rectangle* const param_rectangle, const bool include_rectangle_right_edge, const bool include_rectangle_bottom_edge, const bool include_rectangle_left_edge, const bool include_rectangle_top_edge);
 bool OverlapPoint2DWithRectangle(const Point2D* const param_point, const Rectangle* const param_rectangle, const bool include_edge);
 
-bool OverlapPoint2DWithRectStructOneEx(const Point2D* const param_point, const RectStructOne* const param_rect_struct_one, const bool include_edge_on_rect_struct_one_right, const bool include_edge_on_rect_struct_one_bottom, const bool include_edge_on_rect_struct_one_left, const bool include_edge_on_rect_struct_one_top);
+bool OverlapPoint2DWithRectStructOneEx(const Point2D* const param_point, const RectStructOne* const param_rect_struct_one, const bool include_rect_struct_one_right_edge, const bool include_rect_struct_one_bottom_edge, const bool include_rect_struct_one_left_edge, const bool include_rect_struct_one_top_edge);
 bool OverlapPoint2DWithRectStructOne(const Point2D* const param_point, const RectStructOne* const param_rect_struct_one, const bool include_edge);
 
-bool OverlapRectStructOneWithRectStructOneEx(const RectStructOne* const first_rect_struct_one, const RectStructOne* const second_rect_struct_one, const bool include_edge_on_first_rect_struct_right, const bool include_edge_on_first_rect_struct_bottom, const bool include_edge_on_first_rect_struct_left, const bool include_edge_on_first_rect_struct_top);
+bool OverlapRectStructOneWithRectStructOneEx(const RectStructOne* const first_rect_struct_one, const RectStructOne* const second_rect_struct_one, const bool include_first_rect_struct_one_right_edge, const bool include_first_rect_struct_one_bottom_edge, const bool include_first_rect_struct_one_left_edge, const bool include_first_rect_struct_one_top_edge);
 bool OverlapRectStructOneWithRectStructOne(const RectStructOne* const first_rect_struct_one, const RectStructOne* const second_rect_struct_one, const bool include_edge);
 
 

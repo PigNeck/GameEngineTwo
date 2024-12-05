@@ -9,11 +9,20 @@
 
 #define NUMBER_OF_CHANNELS 16
 
-void TextLink::InitLeast(const size_t param_linked_portion_index, const size_t param_begin_char, const size_t param_end_char)
+const double EASE_PARAMETER = 1000.0;
+const double EASE_DIVISOR = 2.0 * log(EASE_PARAMETER);
+const double FIRST_Y_SHIFT = (1.0 / EASE_PARAMETER) / EASE_DIVISOR;
+const double SECOND_Y_SHIFT = (2.0 / EASE_DIVISOR) - FIRST_Y_SHIFT;
+const double Y_STRETCH_FACTOR = 1.0 / (SECOND_Y_SHIFT - FIRST_Y_SHIFT);
+
+
+void TextLink::InitLeast(const size_t param_linked_path_index, const size_t param_linked_portion_index, const size_t param_begin_char, const size_t param_end_char, const char param_link_type)
 {
+	linked_path_index = param_linked_path_index;
 	linked_portion_index = param_linked_portion_index;
 	begin_char = param_begin_char;
 	end_char = param_end_char;
+	link_type = param_link_type;
 }
 
 
@@ -32,12 +41,28 @@ void Bar::SetTargetWidth(const double percent, const bool light_bar)
 	}
 }
 
+void Bar::SetActualWidth(const size_t discrete_progress, const size_t discrete_capacity, const bool light_bar)
+{
+	SetActualWidth(100.0 * (double)discrete_progress / (double)discrete_capacity, light_bar);
+}
+void Bar::SetActualWidth(const double percent, const bool light_bar)
+{
+	target_width = progress_back_rect_pointer->size.width * (percent / 100.0);
+	progress_rect.size.width = target_width;
+	progress_rect.pos.x = (progress_back_rect_pointer->size.width / -2.0) + (progress_rect.size.width / 2.0);
+
+	if (light_bar)
+	{
+		lighting_level = 101.0;
+	}
+}
+
 
 void ProgressBar::SetTargetWidth(const size_t discrete_progress, const size_t discrete_capacity, const bool light_bar)
 {
 	if (bars.size() > size_t(0))
 	{
-		bars[0].SetTargetWidth(discrete_progress, discrete_capacity, light_bar);
+		bars[0]->SetTargetWidth(discrete_progress, discrete_capacity, light_bar);
 	}
 	else
 	{
@@ -48,7 +73,7 @@ void ProgressBar::SetTargetWidth(const double percent, const bool light_bar)
 {
 	if (bars.size() > size_t(0))
 	{
-		bars[0].SetTargetWidth(percent, light_bar);
+		bars[0]->SetTargetWidth(percent, light_bar);
 	}
 	else
 	{
@@ -60,7 +85,7 @@ void ProgressBar::SetTargetWidthWithIndex(const size_t discrete_progress, const 
 {
 	if (bar_index < bars.size())
 	{
-		bars[bar_index].SetTargetWidth(discrete_progress, discrete_capacity, light_bar);
+		bars[bar_index]->SetTargetWidth(discrete_progress, discrete_capacity, light_bar);
 	}
 	else
 	{
@@ -71,7 +96,7 @@ void ProgressBar::SetTargetWidthWithIndex(const double percent, const bool light
 {
 	if (bar_index < bars.size())
 	{
-		bars[bar_index].SetTargetWidth(percent, light_bar);
+		bars[bar_index]->SetTargetWidth(percent, light_bar);
 	}
 	else
 	{
@@ -79,11 +104,57 @@ void ProgressBar::SetTargetWidthWithIndex(const double percent, const bool light
 	}
 }
 
+void ProgressBar::SetActualWidth(const size_t discrete_progress, const size_t discrete_capacity, const bool light_bar)
+{
+	if (bars.size() > size_t(0))
+	{
+		bars[0]->SetActualWidth(discrete_progress, discrete_capacity, light_bar);
+	}
+	else
+	{
+		cout << "Failed because bars.size() == 0. Try calling BasicInit(...) to fix this issue. Sent by ProgressBar::SetActualWidth(...)." << endl;
+	}
+}
+void ProgressBar::SetActualWidth(const double percent, const bool light_bar)
+{
+	if (bars.size() > size_t(0))
+	{
+		bars[0]->SetActualWidth(percent, light_bar);
+	}
+	else
+	{
+		cout << "Failed because bars.size() == 0. Try calling BasicInit(...) to fix this issue. Sent by ProgressBar::SetActualWidth(...)." << endl;
+	}
+}
+
+void ProgressBar::SetActualWidthWithIndex(const size_t discrete_progress, const size_t discrete_capacity, const bool light_bar, const size_t bar_index)
+{
+	if (bar_index < bars.size())
+	{
+		bars[bar_index]->SetActualWidth(discrete_progress, discrete_capacity, light_bar);
+	}
+	else
+	{
+		cout << "bar_index out of range :(. Sent by ProgressBar::SetActualWidthWithIndex(...)." << endl;
+	}
+}
+void ProgressBar::SetActualWidthWithIndex(const double percent, const bool light_bar, const size_t bar_index)
+{
+	if (bar_index < bars.size())
+	{
+		bars[bar_index]->SetActualWidth(percent, light_bar);
+	}
+	else
+	{
+		cout << "bar_index out of range :(. Sent by ProgressBar::SetActualWidthWithIndex(...)." << endl;
+	}
+}
+
 void ProgressBar::InitLeast()
 {
 	//Do nothing lamo (you)
 }
-void ProgressBar::InitMost(const vector<Bar> param_bars, const Rectangle param_back_rect, const SDL_Color param_back_color, const Rectangle param_progress_back_rect, const SDL_Color param_progress_back_color)
+void ProgressBar::InitMost(const vector<Bar*> param_bars, const Rectangle param_back_rect, const SDL_Color param_back_color, const Rectangle param_progress_back_rect, const SDL_Color param_progress_back_color)
 {
 	bars = param_bars;
 	back_rect = param_back_rect;
@@ -117,43 +188,49 @@ void ProgressBar::SetDefaultBarColor(const size_t index)
 	switch (bars.size())
 	{
 	case 1:
-		bars[index].progress_color = { 0, 200, 0, 255 };
-		bars[index].secondary_progress_color = { 50, 255, 50, 255 };
+		bars[index]->progress_color = { 0, 200, 0, 255 };
+		bars[index]->secondary_progress_color = { 50, 255, 50, 255 };
 		break;
 	case 2:
-		bars[index].progress_color = { 0, 0, 200, 255 };
-		bars[index].secondary_progress_color = { 50, 50, 255, 255 };
+		bars[index]->progress_color = { 0, 0, 200, 255 };
+		bars[index]->secondary_progress_color = { 50, 50, 255, 255 };
 		break;
 	case 3:
-		bars[index].progress_color = { 200, 0, 0, 255 };
-		bars[index].secondary_progress_color = { 255, 50, 50, 255 };
+		bars[index]->progress_color = { 200, 0, 0, 255 };
+		bars[index]->secondary_progress_color = { 255, 50, 50, 255 };
 		break;
 	default:
-		bars[index].progress_color = { 100, 100, 100, 255 };
-		bars[index].secondary_progress_color = { 200, 200, 200, 255 };
+		bars[index]->progress_color = { 100, 100, 100, 255 };
+		bars[index]->secondary_progress_color = { 200, 200, 200, 255 };
 	}
 }
 
 void ProgressBar::AddBar(const size_t discrete_progress, const size_t discrete_capacity)
 {
-	bars.push_back(Bar());
-	bars.back().progress_rect.size.height = progress_back_rect.size.height;
-	bars.back().progress_rect.reference_rectangle = &back_rect;
-	bars.back().progress_back_rect_pointer = &progress_back_rect;
+	bars.push_back(new Bar());
+	bars.back()->progress_rect.size.height = progress_back_rect.size.height;
+	bars.back()->progress_rect.reference_rectangle = &back_rect;
+	bars.back()->progress_back_rect_pointer = &progress_back_rect;
 
-	bars.back().SetTargetWidth(discrete_progress, discrete_capacity, 0);
-	bars.back().progress_rect.size.width = bars.back().target_width;
+	bars.back()->SetTargetWidth(discrete_progress, discrete_capacity, 0);
+	bars.back()->progress_rect.size.width = bars.back()->target_width;
+
+	bars.back()->progress_rect.pos.x = (bars.back()->progress_rect.size.width / 2.0) - (progress_back_rect.size.width / 2.0);
+
 	SetDefaultBarColor(bars.size() - size_t(1));
 }
 void ProgressBar::AddBar(const double percent)
 {
-	bars.push_back(Bar());
-	bars.back().progress_rect.size.height = progress_back_rect.size.height;
-	bars.back().progress_rect.reference_rectangle = &back_rect;
-	bars.back().progress_back_rect_pointer = &progress_back_rect;
+	bars.push_back(new Bar());
+	bars.back()->progress_rect.size.height = progress_back_rect.size.height;
+	bars.back()->progress_rect.reference_rectangle = &back_rect;
+	bars.back()->progress_back_rect_pointer = &progress_back_rect;
 
-	bars.back().SetTargetWidth(percent, 0);
-	bars.back().progress_rect.size.width = bars.back().target_width;
+	bars.back()->SetTargetWidth(percent, 0);
+	bars.back()->progress_rect.size.width = bars.back()->target_width;
+
+	bars.back()->progress_rect.pos.x = (bars.back()->progress_rect.size.width / 2.0) - (progress_back_rect.size.width / 2.0);
+
 	SetDefaultBarColor(bars.size() - size_t(1));
 }
 
@@ -261,6 +338,122 @@ void Program::SetCurrentTextPortionTextBoxProgression(const double target_visabl
 	}
 }
 
+
+CoursePathPathData* Program::GetCurrentCoursePathPathData()
+{
+	const size_t cpps = course_path_path.size();
+
+	if (removing_progress_bar)
+	{
+		if (cpps > size_t(1))
+		{
+			return course_path_path[cpps - size_t(2)];
+		}
+		else
+		{
+			cout << "course_path_path.size() was 0 or 1 and removing_progress_bar was 1 :(. Sent by Program::GetCurrentCoursePathPathData()" << endl;
+			return nullptr;
+		}
+	}
+	else
+	{
+		if (cpps > size_t(0))
+		{
+			return course_path_path[cpps - size_t(1)];
+		}
+		else
+		{
+			cout << "course_path_path.size() was 0 :(. Sent by Program::GetCurrentCoursePathPathData()" << endl;
+			return nullptr;
+		}
+	}
+}
+CoursePath* Program::GetCurrentCoursePath()
+{
+	CoursePathPathData* const current_course_path_path_data = GetCurrentCoursePathPathData();
+
+	if (current_course_path_path_data)
+	{
+		return current_course_path_path_data->path_pointer;
+	}
+	else
+	{
+		cout << "current_course_path_path_data was nullptr :(. Sent by Program::GetCurrentCoursePath()" << endl;
+		return nullptr;
+	}
+}
+ProgressBar* Program::GetCurrentCourseProgressBar()
+{
+	CoursePathPathData* const current_course_path_path_data = GetCurrentCoursePathPathData();
+
+	if (current_course_path_path_data)
+	{
+		return &current_course_path_path_data->progress_bar;
+	}
+	else
+	{
+		cout << "current_course_path_path_data was nullptr :(. Sent by Program::GetCurrentCourseProgressBar()" << endl;
+		return nullptr;
+	}
+}
+TextBox* Program::GetCurrentCourseTextBox()
+{
+	CoursePathPathData* const current_course_path_path_data = GetCurrentCoursePathPathData();
+
+	if (current_course_path_path_data)
+	{
+		return &current_course_path_path_data->text_box;
+	}
+	else
+	{
+		cout << "current_course_path_path_data was nullptr :(. Sent by Program::GetCurrentCourseTextBar()" << endl;
+		return nullptr;
+	}
+}
+
+void Program::UpdateCoursePathTextBox()
+{
+	course_path_text_box.Clear();
+	course_path_text_box.AddCharPtr("Path: ");
+
+	size_t upper_bound;
+	if (removing_progress_bar)
+	{
+		upper_bound = course_path_path.size() - size_t(1);
+	}
+	else
+	{
+		upper_bound = course_path_path.size();
+	}
+
+	for (size_t i = 0; i < upper_bound; i++)
+	{
+		if (i != 0)
+		{
+			course_path_text_box.AddCharPtr(" -> ");
+		}
+
+		const char* current_path_name = course_path_path[i]->path_pointer->path_name;
+
+		//Accounting for current_path_name being undefined or nothing
+		if (current_path_name)
+		{
+			if (strlen(current_path_name) == 0)
+			{
+				current_path_name = "???";
+			}
+		}
+		else
+		{
+			current_path_name = "???";
+		}
+
+		course_path_text_box.AddCharPtr(current_path_name);
+	}
+
+	course_path_text_box.UpdateCharPos();
+}
+
 void Program::UpdateConfetti()
 {
 	for (size_t i = 0; i < confetti.size(); i++)
@@ -319,7 +512,7 @@ void Program::UpdateProgressBar(ProgressBar* const progress_bar)
 {
 	for (size_t i = 0; i < progress_bar->bars.size(); i++)
 	{
-		Bar* const current_bar = &progress_bar->bars[i];
+		Bar* const current_bar = progress_bar->bars[i];
 
 
 		const double diff = current_bar->target_width - current_bar->progress_rect.size.width;
@@ -366,7 +559,7 @@ void Program::DrawProgressBar(ProgressBar* const progress_bar, Camera* const cam
 	SDL_Color calculated_color;
 	for (size_t i = 0; i < progress_bar->bars.size(); i++)
 	{
-		Bar* const current_bar = &progress_bar->bars[i];
+		Bar* const current_bar = progress_bar->bars[i];
 
 		const double lighting_propotion = current_bar->lighting_level / 100.0;
 		const double inverse_lighting_proportion = (100.0 - current_bar->lighting_level) / 100.0;
@@ -380,16 +573,193 @@ void Program::DrawProgressBar(ProgressBar* const progress_bar, Camera* const cam
 	}
 }
 
+void Program::SetHeightsOfCoursePathPathProgressBars()
+{
+	const double temp_sum_h = (previous_portion_button.parent_rect.size.height + (4.0 * (double)(course_path_path.size() - size_t(1))));
+	const double temp_equal_h = temp_sum_h / (double)course_path_path.size();
+	const double temp_smol_h = ((temp_equal_h - 4.0) * (percent_progress_bar_animation_complete / 100.0)) + 4.0;
+	double temp_big_h = 0.0;
+	if (course_path_path.size() > size_t(1))
+	{
+		temp_big_h = (temp_sum_h - temp_smol_h) / (double)(course_path_path.size() - size_t(1));
+	}
+	
+	
+	double consistent_big_progress_rect_height = temp_big_h - 8.0;
+	if (consistent_big_progress_rect_height < 0.0)
+	{
+		consistent_big_progress_rect_height = 0.0;
+	}
+	double consistent_smol_progress_rect_height = temp_smol_h - 8.0;
+	if (consistent_smol_progress_rect_height < 0.0)
+	{
+		consistent_smol_progress_rect_height = 0.0;
+	}
+	
+
+	ProgressBar* temp_pb = nullptr;
+	TextBox* temp_tb = nullptr;
+	for (size_t i = 0; i < course_path_path.size(); i++)
+	{
+		double applicable_temp_h;
+		double applicable_consistent_progress_rect_height;
+		if (i == (course_path_path.size() - size_t(1)))
+		{
+			applicable_temp_h = temp_smol_h;
+			applicable_consistent_progress_rect_height = consistent_smol_progress_rect_height;
+		}
+		else
+		{
+			applicable_temp_h = temp_big_h;
+			applicable_consistent_progress_rect_height = consistent_big_progress_rect_height;
+		}
+
+
+		temp_pb = &course_path_path[i]->progress_bar;
+		temp_tb = &course_path_path[i]->text_box;
+
+		//course_path_path[i]->target_scaled_height = temp_h;
+		temp_pb->back_rect.base_size.height = applicable_temp_h;
+		temp_pb->back_rect.size.height = applicable_temp_h;
+
+		temp_pb->progress_back_rect.size.height = applicable_consistent_progress_rect_height;
+
+		for (size_t j = 0; j < temp_pb->bars.size(); j++)
+		{
+			temp_pb->bars[j]->progress_rect.size.height = applicable_consistent_progress_rect_height;
+		}
+
+		temp_pb->back_rect.pos.y = (e->blank_camera->rect.size.height / -2.0) + (applicable_temp_h / 2.0) + ((temp_big_h - 4.0) * (double)i);
+
+		temp_tb->parent_rect.pos.y = temp_pb->back_rect.pos.y;
+
+		if (applicable_consistent_progress_rect_height != 0.0)
+		{
+			course_path_path[i]->text_box_visable = 1;
+			temp_tb->parent_rect.size.height = applicable_consistent_progress_rect_height;
+			temp_tb->parent_rect.SetBaseWidthWithWidthScale(temp_tb->parent_rect.GetHeightScale());
+		}
+		else
+		{
+			course_path_path[i]->text_box_visable = 0;
+		}
+	}
+}
+
+void Program::UpdateCoursePathPathProgressBars()
+{
+	if (progress_bar_animation_direction)
+	{
+		if (percent_progress_bar_animation_complete != 100.0)
+		{
+			progress_bar_animation_counter += e->frame_factor_inverse;
+			const double x = (progress_bar_animation_counter / 90.0);
+
+			if (x >= 1.0)
+			{
+				progress_bar_animation_counter = 90.0;
+				percent_progress_bar_animation_complete = 100.0;
+			}
+			else
+			{
+				percent_progress_bar_animation_complete = (100.0 * (-pow(0.0002, x))) + 100.0;
+			}
+			SetHeightsOfCoursePathPathProgressBars();
+		}
+	}
+	else
+	{
+		if (percent_progress_bar_animation_complete != 0.0)
+		{
+			progress_bar_animation_counter += e->frame_factor_inverse;
+			const double x = (progress_bar_animation_counter / 90.0);
+
+			if (x >= 1.0)
+			{
+				delete course_path_path.back();
+				course_path_path.pop_back();
+
+				removing_progress_bar = 0;
+
+				progress_bar_animation_counter = 90.0;
+
+				progress_bar_animation_direction = 1;
+				percent_progress_bar_animation_complete = 100.0;
+			}
+			else
+			{
+				if (x < 0.5)
+				{
+					percent_progress_bar_animation_complete = (1.0 - (((pow(EASE_PARAMETER, (2.0 * x) - 1.0) / EASE_DIVISOR) - FIRST_Y_SHIFT) * Y_STRETCH_FACTOR)) * 100.0;
+				}
+				else
+				{
+					percent_progress_bar_animation_complete = (1.0 - ((-(pow(EASE_PARAMETER, 1.0 - (2.0 * x)) / EASE_DIVISOR) + SECOND_Y_SHIFT) * Y_STRETCH_FACTOR)) * 100.0;
+				}
+			}
+
+			SetHeightsOfCoursePathPathProgressBars();
+		}
+	}
+
+	for (size_t i = 0; i < course_path_path.size(); i++)
+	{
+		UpdateProgressBar(&course_path_path[i]->progress_bar);
+	}
+}
+void Program::DrawCoursePathPathProgressBars()
+{
+	for (size_t i = 0; i < course_path_path.size(); i++)
+	{
+		DrawProgressBar(&course_path_path[i]->progress_bar, e->blank_camera);
+
+		const Point2D temp_blank_mouse = e->GetMousePos(e->blank_camera);
+		Rectangle temp_overlap_rect = course_path_path[i]->progress_bar.progress_back_rect;
+		temp_overlap_rect.size.height += 4.0;
+		if (i == 0)
+		{
+			temp_overlap_rect.size.height += 2.0;
+			temp_overlap_rect.pos.y -= 1.0;
+		}
+		if (i == (course_path_path.size() - size_t(1)))
+		{
+			temp_overlap_rect.size.height += 2.0;
+			temp_overlap_rect.pos.y += 1.0;
+		}
+
+		bool condition;
+		if (i == 0)
+		{
+			condition = OverlapPoint2DWithRectangleEx(&temp_blank_mouse, &temp_overlap_rect, 0, 1, 0, 1);
+		}
+		else
+		{
+			condition = OverlapPoint2DWithRectangleEx(&temp_blank_mouse, &temp_overlap_rect, 0, 0, 0, 1);
+		}
+
+		if (condition)
+		{
+			if (course_path_path[i]->text_box_visable)
+			{
+				e->DrawTextBox(&course_path_path[i]->text_box, e->blank_camera);
+			}
+		}
+	}
+}
+
 bool Program::CheckForLinkClicksAndGenerateSavedLinkRects(const double rate, const Size2D stretch_multiplier, const int text_sound_channel_num, const int link_click_channel_num)
 {
 	bool found_overlapping_link = 0;
+	bool part_of_overlapping_link = 0;
 	bool found_clicked_link = 0;
 
 	saved_link_rects.clear();
 
-	const vector<TextLink>* current_links = &course_paths[current_course_path_index]->GetCurrentPortion()->links;
+	const vector<TextLink>* current_links = &GetCurrentCoursePath()->GetCurrentPortion()->links;
 	for (size_t i = 0; i < current_links->size(); i++)
 	{
+		part_of_overlapping_link = 0;
+
 		if (current_visable_char_progression >= (double)current_links->at(i).begin_char)
 		{
 			const size_t temp_begin_index = current_links->at(i).begin_char;
@@ -416,13 +786,26 @@ bool Program::CheckForLinkClicksAndGenerateSavedLinkRects(const double rate, con
 
 				saved_link_rects.push_back({ temp_hitboxes->at(j), 0, 0 });
 
+				if (part_of_overlapping_link)
+				{
+					saved_link_rects.back().hovering = 1;
+					saved_link_rects.back().pressed = e->input.mouse_left.pressed;
+				}
+
 				if (!found_overlapping_link)
 				{
 					const Point2D mouse_pos = e->GetMousePos(e->blank_camera);
 					if (OverlapPoint2DWithRectStructOne(&mouse_pos, &temp_hitboxes->at(j), 1))
 					{
-						saved_link_rects.back().hovering = 1;
-						saved_link_rects.back().pressed = e->input.mouse_left.pressed;
+						part_of_overlapping_link = 1;
+
+						for (size_t k = 0; k <= j; k++)
+						{
+							size_t temp_index = saved_link_rects.size() - size_t(1) - k;
+
+							saved_link_rects[temp_index].hovering = 1;
+							saved_link_rects[temp_index].pressed = e->input.mouse_left.pressed;
+						}
 
 						found_overlapping_link = 1;
 
@@ -434,9 +817,43 @@ bool Program::CheckForLinkClicksAndGenerateSavedLinkRects(const double rate, con
 						{
 							Mix_PlayChannel(link_click_channel_num, e->click_release_sound, 0);
 
-							SetCurrentTextPortionIndex(current_links->at(i).linked_portion_index);
+							SetCurrentPathAndPortionIndexes(current_links->at(i).linked_path_index, current_links->at(i).linked_portion_index, 0, 1);
 							AdvanceCurrentTextPortionTextBox(rate, stretch_multiplier, text_sound_channel_num);
 							found_clicked_link = 1;
+						}
+						else
+						{
+							if (current_link_type != current_links->at(i).link_type)
+							{
+								switch (current_links->at(i).link_type)
+								{
+								case 1:
+									link_tool_tip.SetText("Who?");
+									current_link_type = 1;
+									break;
+								case 2:
+									link_tool_tip.SetText("What?");
+									current_link_type = 1;
+									break;
+								case 3:
+									link_tool_tip.SetText("When?");
+									current_link_type = 1;
+									break;
+								case 4:
+									link_tool_tip.SetText("Why?");
+									current_link_type = 1;
+									break;
+								case 5:
+									link_tool_tip.SetText("How?");
+									current_link_type = 1;
+									break;
+								}
+							}
+
+							if (current_link_type != 0)
+							{
+								update_and_draw_tool_tip_this_frame = 1;
+							}
 						}
 					}
 				}
@@ -449,7 +866,7 @@ bool Program::CheckForLinkClicksAndGenerateSavedLinkRects(const double rate, con
 void Program::AdvanceCurrentTextPortionTextBox(const double rate, const Size2D stretch_multiplier, const int channel_num)
 {
 	double remaining_wait = rate * e->frame_factor_inverse;
-	TextPortion* const current_text_portion = course_paths[current_course_path_index]->GetCurrentPortion();
+	TextPortion* const current_text_portion = GetCurrentCoursePath()->GetCurrentPortion();
 	
 	char sound_effect_id = 0;
 
@@ -499,9 +916,9 @@ void Program::AdvanceCurrentTextPortionTextBox(const double rate, const Size2D s
 	}
 
 	//Update the appropriate saved_visable_char_progression value
-	if (course_paths[current_course_path_index]->current_portion_index >= course_paths[current_course_path_index]->progress)
+	if (GetCurrentCoursePath()->current_portion_index >= GetCurrentCoursePath()->progress)
 	{
-		course_paths[current_course_path_index]->saved_visable_char_progression = current_visable_char_progression;
+		GetCurrentCoursePath()->saved_visable_char_progression = current_visable_char_progression;
 	}
 
 
@@ -552,6 +969,59 @@ void Program::ReduceStretchInCurrentTextPortionTextBox(const double rate)
 				break;
 			}
 		}
+	}
+}
+
+void Program::AddLesson(const char* lesson_name, const unsigned int param_hour_estimate, const unsigned int param_minute_estimate, const size_t param_main_path_index)
+{
+	const size_t lessons_size = lessons.size();
+
+	lessons.push_back(new Lesson());
+	SimpleTextButton* const button = &lessons.back()->button;
+	ProgressBar* const p_bar = &lessons.back()->progress_bar;
+
+
+	button->InitWithBaseSize({ 4.0, 4.0 }, lesson_name, &e->default_font, { 100.0, 24.0 }, 4.0, 4.0, { 0.0, 0.0 }, 0);
+	button->parent_rect.pos = { -540.0, ((double)lessons_size * -160.0) + 400.0 };
+	button->sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+
+	p_bar->InitBasic({ button->parent_rect.pos.x, button->parent_rect.pos.y - (button->parent_rect.size.height / 2.0) - 12.0 }, { button->parent_rect.size.width, 16.0 }, 4.0, 0.0);
+	p_bar->bars[0]->bar_advance_rate = 100.0;
+
+	lessons.back()->main_path_index = param_main_path_index;
+	lessons.back()->hour_estimate = param_hour_estimate;
+	lessons.back()->minute_estimate = param_minute_estimate;
+}
+void Program::UpdateLessons()
+{
+	const size_t lessons_size = lessons.size();
+
+	for (size_t i = 0; i < lessons_size; i++)
+	{
+		lessons[i]->button.parent_rect.pos.y = ((double)i * -160.0) + 400.0 + lessons_scroll_bar.scroll_value;
+		lessons[i]->progress_bar.back_rect.pos.y = lessons[i]->button.parent_rect.pos.y - (lessons[i]->button.parent_rect.size.height / 2.0) - 12.0;
+
+		e->UpdateSimpleTextButton(&lessons[i]->button, e->blank_camera, &main_layer, 1, {});
+		if (lessons[i]->button.press_data.first_frame_released)
+		{
+			if (lessons[i]->main_path_index < course_paths.size())
+			{
+				SetCurrentPathAndPortionIndexes(lessons[i]->main_path_index, course_paths[lessons[i]->main_path_index]->current_portion_index, 1, 1);
+			}
+			else
+			{
+				cout << "lessons[i]->main_path_index OUT OF RANGE!!!11!1 Set by UpdateLessons()." << endl;
+			}
+			SetScene(4, 0);
+		}
+	}
+}
+void Program::DrawLessons()
+{
+	for (size_t i = 0; i < lessons.size(); i++)
+	{
+		e->DrawSimpleTextButton(&lessons[i]->button, e->blank_camera);
+		DrawProgressBar(&lessons[i]->progress_bar, e->blank_camera);
 	}
 }
 
@@ -812,7 +1282,7 @@ void Program::DrawCellSet(CellSet* const param_cell_set, Camera* const camera)
 	}
 }
 
-void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, size_t param_portion_index)
+void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, size_t param_portion_index, const bool reset_course_path_path, const bool move_bars_instantly)
 {
 	bool changed_path_index = 0;
 
@@ -820,14 +1290,130 @@ void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, siz
 	{
 		if ((param_path_index >= 0) && (param_path_index < course_paths.size()))
 		{
-			if (current_course_path_index != param_path_index)
+			bool condition;
+			if (course_path_path.size() > 0)
 			{
-				current_course_path_index = param_path_index;
+				condition = GetCurrentCoursePath() != course_paths[param_path_index];
+			}
+			else
+			{
+				condition = 1;
+			}
+
+			if (condition)
+			{
 				changed_path_index = 1;
 
-				course_path_text_box.Clear();
-				course_path_text_box.AddCharPtr(course_paths[current_course_path_index]->full_path_text);
-				course_path_text_box.UpdateCharPos();
+				if (reset_course_path_path)
+				{
+					course_path_path.clear();
+				}
+
+				bool condition_2 = 0;
+				if (course_path_path.size() >= 2)
+				{
+					CoursePath* const back_thing = course_path_path[course_path_path.size() - size_t(2)]->path_pointer;
+
+					if (back_thing == course_paths[param_path_index])
+					{
+						if (removing_progress_bar)
+						{
+							delete course_path_path.back();
+							course_path_path.pop_back();
+
+							removing_progress_bar = 0;
+						}
+
+						removing_progress_bar = 1;
+						progress_bar_animation_counter = 0.0;
+						percent_progress_bar_animation_complete = 100.0;
+						progress_bar_animation_direction = 0;
+					}
+					else
+					{
+						condition_2 = 1;
+					}
+				}
+				else
+				{
+					condition_2 = 1;
+				}
+
+				if (condition_2)
+				{
+					if (removing_progress_bar)
+					{
+						delete course_path_path.back();
+						course_path_path.pop_back();
+
+						removing_progress_bar = 0;
+					}
+
+
+					course_path_path.push_back(new CoursePathPathData);
+					course_path_path.back()->path_pointer = course_paths[param_path_index];
+
+					Size2D temp_size = { next_portion_button.parent_rect.GetUniEdge({ 2 }) - previous_portion_button.parent_rect.GetUniEdge({ 0 }) + 8.0, (previous_portion_button.parent_rect.size.height + (4.0 * (double)(course_path_path.size() - size_t(1)))) / (double)course_path_path.size()};
+
+					course_path_path.back()->progress_bar.InitBasic(
+						{ 0.0, 0.0 },
+						temp_size,
+						4.0,
+						0.0
+					);
+
+					//Setting new progress bar back bar color
+					switch(course_path_path.size())
+					{
+					case 1:
+						course_path_path.back()->progress_bar.bars.back()->progress_color = { 0, 180, 0, 255 };
+						course_path_path.back()->progress_bar.bars.back()->secondary_progress_color = { 0, 230, 0, 255 };
+						break;
+					case 2:
+						course_path_path.back()->progress_bar.bars.back()->progress_color = { 0, 140, 156, 255 };
+						course_path_path.back()->progress_bar.bars.back()->secondary_progress_color = { 0, 167, 187, 255 };
+						break;
+					}
+
+					course_path_path.back()->progress_bar.AddBar(0.0);
+
+					//Setting new progress bar front bar color
+					switch (course_path_path.size())
+					{
+					case 1:
+						course_path_path.back()->progress_bar.bars.back()->progress_color = { 0, 220, 0, 255 };
+						course_path_path.back()->progress_bar.bars.back()->secondary_progress_color = { 20, 255, 20, 255 };
+						break;
+					case 2:
+						course_path_path.back()->progress_bar.bars.back()->progress_color = { 0, 180, 200, 255 };
+						course_path_path.back()->progress_bar.bars.back()->secondary_progress_color = { 0, 217, 240, 255 };
+						break;
+					}
+
+					course_path_path.back()->text_box.InitLeast(&e->default_font);
+					course_path_path.back()->text_box.parent_rect.size.width = temp_size.width - 8.0;
+					course_path_path.back()->text_box.parent_rect.size.height = previous_portion_button.parent_rect.size.height - 8.0;
+					course_path_path.back()->text_box.parent_rect.SetBaseSizeWithSizeScale({ 4.0, 4.0 });
+					course_path_path.back()->text_box.horizontal_text_centering = { 1 };
+					course_path_path.back()->text_box.vertical_text_centering = { 1 };
+
+					if (reset_course_path_path)
+					{
+						progress_bar_animation_direction = 1;
+						progress_bar_animation_counter = 90.0;
+						percent_progress_bar_animation_complete = 100.0;
+
+						SetHeightsOfCoursePathPathProgressBars();
+					}
+					else
+					{
+						progress_bar_animation_direction = 1;
+						progress_bar_animation_counter = 0.0;
+						percent_progress_bar_animation_complete = 0.0;
+					}
+				}
+
+				UpdateCoursePathTextBox();
 			}
 		}
 		else
@@ -837,7 +1423,7 @@ void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, siz
 		}
 	}
 
-	const size_t course_text_size = course_paths[current_course_path_index]->portions.size();
+	const size_t course_text_size = GetCurrentCoursePath()->portions.size();
 	if (course_text_size > 0)
 	{
 		bool changed_portion_index = 0;
@@ -847,37 +1433,41 @@ void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, siz
 
 
 		//Set current_portion_index, changed_portion_index, and (progress, changed_progress, and finished_portion if finished_portion) appropriately
-		size_t* const current_portion_index = &course_paths[current_course_path_index]->current_portion_index;
-		size_t* const progress = &course_paths[current_course_path_index]->progress;
+		size_t* const current_portion_index = &GetCurrentCoursePath()->current_portion_index;
+		size_t* const progress = &GetCurrentCoursePath()->progress;
 
-		if (param_portion_index == course_text_size)
+		if (param_portion_index != numeric_limits<size_t>::max())
 		{
-			if (*progress != course_text_size)
+			if (param_portion_index == course_text_size)
 			{
-				*progress = course_text_size;
-				changed_progress = 1;
+				if (*progress != course_text_size)
+				{
+					*progress = course_text_size;
+					changed_progress = 1;
+				}
+
+				param_portion_index = course_text_size - size_t(1);
+				finished_portion = 1;
+			}
+			if (param_portion_index > course_text_size)
+			{
+				if (*progress != course_text_size)
+				{
+					*progress = course_text_size;
+					changed_progress = 1;
+				}
+
+				param_portion_index = course_text_size - size_t(1);
+				cout << "param_text_portion_index TOO HIGH. Set current_text_portion_index to last course_text index instead. Sent from SetCurrentTextPortionIndex(...)" << endl;
 			}
 
-			param_portion_index = course_text_size - size_t(1);
-			finished_portion = 1;
-		}
-		if (param_portion_index > course_text_size)
-		{
-			if (*progress != course_text_size)
+			if (*current_portion_index != param_portion_index)
 			{
-				*progress = course_text_size;
-				changed_progress = 1;
+				*current_portion_index = param_portion_index;
+				changed_portion_index = 1;
 			}
-
-			param_portion_index = course_text_size - size_t(1);
-			cout << "param_text_portion_index TOO HIGH. Set current_text_portion_index to last course_text index instead. Sent from SetCurrentTextPortionIndex(...)" << endl;
 		}
 
-		if (*current_portion_index != param_portion_index)
-		{
-			*current_portion_index = param_portion_index;
-			changed_portion_index = 1;
-		}
 		changed_portion_index = changed_portion_index || changed_path_index;
 		changed_progress = changed_progress || changed_path_index;
 
@@ -888,7 +1478,7 @@ void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, siz
 		//Add all the chars from current_portion to current_text_portion_text_box (blue if part of a link).
 		if (changed_portion_index)
 		{
-			TextPortion* const current_portion = course_paths[current_course_path_index]->GetCurrentPortion();
+			TextPortion* const current_portion = GetCurrentCoursePath()->GetCurrentPortion();
 
 			current_text_portion_text_box.Clear();
 			for (size_t i = 0; i < current_portion->text.size(); i++)
@@ -923,7 +1513,7 @@ void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, siz
 				{
 					if (*current_portion_index == *progress)
 					{
-						current_visable_char_progression = course_paths[current_course_path_index]->saved_visable_char_progression - 30.0;
+						current_visable_char_progression = GetCurrentCoursePath()->saved_visable_char_progression - 30.0;
 						if (current_visable_char_progression <= -1.0)
 						{
 							current_visable_char_progression = -1.0;
@@ -979,13 +1569,27 @@ void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, siz
 		//Set front progress bar length
 		if (finished_portion)
 		{
-			path_progress_bar.SetTargetWidthWithIndex(100.0, 1, 1);
+			if (move_bars_instantly)
+			{
+				GetCurrentCourseProgressBar()->SetActualWidthWithIndex(100.0, 1, 1);
+			}
+			else
+			{
+				GetCurrentCourseProgressBar()->SetTargetWidthWithIndex(100.0, 1, 1);
+			}
 		}
 		else
 		{
 			if (changed_portion_index)
 			{
-				path_progress_bar.SetTargetWidthWithIndex(course_paths[current_course_path_index]->current_portion_index, course_paths[current_course_path_index]->portions.size(), 1, 1);
+				if (move_bars_instantly)
+				{
+					GetCurrentCourseProgressBar()->SetActualWidthWithIndex(GetCurrentCoursePath()->current_portion_index, GetCurrentCoursePath()->portions.size(), 1, 1);
+				}
+				else
+				{
+					GetCurrentCourseProgressBar()->SetTargetWidthWithIndex(GetCurrentCoursePath()->current_portion_index, GetCurrentCoursePath()->portions.size(), 1, 1);
+				}
 			}
 		}
 
@@ -995,34 +1599,35 @@ void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, siz
 
 		if (changed_progress)
 		{
-			const size_t path_progress = course_paths[current_course_path_index]->progress;
+			const size_t path_progress = GetCurrentCoursePath()->progress;
 
 			//Set back progress bar length
-			path_progress_bar.SetTargetWidthWithIndex(path_progress, course_paths[current_course_path_index]->portions.size(), 1, 0);
+			if (move_bars_instantly)
+			{
+				GetCurrentCourseProgressBar()->SetActualWidthWithIndex(path_progress, GetCurrentCoursePath()->portions.size(), 1, 0);
+			}
+			else
+			{
+				GetCurrentCourseProgressBar()->SetTargetWidthWithIndex(path_progress, GetCurrentCoursePath()->portions.size(), 1, 0);
+			}
 
 			//Set progress_bar_text_box.chars
-			progress_bar_text_box.Clear();
-			progress_bar_text_box.AddCharPtr(to_string(path_progress).c_str());
-			progress_bar_text_box.AddChar('/');
-			progress_bar_text_box.AddCharPtr(to_string(course_text_size).c_str());
-			progress_bar_text_box.AddCharPtr(" completed");
-			progress_bar_text_box.UpdateCharPos();
+			GetCurrentCourseTextBox()->Clear();
+			GetCurrentCourseTextBox()->AddCharPtr(to_string(path_progress).c_str());
+			GetCurrentCourseTextBox()->AddChar('/');
+			GetCurrentCourseTextBox()->AddCharPtr(to_string(course_text_size).c_str());
+			GetCurrentCourseTextBox()->AddCharPtr(" completed");
+			GetCurrentCourseTextBox()->UpdateCharPos();
 		}
 	}
 	else
 	{
-		//Set progress bar length
-		path_progress_bar.SetTargetWidthWithIndex(0.0, 1, 0);
-		path_progress_bar.SetTargetWidthWithIndex(0.0, 1, 1);
-
-
-
 		cout << "course_text_size == 0, so function quit. Sent from SetCurrentTextPortionIndex(...)" << endl;
 	}
 }
-void Program::SetCurrentTextPortionIndex(size_t param_portion_index)
+void Program::SetCurrentTextPortionIndex(size_t param_portion_index, const bool reset_course_path_path, const bool move_bar_instantly)
 {
-	SetCurrentPathAndPortionIndexes(numeric_limits<size_t>::max(), param_portion_index);
+	SetCurrentPathAndPortionIndexes(numeric_limits<size_t>::max(), param_portion_index, reset_course_path_path, move_bar_instantly);
 }
 
 void Program::Run()
@@ -1236,28 +1841,43 @@ void Program::PostDrawRunScene3()
 
 void Program::SetScene4()
 {
-	SetCurrentPathAndPortionIndexes(0, 0);
+	previous_portion_button.press_data.Reset();
+	next_portion_button.press_data.Reset();
+	previous_return_portion_button.press_data.Reset();
+	next_return_portion_button.press_data.Reset();
+	finish_portion_button.press_data.Reset();
+
 	complete_lesson_cutscene_timer = -1.0;
 }
 void Program::EndScene4()
 {
+	update_and_draw_tool_tip_this_frame = 0;
+
 	confetti.clear();
 }
 void Program::RunScene4()
 {
 	//Update the accessibility of the previous, next, return, and finish portion buttons
-	const bool at_last_portion = (course_paths[current_course_path_index]->current_portion_index + size_t(1)) >= course_paths[current_course_path_index]->portions.size();
+	const bool at_first_portion = GetCurrentCoursePath()->current_portion_index == size_t(0);
+	const bool at_last_portion = (GetCurrentCoursePath()->current_portion_index + size_t(1)) >= GetCurrentCoursePath()->portions.size();
 	const bool all_portion_chars_visable = current_visable_char_progression >= (double)(current_text_portion_text_box.chars.size() - size_t(1));
+	const bool has_return_path_index = (GetCurrentCoursePath()->return_path_index != numeric_limits<size_t>::max());
 
 	const bool next_portion_button_accessibility = all_portion_chars_visable && !at_last_portion;
 	next_portion_button.press_data.pressable = next_portion_button_accessibility;
 	next_portion_button.press_data.hoverable = next_portion_button_accessibility;
-	const bool previous_portion_button_accessibility = (course_paths[current_course_path_index]->current_portion_index != size_t(0));
+	const bool previous_portion_button_accessibility = !at_first_portion;
 	previous_portion_button.press_data.pressable = previous_portion_button_accessibility;
 	previous_portion_button.press_data.hoverable = previous_portion_button_accessibility;
-	const bool finish_portion_button_accessibility = all_portion_chars_visable && at_last_portion;
+	const bool finish_portion_button_accessibility = all_portion_chars_visable && at_last_portion && !has_return_path_index;
 	finish_portion_button.press_data.pressable = finish_portion_button_accessibility;
 	finish_portion_button.press_data.hoverable = finish_portion_button_accessibility;
+	const bool previous_return_button_accessibility = at_first_portion && has_return_path_index;
+	previous_return_portion_button.press_data.pressable = previous_return_button_accessibility;
+	previous_return_portion_button.press_data.hoverable = previous_return_button_accessibility;
+	const bool next_return_button_accessibility = all_portion_chars_visable && at_last_portion && has_return_path_index;
+	next_return_portion_button.press_data.pressable = next_return_button_accessibility;
+	next_return_portion_button.press_data.hoverable = next_return_button_accessibility;
 
 
 	e->UpdateSimpleTextButton(&next_portion_button, e->blank_camera, &main_layer, 0, { &main_layer });
@@ -1271,46 +1891,37 @@ void Program::RunScene4()
 	{
 		if (next_portion_button.press_data.first_frame_released || e->input.j.first_frame_pressed)
 		{
-			SetCurrentTextPortionIndex(course_paths[current_course_path_index]->current_portion_index + size_t(1));
+			SetCurrentTextPortionIndex(GetCurrentCoursePath()->current_portion_index + size_t(1), 0, 0);
 		}
 		if (previous_portion_button.press_data.first_frame_released)
 		{
-			SetCurrentTextPortionIndex(course_paths[current_course_path_index]->current_portion_index - size_t(1));
+			SetCurrentTextPortionIndex(GetCurrentCoursePath()->current_portion_index - size_t(1), 0, 0);
 		}
 
 
 		if (finish_portion_button.press_data.first_frame_released)
 		{
-			SetCurrentTextPortionIndex(course_paths[current_course_path_index]->portions.size());
+			SetCurrentTextPortionIndex(GetCurrentCoursePath()->portions.size(), 0, 0);
 			complete_lesson_cutscene_timer = 0.0;
 
 			Mix_PlayChannel(2, confetti_sound, 0);
 			for (size_t i = 0; i < size_t(50); i++)
 			{
-				confetti.push_back({ (unsigned char)e->GetRandInt(0, 5), {0.0, path_progress_bar.back_rect.GetUniEdge({3})}, {e->GetRandDouble(-8.0, 8.0), e->GetRandDouble(5.0, 15.0)}, 0.0 });
+				confetti.push_back({ (unsigned char)e->GetRandInt(0, 5), {0.0, finish_portion_button.parent_rect.GetUniEdge({3})}, {e->GetRandDouble(-8.0, 8.0), e->GetRandDouble(5.0, 15.0)}, 0.0});
 			}
+		}
+
+		
+		if (previous_return_portion_button.press_data.first_frame_released || next_return_portion_button.press_data.first_frame_released)
+		{
+			SetCurrentTextPortionIndex(GetCurrentCoursePath()->portions.size(), 0, 0);
+			SetCurrentPathAndPortionIndexes(GetCurrentCoursePath()->return_path_index, numeric_limits<size_t>::max(), 0, 1);
 		}
 
 
 
 		AdvanceCurrentTextPortionTextBox(0.64, { 0.66667, 1.5 }, 1);
 		CheckForLinkClicksAndGenerateSavedLinkRects(0.8, { 0.66667, 1.5 }, 1, 0);
-
-
-		//Test code for cell_set
-		if (e->input.h.first_frame_pressed)
-		{
-			if (test_cset.set[0]->state)
-			{
-				Mix_PlayChannel(2, e->click_release_sound, 0);
-				test_cset.Click(0, 0);
-			}
-			else
-			{
-				Mix_PlayChannel(2, e->click_press_sound, 0);
-				test_cset.Click(0, 1);
-			}
-		}
 	}
 	if (complete_lesson_cutscene_timer != -1.0)
 	{
@@ -1329,45 +1940,16 @@ void Program::RunScene4()
 
 	//Update visual-related member variables
 	ReduceStretchInCurrentTextPortionTextBox(0.2);
-	UpdateCellSet(&test_cset);
 
-	UpdateProgressBar(&path_progress_bar);
+	UpdateCoursePathPathProgressBars();
 
-	/*
-	//Move progress bar closer to target width
-	if (course_path_progress_bar.size.width != course_path_progress_bar_target_width)
+	if (update_and_draw_tool_tip_this_frame)
 	{
-		if ((course_path_progress_bar.size.width >= (course_path_progress_bar_target_width - 0.025)) && (course_path_progress_bar.size.width <= (course_path_progress_bar_target_width + 0.025)))
-		{
-			proportion_progress_bar_moved_reverse = 0.0;
-
-			course_path_progress_bar.size.width = course_path_progress_bar_target_width;
-		}
-		else
-		{
-			//Set progression percent of progress bar
-			if (course_paths[current_course_path_index]->portions.size() != 0)
-			{
-				proportion_progress_bar_moved_reverse = abs(course_path_progress_bar_target_width - course_path_progress_bar.size.width) / (course_path_progress_bar_back_middle.size.width / (double)course_paths[current_course_path_index]->portions.size());
-				if (proportion_progress_bar_moved_reverse > 1.0)
-				{
-					proportion_progress_bar_moved_reverse = 1.0;
-				}
-			}
-			else
-			{
-				cout << "Current path has NO PORTIONS (path.size() == 0). Sent from RunScene4()" << endl;
-			}
-			
-			//Set progress bar width
-			course_path_progress_bar.size.width += (course_path_progress_bar_target_width - course_path_progress_bar.size.width) * (1.0 - pow(0.8, e->frame_factor_inverse));
-		}
+		e->UpdateToolTip(&link_tool_tip, e->blank_camera);
 	}
-	*/
 }
 void Program::DrawScene4()
 {
-	DrawCellSet(&test_cset, e->blank_camera);
 	e->DrawTextBox(&current_text_portion_text_box, e->blank_camera);
 
 	for (size_t i = 0; i < saved_link_rects.size(); i++)
@@ -1407,31 +1989,69 @@ void Program::DrawScene4()
 		e->DrawTextBox(&course_path_text_box, e->blank_camera);
 	}
 
-	DrawProgressBar(&path_progress_bar, e->blank_camera);
+	DrawCoursePathPathProgressBars();
 	const Point2D mouse_blank = e->GetMousePos(e->blank_camera);
-	if (OverlapPoint2DWithRectangle(&mouse_blank, &path_progress_bar.back_rect, 1))
-	{
-		e->DrawTextBox(&progress_bar_text_box, e->blank_camera);
-	}
+	//if (OverlapPoint2DWithRectangle(&mouse_blank, &path_progress_bar.back_rect, 1))
+	//{
+	//	e->DrawTextBox(&progress_bar_text_box, e->blank_camera);
+	//}
 
 
 	//Draw the previous, next, return, and finish buttons
-	const bool at_last_portion = (course_paths[current_course_path_index]->current_portion_index + size_t(1)) >= course_paths[current_course_path_index]->portions.size();
-	
-	if (!at_last_portion)
+	const bool at_first_portion = GetCurrentCoursePath()->current_portion_index == size_t(0);
+	const bool at_last_portion = (GetCurrentCoursePath()->current_portion_index + size_t(1)) >= GetCurrentCoursePath()->portions.size();
+	const bool has_return_path_index = (GetCurrentCoursePath()->return_path_index != numeric_limits<size_t>::max());
+
+
+
+	if (has_return_path_index)
 	{
-		e->DrawSimpleTextButton(&next_portion_button, e->blank_camera);
+		if (at_last_portion)
+		{
+			e->DrawSimpleTextButton(&next_return_portion_button, e->blank_camera);
+		}
+		else
+		{
+			e->DrawSimpleTextButton(&next_portion_button, e->blank_camera);
+		}
+	}
+	else
+	{
+		if (at_last_portion)
+		{
+			e->DrawSimpleTextButton(&finish_portion_button, e->blank_camera);
+		}
+		else
+		{
+			e->DrawSimpleTextButton(&next_portion_button, e->blank_camera);
+		}
 	}
 
-	e->DrawSimpleTextButton(&previous_portion_button, e->blank_camera);
-
-	if (at_last_portion)
+	if (at_first_portion)
 	{
-		e->DrawSimpleTextButton(&finish_portion_button, e->blank_camera);
+		if (has_return_path_index)
+		{
+			e->DrawSimpleTextButton(&previous_return_portion_button, e->blank_camera);
+		}
+		else
+		{
+			e->DrawSimpleTextButton(&previous_portion_button, e->blank_camera);
+		}
+	}
+	else
+	{
+		e->DrawSimpleTextButton(&previous_portion_button, e->blank_camera);
 	}
 
 	//Draw Confetti
 	DrawConfetti(e->blank_camera);
+
+	if (update_and_draw_tool_tip_this_frame)
+	{
+		e->DrawToolTip(&link_tool_tip, e->blank_camera);
+
+		update_and_draw_tool_tip_this_frame = 0;
+	}
 }
 void Program::PostDrawRunScene4()
 {
@@ -1440,7 +2060,21 @@ void Program::PostDrawRunScene4()
 
 void Program::SetScene5()
 {
+	for (size_t i = 0; i < lessons.size(); i++)
+	{
+		lessons[i]->button.press_data.Reset();
 
+		if (lessons[i]->main_path_index < course_paths.size())
+		{
+			lessons[i]->progress_bar.SetActualWidth(course_paths[lessons[i]->main_path_index]->progress, course_paths[lessons[i]->main_path_index]->portions.size(), 0);
+		}
+		else
+		{
+			lessons[i]->progress_bar.SetActualWidth(200.0, 0);
+
+			cout << "lessons[i]->main_path_index out of range bozo!!@!!1! Sent from SetScene5()" << endl;
+		}
+	}
 }
 void Program::EndScene5()
 {
@@ -1448,11 +2082,13 @@ void Program::EndScene5()
 }
 void Program::RunScene5()
 {
-
+	e->UpdateScrollBar(&lessons_scroll_bar, e->blank_camera, &main_layer, 0, { &main_layer });
+	UpdateLessons();
 }
 void Program::DrawScene5()
 {
-
+	e->DrawScrollBar(&lessons_scroll_bar, e->blank_camera);
+	DrawLessons();
 }
 void Program::PostDrawRunScene5()
 {
@@ -1547,11 +2183,6 @@ Program::Program() : e(nullptr)
 {
 	e = new Engine();
 
-	e->p = this;
-	e->RunPointer = &Program::Run;
-	e->DrawPointer = &Program::Draw;
-	e->PostDrawRunPointer = &Program::PostDrawRun;
-
 	main_camera = e->NewCamera("Main");
 
 	const double blank_camera_right_edge = e->blank_camera->rect.GetUniEdge({ 0 });
@@ -1559,7 +2190,7 @@ Program::Program() : e(nullptr)
 	const double blank_camera_left_edge = e->blank_camera->rect.GetUniEdge({ 2 });
 	const double blank_camera_top_edge = e->blank_camera->rect.GetUniEdge({ 3 });
 
-
+	
 
 
 
@@ -1585,31 +2216,35 @@ Program::Program() : e(nullptr)
 
 
 	//Initialize the next, previous, return, and finish buttons
-	next_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Next", &e->default_font, { 40.0, 13.0 }, 4.0, 4.0, { 0.0, 0.0 }, 0);
+	Size2D course_button_size = { 50.0, 13.0 };
+
+	next_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Next", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
 	next_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_right_edge, { 0 });
 	next_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
 	next_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
 
-	previous_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Prev", &e->default_font, { 40.0, 13.0 }, 4.0, 4.0, { 0.0, 0.0 }, 0);
+	previous_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Prev", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
 	previous_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_left_edge, { 2 });
 	previous_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
 	previous_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
 
-	previous_return_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Return", &e->default_font, { 40.0, 13.0 }, 4.0, 4.0, { 0.0, 0.0 }, 0);
+	previous_return_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Return", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
 	previous_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_left_edge, { 2 });
 	previous_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
 	previous_return_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
 	previous_return_portion_button.press_data.hoverable = 0;
 	previous_return_portion_button.press_data.pressable = 0;
 
-	next_return_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Return", &e->default_font, { 40.0, 13.0 }, 4.0, 4.0, { 0.0, 0.0 }, 0);
+	//Maybe call "done"?
+
+	next_return_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Return", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
 	next_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_right_edge, { 0 });
 	next_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
 	next_return_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
 	next_return_portion_button.press_data.hoverable = 0;
 	next_return_portion_button.press_data.pressable = 0;
 
-	finish_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Finish", &e->default_font, { 40.0, 13.0 }, 4.0, 4.0, { 0.0, 0.0 }, 0);
+	finish_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Finish", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
 	finish_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_right_edge, { 0 });
 	finish_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
 	finish_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
@@ -1618,41 +2253,12 @@ Program::Program() : e(nullptr)
 
 
 
-	//Initialize progress bar rectangles
-
-	Size2D temp_size = { next_portion_button.parent_rect.GetUniEdge({ 2 }) - previous_portion_button.parent_rect.GetUniEdge({ 0 }) + 8.0, previous_portion_button.parent_rect.size.height };
-
-	path_progress_bar.InitBasic(
-		{ 0.0, e->blank_camera->rect.GetUniEdge({ 1 }) + (temp_size.height / 2.0) },
-		temp_size,
-		4.0,
-		0.0
-	);
-	path_progress_bar.bars.back().progress_color = { 0, 190, 0, 255 };
-	path_progress_bar.bars.back().secondary_progress_color = { 30, 255, 30, 255 };
-
-	path_progress_bar.AddBar(0.0);
-	path_progress_bar.bars.back().progress_color = { 0, 210, 0, 255 };
-	path_progress_bar.bars.back().secondary_progress_color = { 70, 255, 70, 255 };
-
-
-
-	progress_bar_text_box.InitLeast(&e->default_font);
-	progress_bar_text_box.parent_rect.size = path_progress_bar.progress_back_rect.size;
-	progress_bar_text_box.parent_rect.pos = path_progress_bar.back_rect.pos;
-	progress_bar_text_box.horizontal_text_centering = { 1 };
-	progress_bar_text_box.vertical_text_centering = { 1 };
-	progress_bar_text_box.parent_rect.SetBaseSizeWithSizeScale({ 4.0, 4.0 });
-
-
-
 
 
 	course_path_rectangle.size.width = e->blank_camera->rect.size.width;
 	course_path_rectangle.size.height = 26.0;
 	course_path_rectangle.SetBaseSizeWithSizeScale({ 2.0, 2.0 });
-	//course_path_rectangle.SetPosWithUniEdge(course_path_progress_bar_back.GetUniEdge({ 3 }), { 1 });
-	course_path_rectangle.SetPosWithUniEdge(path_progress_bar.back_rect.GetUniEdge({ 3 }), { 1 });
+	course_path_rectangle.SetPosWithUniEdge(previous_portion_button.parent_rect.GetUniEdge({3}), {1});
 	course_path_rectangle.SetPosWithUniEdge(e->blank_camera->rect.GetUniEdge({ 2 }), { 2 });
 	course_path_rectangle.pos.x += 6.0;
 	course_path_rectangle.pos.y += 6.0;
@@ -1670,7 +2276,7 @@ Program::Program() : e(nullptr)
 
 	// ----   CREATE COURSE DATA   ----
 
-	intro_main.full_path_text = "Path: main";
+	intro_main.path_name = "Intro";
 
 	intro_main.portions.push_back(new TextPortion());
 	intro_main.portions.back()->InitLeast("Ello, it's me, lead developer of PLACEHOLDER!", 1);
@@ -1709,38 +2315,73 @@ Program::Program() : e(nullptr)
 
 
 
-	lesson_1_main.full_path_text = "Path: main";
+	lesson_1_main.path_name = "Lesson 1";
 
 	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("This is the first portion. Skibidi bop mm dada", 1);
+	lesson_1_main.portions.back()->InitLeast("As I previously mentioned, a lot of parts go into making a video game, so let's simply try to recreate one part first.", 1);
 
 	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("This is the second portion.", 2);
+	lesson_1_main.portions.back()->InitLeast("The part we are trying to recreate is going to be the score from \"Scooby-Doo\" for the ZX Spectrum, which we will finish in a couple of lessons.", 1);
+
+	lesson_1_main.portions.push_back(new TextPortion());
+	lesson_1_main.portions.back()->InitLeast("Look at those GRAPHICS", 1);
+
+	lesson_1_main.portions.push_back(new TextPortion());
+	lesson_1_main.portions.back()->InitLeast("Anyways, this score is a numerical value that is displayed on the screen and increments when the player defeats enemies, which are these little ghouls here.", 1);
+
+	lesson_1_main.portions.push_back(new TextPortion());
+	lesson_1_main.portions.back()->InitLeast("Seems pretty simple, right? (say yes please)", 1);
+
+	lesson_1_main.portions.push_back(new TextPortion());
+	lesson_1_main.portions.back()->InitLeast("As it turns out, not really.", 1);
+
+	lesson_1_main.portions.push_back(new TextPortion());
+	lesson_1_main.portions.back()->InitLeast("Like, how does the computer \"know\" what the number is at all times?", 1);
+
+	lesson_1_main.portions.push_back(new TextPortion());
+	lesson_1_main.portions.back()->InitLeast("How is it able to add a certain number of points to the number?", 1);
+
+	lesson_1_main.portions.push_back(new TextPortion());
+	lesson_1_main.portions.back()->InitLeast("How can it display this number on the screen?", 1);
+
+	lesson_1_main.portions.push_back(new TextPortion());
+	lesson_1_main.portions.back()->InitLeast("However, before we can even start to answer these questions, we need to learn about a core computer science concept: abstraction!", 1);
 	lesson_1_main.portions.back()->links.push_back(TextLink());
-	lesson_1_main.portions.back()->links.back().InitLeast(3, 8, 25);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("This is the third portion.", 3);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("This is the fourth portion.", 2);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("This is the fifth portion.", 1);
+	lesson_1_main.portions.back()->links.back().InitLeast(2, 0, 61, 128, 4);
 
 	course_paths.push_back(&lesson_1_main);
 
 
 
+	lesson_1_abstraction_justification.path_name = "Abstraction Justification";
+	lesson_1_abstraction_justification.return_path_index = 1;
+
+	lesson_1_abstraction_justification.portions.push_back(new TextPortion());
+	lesson_1_abstraction_justification.portions.back()->InitLeast("The rest of the course will not make sense if you are not aware of this concept, unfortunately. I would love it if you could get right into it, but this is quite necessary information as it turns out. Plus, abstraction is cool! (according to me)", 1);
+
+	course_paths.push_back(&lesson_1_abstraction_justification);
 
 
 
-	//-----------------   COURSE STUFFS SCENE 4   -----------------
 
-	lessons.push_back(new Lesson());
-	lessons.back()->button.InitWithBaseSize({ 4.0, 4.0 }, "Intro", & e->default_font, { 100.0, 24.0 }, 4.0, 4.0, { 0.0, 0.0 }, 0);
-	lessons.back()->main_path_index = 0;
-	lessons.back()->minute_estimate = 10;
+
+	SetCurrentPathAndPortionIndexes(0, 0, 1, 1);
+
+
+
+
+	link_tool_tip.InitLeast(&e->default_font);
+
+
+
+
+
+
+	//-----------------   COURSE STUFFS SCENE 5   -----------------
+
+	lessons_scroll_bar.InitBasic(20.0 * 160.0, e->blank_camera->rect.size.height, e->blank_camera->rect, 32.0, 0);
+	AddLesson("Intro", 0, 10, 0);
+	AddLesson("Lesson 1", 0, 15, 1);
 
 
 

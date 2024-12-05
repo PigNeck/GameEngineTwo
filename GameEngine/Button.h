@@ -18,6 +18,8 @@ struct PressData
 
 	bool hoverable = 1;
 	bool pressable = 1;
+
+	void Reset();
 };
 
 struct ButtonSoundData

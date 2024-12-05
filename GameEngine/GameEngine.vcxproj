@@ -155,6 +155,7 @@
     <ClCompile Include="TextButton.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Tools.cpp" />
+    <ClCompile Include="ToolTip.cpp" />
     <ClCompile Include="TransistorSet.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -182,6 +183,7 @@
     <ClInclude Include="TextButton.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Tools.h" />
+    <ClInclude Include="ToolTip.h" />
     <ClInclude Include="TransistorSet.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

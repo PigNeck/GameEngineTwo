@@ -967,6 +967,11 @@ void Engine::DrawScrollBar(ScrollBar* param_scroll_bar, Camera* camera)
 
     BasicDrawScrollBar(param_scroll_bar, temp_cam_pointer);
 }
+void Engine::DrawToolTip(ToolTip* const param_tool_tip, Camera* const camera)
+{
+    DrawRectangleEx(&param_tool_tip->saved_box, param_tool_tip->inner_color, param_tool_tip->border_scaled_size.width, { 2 }, param_tool_tip->border_scaled_size.height, { 2 }, param_tool_tip->border_scaled_size.width, { 2 }, param_tool_tip->border_scaled_size.height, { 2 }, param_tool_tip->border_color, { 0.0, 0.0 }, { 0, 0, 0, 0 }, camera);
+    DrawTextBox(&param_tool_tip->text_box, camera);
+}
 
 void Engine::DrawQueueSprite(QueueSprite* param_sprite)
 {
@@ -1318,6 +1323,15 @@ void Engine::UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, MouseL
     {
         cout << "INITIALIZE THE SCROLL BAR WITH THE \'INITBASIC()\' FUNCTION FIRST";
     }
+}
+void Engine::UpdateToolTip(ToolTip* const param_tool_tip, Camera* const camera)
+{
+    Point2D temp_mouse_pos = GetMousePos(camera);
+
+    param_tool_tip->saved_box.SetPosWithUniEdge(temp_mouse_pos.x - param_tool_tip->border_scaled_size.width, { 0 });
+    param_tool_tip->saved_box.SetPosWithUniEdge(temp_mouse_pos.y + param_tool_tip->border_scaled_size.height, { 1 });
+
+    param_tool_tip->text_box.parent_rect.pos = param_tool_tip->saved_box.pos;
 }
 
 
@@ -2190,7 +2204,7 @@ void Engine::DeactivateMouseLayers(const bool white_list, vector<MouseLayer*> ta
 }
 
 
-Engine::Engine() : p(nullptr), RunPointer(nullptr), rd(), gen(rd()) {
+Engine::Engine() : rd(), gen(rd()) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     IMG_Init(IMG_INIT_PNG);
     Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
@@ -2942,32 +2956,18 @@ void Engine::Run()
         }
 
         //Call run pointer if applicable
-        if (debug_mode)
+        if ((debug_mode && running_game) || (!debug_mode))
         {
-            if (running_game)
-            {
-                (p->*RunPointer)();
-            }
-        }
-        else
-        {
-            (p->*RunPointer)();
+            methods_pointer->Run();
         }
 
         //Call draw pointer
-        (p->*DrawPointer)();
+        methods_pointer->Draw();
 
         //Call post draw run pointer if applicable
-        if (debug_mode)
+        if ((debug_mode && running_game) || (!debug_mode))
         {
-            if (running_game)
-            {
-                (p->*PostDrawRunPointer)();
-            }
-        }
-        else
-        {
-            (p->*PostDrawRunPointer)();
+            methods_pointer->PostDrawRun();
         }
 
         DrawScreen();

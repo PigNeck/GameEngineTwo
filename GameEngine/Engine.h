@@ -11,8 +11,16 @@
 #include "DebugDataContainer.h"
 #include "ScrollBar.h"
 #include "MouseLayer.h"
+#include "ToolTip.h"
 
-struct Program;
+struct RunDrawAndPostDrawRunMethods
+{
+	virtual void Run() = 0;
+	virtual void Draw() = 0;
+	virtual void PostDrawRun() = 0;
+
+	virtual ~RunDrawAndPostDrawRunMethods() = default;
+};
 
 struct Engine {
 	// -----------------   ESSENTIAL WINDOW OBJECTS   -----------------
@@ -36,10 +44,7 @@ struct Engine {
 	bool running;
 	bool running_game;
 
-	Program* p;
-	void (Program::* RunPointer)();
-	void (Program::* DrawPointer)();
-	void (Program::* PostDrawRunPointer)();
+	RunDrawAndPostDrawRunMethods* methods_pointer = nullptr;
 
 
 
@@ -194,6 +199,8 @@ struct Engine {
 	void UpdateTextButton(TextButton* param_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
 	void UpdateSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
 	void UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
+	//"camera" is used to determine if the tool_tip goes out of visible range. If this happens, the tool_tip is moved to visible range. Also, make sure to move "camera" BEFORE this function is called if it will move this frame.
+	void UpdateToolTip(ToolTip* const param_tool_tip, Camera* const camera);
 
 
 
@@ -235,6 +242,8 @@ struct Engine {
 	void DrawQueueSprite(QueueSprite* param_sprite);
 
 	void DrawScrollBar(ScrollBar* param_scroll_bar, Camera* camera);
+
+	void DrawToolTip(ToolTip* const param_tool_tip, Camera* const camera);
 
 
 

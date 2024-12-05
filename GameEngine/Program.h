@@ -22,6 +22,7 @@ struct Ground
 
 struct TextLink
 {
+	size_t linked_path_index = numeric_limits<size_t>::max();
 	size_t linked_portion_index = numeric_limits<size_t>::max();
 	size_t begin_char = numeric_limits<size_t>::max();
 	size_t end_char = numeric_limits<size_t>::max();
@@ -29,7 +30,8 @@ struct TextLink
 	//IMPLEMENT LATER
 	char link_type = 0; //0 == nothing, 1 == "Who?", 2 == "What?", 3 == "When?", 4 == "Why?", 5 == "How?"
 
-	void InitLeast(const size_t param_linked_portion_index, const size_t param_begin_char, const size_t param_end_char);
+	//Link type 0 == nothing, 1 == "Who?", 2 == "What?", 3 == "When?", 4 == "Why?", 5 == "How?"
+	void InitLeast(const size_t param_linked_path_index, const size_t param_linked_portion_index, const size_t param_begin_char, const size_t param_end_char, const char param_link_type);
 };
 
 struct CharWithWaitMultiplier
@@ -37,18 +39,6 @@ struct CharWithWaitMultiplier
 	char value = 'A';
 	char sound_id = 0;
 	double wait_multiplier = 1.0;
-};
-
-struct Lesson
-{
-	SimpleTextButton button; //CURRENTLY CANNOT SCALE WITH RESOLUTION
-	Rectangle progress_bar; //CURRENTLY CANNOT SCALE WITH RESOLUTION
-	Rectangle progress_bar_back; //CURRENTLY CANNOT SCALE WITH RESOLUTION
-	Rectangle progress_bar_back_middle; //CURRENTLY CANNOT SCALE WITH RESOLUTION
-
-	unsigned char state;
-	unsigned int minute_estimate;
-	size_t main_path_index;
 };
 
 struct Confetti
@@ -72,17 +62,22 @@ struct Bar
 	SDL_Color progress_color = { 0, 0, 0, 255 };
 	SDL_Color secondary_progress_color = { 255, 255, 255, 255 };
 
-	Rectangle* progress_back_rect_pointer;
+	Rectangle* progress_back_rect_pointer = nullptr;
 
 	//Call this function before Updating this instance of Bar. Percent filled = discrete_progress / discrete_capacity
 	void SetTargetWidth(const size_t discrete_progress, const size_t discrete_capacity, const bool light_bar);
 	//Call this function before Updating this instance of Bar. Thank you choosing American Airlines. We hope you enjoy your flight.
 	void SetTargetWidth(const double percent, const bool light_bar);
+
+	//Percent filled = discrete_progress / discrete_capacity. This function also sets target_width (so that the bar width stays put!)
+	void SetActualWidth(const size_t discrete_progress, const size_t discrete_capacity, const bool light_bar);
+	//This function also sets target_width (so that the bar width stays put!). Thank you choosing American Airlines. We hope you enjoy your flight.
+	void SetActualWidth(const double percent, const bool light_bar);
 };
 
 struct ProgressBar //Rotation is not supported for ProgressBar :(
 {
-	vector<Bar> bars;
+	vector<Bar*> bars;
 
 	Rectangle back_rect; //Is the parent rect of progress_back_rect. Treat it like a "parent_rect" which is also drawn to the screen as the "outline" of the progress bar.
 	SDL_Color back_color = { 0, 0, 0, 255 };
@@ -99,10 +94,20 @@ struct ProgressBar //Rotation is not supported for ProgressBar :(
 	//Only call this function if there are multiple bars in this instance of ProgressBar. For a normal progress bar, just use SetTargetWidth(...) instead :)
 	void SetTargetWidthWithIndex(const double percent, const bool light_bar, const size_t bar_index);
 
+	//Percent filled = discrete_progress / discrete_capacity. This function also sets target_width (so that the bar width stays put!)
+	void SetActualWidth(const size_t discrete_progress, const size_t discrete_capacity, const bool light_bar);
+	//This function also sets target_width (so that the bar width stays put!). Thank you choosing Boeing. We hope you enjoy your flight.
+	void SetActualWidth(const double percent, const bool light_bar);
+
+	//Only call this function if there are multiple bars in this instance of ProgressBar. For a normal progress bar, just use SetActualWidth(...) instead :)
+	void SetActualWidthWithIndex(const size_t discrete_progress, const size_t discrete_capacity, const bool light_bar, const size_t bar_index);
+	//Only call this function if there are multiple bars in this instance of ProgressBar. For a normal progress bar, just use SetActualWidth(...) instead :)
+	void SetActualWidthWithIndex(const double percent, const bool light_bar, const size_t bar_index);
+
 	//The suggested way to initialize an instance of ProgressBar is with one of the InitBasic(...) functions
 	void InitLeast();
 	//The suggested way to initialize an instance of ProgressBar is with one of the InitBasic(...) functions
-	void InitMost(const vector<Bar> param_bars, const Rectangle param_back_rect, const SDL_Color param_back_color, const Rectangle param_progress_back_rect, const SDL_Color param_progress_back_color);
+	void InitMost(const vector<Bar*> param_bars, const Rectangle param_back_rect, const SDL_Color param_back_color, const Rectangle param_progress_back_rect, const SDL_Color param_progress_back_color);
 	//This is one of the suggested ways to initialize an instance of ProgressBar. There is also the other InitBasic(...) function (which takes different parameters).
 	void InitBasic(const Point2D position, const Size2D back_rect_size, const double outline_thickness, const size_t discrete_progress, const size_t discrete_capacity);
 	//This is one of the suggested ways to initialize an instance of ProgressBar. There is also the other InitBasic(...) function (which takes different parameters).
@@ -116,6 +121,17 @@ struct ProgressBar //Rotation is not supported for ProgressBar :(
 	void AddBar(const double percent);
 
 	ProgressBar();
+};
+
+struct Lesson
+{
+	SimpleTextButton button; //CURRENTLY CANNOT SCALE WITH RESOLUTION
+	ProgressBar progress_bar; //CURRENTLY CANNOT SCALE WITH RESOLUTION
+
+	unsigned char state = 0;
+	unsigned int hour_estimate = 0;
+	unsigned int minute_estimate = 0;
+	size_t main_path_index = 0;
 };
 
 struct TextPortion
@@ -142,14 +158,31 @@ struct TextPortion
 struct CoursePath
 {
 	vector<TextPortion*> portions;
-	const char* full_path_text = nullptr;
-	Lesson* accociated_lesson = nullptr;
+	const char* path_name = nullptr;
 	
 	size_t current_portion_index = 0;
 	size_t progress = 0;
 	double saved_visable_char_progression = -1.0;
 
 	TextPortion* GetCurrentPortion();
+
+	size_t return_path_index = numeric_limits<size_t>::max();
+};
+
+struct CoursePathPathData
+{
+	CoursePath* path_pointer = nullptr;
+	ProgressBar progress_bar;
+	TextBox text_box;
+	bool text_box_visable = 1;
+};
+
+struct CoursePathNameThing
+{
+	CoursePath* const course_path_pointer;
+	const size_t name_start_index; // INCLUDED
+	const size_t name_end_index; // INCLUDED
+	const size_t name_length;
 };
 
 struct RectStructOnePlusHovering
@@ -159,10 +192,10 @@ struct RectStructOnePlusHovering
 	bool pressed = 0;
 };
 
-struct Program
+struct Program : RunDrawAndPostDrawRunMethods
 {
-	Engine* e;
-	Camera* main_camera;
+	Engine* e = nullptr;
+	Camera* main_camera = nullptr;
 
 	Animation run_anim;
 	Animation idle_anim;
@@ -204,14 +237,12 @@ struct Program
 
 	//Initialize course paths
 	vector<CoursePath*> course_paths;
-	size_t current_course_path_index = numeric_limits<size_t>::max();
 
 	CoursePath intro_main;
 	CoursePath lesson_1_main;
+	CoursePath lesson_1_abstraction_justification;
 	CoursePath lesson_2_main;
 	CoursePath lesson_3_main;
-
-	//size_t current_text_portion_index = 0;
 
 	SimpleTextButton next_portion_button;
 	SimpleTextButton previous_portion_button;
@@ -223,9 +254,13 @@ struct Program
 	Rectangle course_path_rectangle; //CURRENTLY CANNOT SCALE WITH RESOLUTION
 	TextBox course_path_text_box; //CURRENTLY CANNOT SCALE WITH RESOLUTION
 
-	//Progress bar data
-	ProgressBar path_progress_bar;
-	TextBox progress_bar_text_box;
+	vector<CoursePathPathData*> course_path_path;
+	CoursePathPathData* GetCurrentCoursePathPathData();
+	CoursePath* GetCurrentCoursePath();
+	ProgressBar* GetCurrentCourseProgressBar();
+	TextBox* GetCurrentCourseTextBox();
+
+	void UpdateCoursePathTextBox();
 
 	double complete_lesson_cutscene_timer = -1.0;
 
@@ -238,6 +273,15 @@ struct Program
 	void UpdateProgressBar(ProgressBar* const progress_bar);
 	void DrawProgressBar(ProgressBar* const progress_bar, Camera* const camera);
 
+	double progress_bar_animation_counter = 100.0;
+	double percent_progress_bar_animation_complete = 100.0;
+	bool progress_bar_animation_direction = 1;
+	bool removing_progress_bar = 0;
+	void SetHeightsOfCoursePathPathProgressBars();
+
+	void UpdateCoursePathPathProgressBars();
+	void DrawCoursePathPathProgressBars();
+
 
 	//Call this AFTER AdvanceCurrentTextPortionTextBox(...). All of the parameters should match the parameters for AdvanceCurrentPortionTextBox(...).
 	bool CheckForLinkClicksAndGenerateSavedLinkRects(const double rate, const Size2D stretch_multiplier, const int text_sound_channel_num, const int link_click_channel_num);
@@ -247,6 +291,11 @@ struct Program
 	void ReduceStretchInCurrentTextPortionTextBox(const double rate);
 
 
+	bool update_and_draw_tool_tip_this_frame = 0;
+	char current_link_type = 0;
+	ToolTip link_tool_tip;
+
+
 
 
 
@@ -254,7 +303,12 @@ struct Program
 	//-----------------   COURSE STUFFS SCENE 5   -----------------
 
 	//Initialize lessons
+	ScrollBar lessons_scroll_bar; //DOESN'T SCALE WITH RESOLUTION
 	vector<Lesson*> lessons; //LESSONS DO NOT SCALE WITH RESOLUTION YET
+
+	void AddLesson(const char* lesson_name, const unsigned int param_hour_estimate, const unsigned int param_minute_estimate, const size_t param_main_path_index);
+	void UpdateLessons();
+	void DrawLessons();
 
 
 
@@ -331,9 +385,9 @@ struct Program
 
 
 
-	void Run();
-	void Draw();
-	void PostDrawRun();
+	void Run() override;
+	void Draw() override;
+	void PostDrawRun() override;
 	Program();
 	~Program();
 
@@ -348,9 +402,9 @@ struct Program
 	void DrawCellSet(CellSet* const param_cell_set, Camera* const camera);
 
 	//To start at the beginning of the portion, make param_visable_char_progression -1.0
-	void SetCurrentPathAndPortionIndexes(const size_t param_path_index, size_t param_portion_index);
+	void SetCurrentPathAndPortionIndexes(const size_t param_path_index, size_t param_portion_index, const bool reset_course_path_path, const bool move_bars_instantly);
 	//To start at the beginning of the portion, make param_visable_char_progression -1.0
-	void SetCurrentTextPortionIndex(size_t param_portion_index);
+	void SetCurrentTextPortionIndex(size_t param_portion_index, const bool reset_course_path_path, const bool move_bars_instantly);
 
 
 
