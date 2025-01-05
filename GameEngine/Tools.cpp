@@ -495,3 +495,156 @@ Size2D GetRelativeSize(const Size2D* const param_size, const Size2D reference_si
 
 	return temp_size;
 }
+
+
+
+
+
+
+// -----------------   RECTANGLENEW CONVERSIONS   -----------------
+
+SDL_Point Point2DNewToSDLPoint(const Point2DNew point, const RigidCentering pixel_side_horizontal, const RigidCentering pixel_side_vertical, const Camera* const camera)
+{
+	return { UniXToSDLX(point.x, pixel_side_horizontal, camera), UniYToSDLY(point.y, pixel_side_vertical, camera) };
+}
+SDL_Size Size2DNewToSDLSize(const Size2DNew size, const Point2DNew top_left_corner, const Camera* camera)
+{
+	return { UniWidthToSDLWidth(size.width, top_left_corner.x, camera), UniHeightToSDLHeight(size.height, top_left_corner.y, camera) };
+}
+
+SDL_Rect RectangleNewToSDLRect(const RectangleNew* const rect, Camera* const camera)
+{
+	const int right = UniXToSDLX(rect->GetEdge({ 0 }), { 2 }, camera);
+	const int bottom = UniYToSDLY(rect->GetEdge({ 1 }), { 0 }, camera);
+	const int left = UniXToSDLX(rect->GetEdge({ 2 }), { 0 }, camera);
+	const int top = UniYToSDLY(rect->GetEdge({ 3 }), { 2 }, camera);
+
+	return GetSDLRectWithEdges(right, bottom, left, top);
+}
+
+SDL_RectWithRotation RectangleNewToSDLRectWithRotation(const RectangleNew* const rect, Camera* const camera)
+{
+	const double uni_left_edge = rect->GetEdge({ 2 });
+	const double uni_top_edge = rect->GetEdge({ 3 });
+
+	const int right = UniXToSDLX(rect->GetEdge({ 0 }), { 2 }, camera);
+	const int bottom = UniYToSDLY(rect->GetEdge({ 1 }), { 0 }, camera);
+	const int left = UniXToSDLX(uni_left_edge, { 0 }, camera);
+	const int top = UniYToSDLY(uni_top_edge, { 2 }, camera);
+
+	const int center_x = UniXToSDLX(uni_left_edge + ((-rect->centering.x_centering + 1.0) * rect->GetScaledWidth() / 2.0), { 1 }, camera) - left;
+	const int center_y = UniYToSDLY(uni_top_edge - ((rect->centering.y_centering + 1.0) * rect->GetScaledHeight() / 2.0), { 1 }, camera) - top;
+
+	const SDL_RendererFlip flip = rect->total_flip.GetSDLFlip();
+
+	return { GetSDLRectWithEdges(right, bottom, left, top),
+		{ center_x, center_y },
+		rect->rotation.radians + ((rect->total_flip.flip_horizontally && rect->total_flip.flip_vertically) * M_PI),
+		flip
+	};
+}
+SDL_RectWithRotation RectangleNewToSDLRectWithRotation(const Point2DNew* const pos, const Size2DNew* const unscaled_size, const Scale2DNew* const scale, const Centering2DNew* const centering, const Rotation2DNew* const rotation, const TotalFlip* const total_flip, Camera* const camera)
+{
+	RectangleNew temp_rect;
+	if (pos)
+	{
+		temp_rect.pos = *pos;
+	}
+	if (unscaled_size)
+	{
+		temp_rect.unscaled_size = *unscaled_size;
+	}
+	if (scale)
+	{
+		temp_rect.scale = *scale;
+	}
+	if (centering)
+	{
+		temp_rect.centering = *centering;
+	}
+	if (rotation)
+	{
+		temp_rect.rotation = *rotation;
+	}
+	if (total_flip)
+	{
+		temp_rect.total_flip = *total_flip;
+	}
+
+	return RectangleNewToSDLRectWithRotation(&temp_rect, camera);
+}
+
+
+SDL_RectWithRotation RefRectangleNewToSDLRectWithRotation(const RefRectangleNew* const rect, Camera* const camera)
+{
+	const RectangleNew temp_rectangle_new = rect->GetRectangleNew();
+
+	return RectangleNewToSDLRectWithRotation(&temp_rectangle_new, camera);
+}
+SDL_RectWithRotation RefRectangleNewToSDLRectWithRotation(const RefPoint2DNew* const pos, const Size2DNew* const unscaled_size, const RefScale2DNew* const scale, const Centering2DNew* const centering, const RefRotation2DNew* const rotation, const RefTotalFlip* const total_flip, Camera* const camera)
+{
+	RectangleNew temp_rect;
+	if (pos)
+	{
+		temp_rect.pos = pos->GetPoint2DNew();
+	}
+	if (unscaled_size)
+	{
+		temp_rect.unscaled_size = *unscaled_size;
+	}
+	if (scale)
+	{
+		temp_rect.scale = scale->GetScale2DNew();
+	}
+	if (centering)
+	{
+		temp_rect.centering = *centering;
+	}
+	if (rotation)
+	{
+		temp_rect.rotation = rotation->GetRotation2DNew();
+	}
+	if (total_flip)
+	{
+		temp_rect.total_flip = total_flip->GetUniValue();
+	}
+
+	return RectangleNewToSDLRectWithRotation(&temp_rect, camera);
+}
+
+SDL_RectWithRotation RefRectangleNewNewToSDLRectWithRotation(const RefRectangleNewNew* const rect, Camera* const camera)
+{
+	const RectangleNew temp_rectangle_new = rect->GetRectangleNew();
+
+	return RectangleNewToSDLRectWithRotation(&temp_rectangle_new, camera);
+}
+SDL_RectWithRotation RefRectangleNewNewToSDLRectWithRotation(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, Camera* const camera)
+{
+	RectangleNew temp_rect;
+	if (pos)
+	{
+		temp_rect.pos = pos->GetUniValue();
+	}
+	if (unscaled_size)
+	{
+		temp_rect.unscaled_size = { unscaled_size->width, unscaled_size->height };
+	}
+	if (scale)
+	{
+		temp_rect.scale = scale->GetUniValue();
+	}
+	if (centering)
+	{
+		temp_rect.centering = *centering;
+	}
+	if (rotation)
+	{
+		temp_rect.rotation = rotation->GetUniValue();
+	}
+	if (total_flip)
+	{
+		temp_rect.total_flip = total_flip->GetUniValue();
+	}
+
+	return RectangleNewToSDLRectWithRotation(&temp_rect, camera);
+}

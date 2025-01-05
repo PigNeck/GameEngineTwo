@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -28,9 +29,9 @@ struct Size2D
     void PrintProperties();
 };
 
-struct Flip
+struct Flip //0 = no flip;  1 = horizontal flip;  2 = vertical flip;  3 = both flip
 {
-    //0: no flip -- 1: horizontal flip -- 2: vertical flip -- 3: both flip
+    //WARNING: change the unsigned masked ints to unsigned masked chars for efficiency? (apply to Flip, RigidCentering and Direction)
     unsigned int value : 2;
 
     Flip();
@@ -39,9 +40,8 @@ struct Flip
     void PrintProperties(const bool display_as_int);
 };
 
-struct RigidCentering
+struct RigidCentering //0 = left/down;  1 = middle;  2 = right/up;  3 = UNDEFINED
 {
-    //0: left/down -- 1: middle -- 2: right/up -- 3: UNDEFINED
     unsigned int value : 2;
 
     RigidCentering();
@@ -49,13 +49,21 @@ struct RigidCentering
 
     void PrintProperties(const bool display_as_int);
 };
-struct Direction
+struct Direction //0 = right;  1 = down;  2 = left;  3 = up
 {
-    //0: right -- 1: down -- 2: left -- 3: up
     unsigned int value : 2;
 
     Direction();
     Direction(unsigned int param_value);
+
+    void PrintProperties(const bool display_as_int);
+};
+struct Corner //0 = top-right;  1 = bottom-right;  2 = bottom-left;  3 = top-left
+{
+    unsigned int value : 2;
+
+    Corner();
+    Corner(unsigned int param_value);
 
     void PrintProperties(const bool display_as_int);
 };

@@ -1,5 +1,6 @@
 #pragma once
 #include "Rectangle.h"
+#include "RectangleNew.h"
 #include "Camera.h"
 #include "Input.h"
 #include "Font.h"
@@ -45,6 +46,11 @@ struct Engine {
 	bool running_game;
 
 	RunDrawAndPostDrawRunMethods* methods_pointer = nullptr;
+
+
+	float additional_color_index = 0.0;
+	SDL_PixelFormat* rgba;
+	SDL_Texture* pixel_access_texture;
 
 
 
@@ -102,6 +108,8 @@ struct Engine {
 	Texture* boundary_view_pressed_t;
 
 	Texture* test_t;
+
+	Texture* distinguishing_sides_t;
 
 
 
@@ -193,13 +201,17 @@ struct Engine {
 	// -----------------   DEFAULT UPDATE FUNCTIONS   -----------------
 
 	void UpdateTextBox(TextBox* param_text_box);
+	//IMPORTANT!!!: Even if non-hoverable, if mouse is overlapping with hitbox, mouse_layers will be removed. To avoid this, simply don't call the function and call press_data.Reset(...) as needed.
 	void UpdatePressData(PressData* param_press_data, Rectangle* param_hitbox, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
 	void UpdateButtonSounds(PressData* const press_data, ButtonSoundData* const sounds) const;
+	//IMPORTANT!!!: Even if non-hoverable, if mouse is overlapping with hitbox, mouse_layers will be removed. To avoid this, simply don't call the function and call press_data.Reset(...) as needed.
 	void UpdateButton(Button* param_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
+	//IMPORTANT!!!: Even if non-hoverable, if mouse is overlapping with hitbox, mouse_layers will be removed. To avoid this, simply don't call the function and call press_data.Reset(...) as needed.
 	void UpdateTextButton(TextButton* param_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
+	//IMPORTANT!!!: Even if non-hoverable, if mouse is overlapping with hitbox, mouse_layers will be removed. To avoid this, simply don't call the function and call press_data.Reset(...) as needed.
 	void UpdateSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
 	void UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
-	//"camera" is used to determine if the tool_tip goes out of visible range. If this happens, the tool_tip is moved to visible range. Also, make sure to move "camera" BEFORE this function is called if it will move this frame.
+	//IMPORTANT!!!(ish): Firstly, it is recommended that this function is unintuitively called in a "DrawScene_()" function rather than in an "UpdateScene_()" function unless some code requires that the position of the tool_tip->saved_box or tool_tip->text_box is updated in the "UpdateScene_()" function. This is because the engine calls the appropriate run function, waits the remainder of the frame, and then calls the appropriate draw function. If the mouse position is updated in the "in-between" time, the tool tip will lag an additional one frame behind (very sad). Unfortunately, there is some required delay between when the tool is drawn to the sdl_canvas and when it appears on the screen that I have no control over. Secondly "camera" is used to determine if the tool_tip goes out of visible range. If this happens, the tool_tip is moved to visible range. Also, make sure to move "camera" BEFORE this function is called if it will move this frame.
 	void UpdateToolTip(ToolTip* const param_tool_tip, Camera* const camera);
 
 
@@ -271,7 +283,10 @@ struct Engine {
 	void LoadEngineTexture(Texture* param_texture, const char path[]);
 	void UnloadEngineSoundChunk(Mix_Chunk** const param_chunk);
 	Camera* NewCamera(const char* const name);
-	Point2D GetMousePos(Camera* reference_camera);
+	//Returns the top left of the mouse pos pixel as a Point2D
+	Point2D GetMousePos(Camera* const reference_camera);
+	//NOTE: A pizel_size_vertical value of 0 = TOP, 1 = middle, and 2 = BOTTOM (This follows the traditional computer graphics standard rather than the typical mathematical standard) ---- A pixel_size_horizontal value of 0 = left side, 1 = middle and 2 = right side
+	Point2D GetMousePos(Camera* const reference_camera, const RigidCentering pixel_side_horizontal, const RigidCentering pixel_side_vertical);
 
 
 
@@ -382,4 +397,42 @@ private:  // -----------------   P R I V A T E   S E C T I O N   ---------------
 
 
 	// -----------------   OBSELETE FUNCTIONS   -----------------
+
+
+
+
+
+
+
+
+
+public: // -----------------   RECTANGLENEW FUNCTIONS   -----------------
+
+	void DrawSDLRectWithRotation(const SDL_RectWithRotation* const rect, const SDL_Color fill_color);
+	void DrawTextureWithSDLRectWithRotation(const SDL_RectWithRotation* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod);
+
+
+	void DrawRectangleNew(const RectangleNew* const rect, const SDL_Color fill_color, Camera* const camera);
+	void DrawTextureWithRectangleNew(const RectangleNew* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
+
+	void DrawRectangleNew(const Point2DNew* const pos, const Size2DNew* const unscaled_size, const Scale2DNew* const scale, const Centering2DNew* const centering, const Rotation2DNew* const rotation, const TotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera);
+	void DrawTextureWithRectangleNew(const Point2DNew* const pos, const Size2DNew* const unscaled_size, const Scale2DNew* const scale, const Centering2DNew* const centering, const Rotation2DNew* const rotation, const TotalFlip* const total_flip, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
+
+
+	void DrawRefRectangleNew(const RefRectangleNew* const rect, const SDL_Color fill_color, Camera* const camera);
+	void DrawTextureWithRefRectangleNew(const RefRectangleNew* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
+
+	void DrawRefRectangleNew(const RefPoint2DNew* const pos, const Size2DNew* const unscaled_size, const RefScale2DNew* const scale, const Centering2DNew* const centering, const RefRotation2DNew* const rotation, const RefTotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera);
+	void DrawTextureWithRefRectangleNew(const RefPoint2DNew* const pos, const Size2DNew* const unscaled_size, const RefScale2DNew* const scale, const Centering2DNew* const centering, const RefRotation2DNew* const rotation, const RefTotalFlip* const total_flip, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
+
+
+	void DrawRefRectangleNewNew(const RefRectangleNewNew* const rect, const SDL_Color fill_color, Camera* const camera);
+	void DrawTextureWithRefRectangleNewNew(const RefRectangleNewNew* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
+
+	void DrawRefRectangleNewNew(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera);
+	void DrawTextureWithRefRectangleNewNew(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
+
+
+
+	void ModifyPixels(SDL_Texture* texture);
 };

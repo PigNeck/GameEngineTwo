@@ -585,6 +585,7 @@ void Engine::BasicDrawPoint(Point2D* param_point, Size2D param_size, SDL_Color c
 {
     Rectangle temp_rectangle;
 
+    temp_rectangle.pos = *param_point;
     temp_rectangle.base_size = param_size;
     temp_rectangle.SetSizeWithSizeScale({ 1.0, 1.0 });
 
@@ -1037,6 +1038,13 @@ Point2D Engine::GetMousePos(Camera* reference_camera)
     Point2D temp_point = SDLPointToUniPoint({ input.mouse_x, input.mouse_y }, { 0 }, { 0 }, reference_camera);
     return temp_point;
 }
+Point2D Engine::GetMousePos(Camera* const reference_camera, const RigidCentering pixel_side_horizontal, const RigidCentering pixel_side_vertical)
+{
+    //WARNING
+
+    Point2D temp_point = SDLPointToUniPoint({ input.mouse_x, input.mouse_y }, pixel_side_horizontal, pixel_side_vertical, reference_camera);
+    return temp_point;
+}
 
 
 void Engine::LoadEngineTexture(Texture* param_texture, const char path[])
@@ -1082,6 +1090,9 @@ void Engine::LoadEngineTextures() {
     LoadEngineTexture(boundary_view_released_t, "images/boundary_view_released.png");
     boundary_view_hovering_t = new Texture();
     LoadEngineTexture(boundary_view_hovering_t, "images/boundary_view_hovering.png");
+
+    distinguishing_sides_t = new Texture();
+    LoadEngineTexture(distinguishing_sides_t, "images/distinguishing_sides.png");
 }
 void Engine::DeleteEngineTextures() {
     for (int i = 0; i < textures.size(); i++)
@@ -1326,10 +1337,28 @@ void Engine::UpdateScrollBar(ScrollBar* param_scroll_bar, Camera* camera, MouseL
 }
 void Engine::UpdateToolTip(ToolTip* const param_tool_tip, Camera* const camera)
 {
-    Point2D temp_mouse_pos = GetMousePos(camera);
+    Point2D temp_mouse_pos = GetMousePos(camera, { 2 }, { 2 });
 
     param_tool_tip->saved_box.SetPosWithUniEdge(temp_mouse_pos.x - param_tool_tip->border_scaled_size.width, { 0 });
     param_tool_tip->saved_box.SetPosWithUniEdge(temp_mouse_pos.y + param_tool_tip->border_scaled_size.height, { 1 });
+
+    bool adjusted_horizontally = 0;
+    if ((param_tool_tip->saved_box.GetUniEdge({ 2 }) - param_tool_tip->border_scaled_size.width) < (camera->rect.GetUniEdge({ 2 })))
+    {
+        param_tool_tip->saved_box.SetPosWithUniEdge(camera->rect.GetUniEdge({ 2 }) + param_tool_tip->border_scaled_size.width, { 2 });
+        adjusted_horizontally = 1;
+    }
+    if ((param_tool_tip->saved_box.GetUniEdge({ 3 }) + param_tool_tip->border_scaled_size.height) > (camera->rect.GetUniEdge({ 3 })))
+    {
+        if (adjusted_horizontally)
+        {
+            param_tool_tip->saved_box.pos.y -= param_tool_tip->saved_box.size.height + (param_tool_tip->border_scaled_size.height * 2.0);
+        }
+        else
+        {
+            param_tool_tip->saved_box.SetPosWithUniEdge(camera->rect.GetUniEdge({ 3 }) - param_tool_tip->border_scaled_size.height, { 3 });
+        }
+    }
 
     param_tool_tip->text_box.parent_rect.pos = param_tool_tip->saved_box.pos;
 }
@@ -2213,7 +2242,7 @@ Engine::Engine() : rd(), gen(rd()) {
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         600, 400,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP);
+        SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL);
 
     SDL_GetWindowSize(window, &window_width, &window_height);
 
@@ -2288,6 +2317,11 @@ Engine::Engine() : rd(), gen(rd()) {
 
     boundary_view_button.parent_rect.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 0 }), { 0 });
     boundary_view_button.parent_rect.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 3 }), { 3 });
+
+
+
+    rgba = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
+    pixel_access_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 400, 400);
 
 
 
@@ -2972,6 +3006,9 @@ void Engine::Run()
 
         DrawScreen();
 
+        ModifyPixels(pixel_access_texture);
+        additional_color_index -= 2.0;
+
         SDL_RenderPresent(renderer);
 
         frame_duration = SDL_GetTicks() - frame_start;
@@ -2979,4 +3016,181 @@ void Engine::Run()
             SDL_Delay(frame_delay - frame_duration); // Wait enough to maintain the desired frame rate
         }
     }
+}
+
+
+
+
+
+
+// -----------------   RECTANGLENEW FUNCTIONS   -----------------
+
+void Engine::DrawSDLRectWithRotation(const SDL_RectWithRotation* const rect, const SDL_Color fill_color)
+{
+    SDL_SetTextureColorMod(solid_color_pixel_texture->sdl_texture, fill_color.r, fill_color.g, fill_color.b);
+    SDL_SetTextureAlphaMod(solid_color_pixel_texture->sdl_texture, fill_color.a);
+    SDL_RenderCopyEx(renderer, solid_color_pixel_texture->sdl_texture, nullptr, &rect->rect, rect->GetDegrees(), &rect->center, rect->flip);
+}
+void Engine::DrawTextureWithSDLRectWithRotation(const SDL_RectWithRotation* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod)
+{
+    if (color_and_alpha_mod)
+    {
+        SDL_SetTextureColorMod(texture->sdl_texture, color_and_alpha_mod->r, color_and_alpha_mod->g, color_and_alpha_mod->b);
+        SDL_SetTextureAlphaMod(texture->sdl_texture, color_and_alpha_mod->a);
+    }
+    else
+    {
+        SDL_SetTextureColorMod(texture->sdl_texture, 255, 255, 255);
+        SDL_SetTextureAlphaMod(texture->sdl_texture, 255);
+    }
+
+    SDL_RenderCopyEx(renderer, texture->sdl_texture, nullptr, &rect->rect, rect->GetDegrees(), &rect->center, rect->flip);
+
+    if (color_and_alpha_mod)
+    {
+        SDL_SetTextureColorMod(texture->sdl_texture, 255, 255, 255);
+        SDL_SetTextureAlphaMod(texture->sdl_texture, 255);
+    }
+}
+
+
+void Engine::DrawRectangleNew(const RectangleNew* const rect, const SDL_Color fill_color, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RectangleNewToSDLRectWithRotation(rect, camera);
+
+    DrawSDLRectWithRotation(&sdl_rect_with_rotation, fill_color);
+}
+void Engine::DrawTextureWithRectangleNew(const RectangleNew* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RectangleNewToSDLRectWithRotation(rect, camera);
+
+    DrawTextureWithSDLRectWithRotation(&sdl_rect_with_rotation, texture, source_rect, color_and_alpha_mod);
+}
+
+void Engine::DrawRectangleNew(const Point2DNew* const pos, const Size2DNew* const unscaled_size, const Scale2DNew* const scale, const Centering2DNew* const centering, const Rotation2DNew* const rotation, const TotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RectangleNewToSDLRectWithRotation(pos, unscaled_size, scale, centering, rotation, total_flip, camera);
+
+    DrawSDLRectWithRotation(&sdl_rect_with_rotation, fill_color);
+}
+void Engine::DrawTextureWithRectangleNew(const Point2DNew* const pos, const Size2DNew* const unscaled_size, const Scale2DNew* const scale, const Centering2DNew* const centering, const Rotation2DNew* const rotation, const TotalFlip* const total_flip, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RectangleNewToSDLRectWithRotation(pos, unscaled_size, scale, centering, rotation, total_flip, camera);
+
+    DrawTextureWithSDLRectWithRotation(&sdl_rect_with_rotation, texture, source_rect, color_and_alpha_mod);
+}
+
+
+void Engine::DrawRefRectangleNew(const RefRectangleNew* const rect, const SDL_Color fill_color, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RefRectangleNewToSDLRectWithRotation(rect, camera);
+
+    DrawSDLRectWithRotation(&sdl_rect_with_rotation, fill_color);
+}
+void Engine::DrawTextureWithRefRectangleNew(const RefRectangleNew* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RefRectangleNewToSDLRectWithRotation(rect, camera);
+
+    DrawTextureWithSDLRectWithRotation(&sdl_rect_with_rotation, texture, source_rect, color_and_alpha_mod);
+}
+
+void Engine::DrawRefRectangleNew(const RefPoint2DNew* const pos, const Size2DNew* const unscaled_size, const RefScale2DNew* const scale, const Centering2DNew* const centering, const RefRotation2DNew* const rotation, const RefTotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RefRectangleNewToSDLRectWithRotation(pos, unscaled_size, scale, centering, rotation, total_flip, camera);
+
+    DrawSDLRectWithRotation(&sdl_rect_with_rotation, fill_color);
+}
+void Engine::DrawTextureWithRefRectangleNew(const RefPoint2DNew* const pos, const Size2DNew* const unscaled_size, const RefScale2DNew* const scale, const Centering2DNew* const centering, const RefRotation2DNew* const rotation, const RefTotalFlip* const total_flip, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RefRectangleNewToSDLRectWithRotation(pos, unscaled_size, scale, centering, rotation, total_flip, camera);
+
+    DrawTextureWithSDLRectWithRotation(&sdl_rect_with_rotation, texture, source_rect, color_and_alpha_mod);
+}
+
+
+void Engine::DrawRefRectangleNewNew(const RefRectangleNewNew* const rect, const SDL_Color fill_color, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RefRectangleNewNewToSDLRectWithRotation(rect, camera);
+
+    DrawSDLRectWithRotation(&sdl_rect_with_rotation, fill_color);
+}
+void Engine::DrawTextureWithRefRectangleNewNew(const RefRectangleNewNew* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RefRectangleNewNewToSDLRectWithRotation(rect, camera);
+
+    DrawTextureWithSDLRectWithRotation(&sdl_rect_with_rotation, texture, source_rect, color_and_alpha_mod);
+}
+
+void Engine::DrawRefRectangleNewNew(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RefRectangleNewNewToSDLRectWithRotation(pos, unscaled_size, scale, centering, rotation, total_flip, camera);
+
+    DrawSDLRectWithRotation(&sdl_rect_with_rotation, fill_color);
+}
+void Engine::DrawTextureWithRefRectangleNewNew(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera)
+{
+    const SDL_RectWithRotation sdl_rect_with_rotation = RefRectangleNewNewToSDLRectWithRotation(pos, unscaled_size, scale, centering, rotation, total_flip, camera);
+
+    DrawTextureWithSDLRectWithRotation(&sdl_rect_with_rotation, texture, source_rect, color_and_alpha_mod);
+}
+
+
+
+void Engine::ModifyPixels(SDL_Texture* texture) {
+    void* pixels;
+    int pitch;
+
+    // Lock the texture for direct pixel access
+    if (SDL_LockTexture(texture, NULL, &pixels, &pitch) == 0) {
+        Uint32* pixelArray = (Uint32*)pixels; // Assume 32-bit pixel format
+        int width = pitch / sizeof(Uint32);
+
+        // Example: Set a region of pixels to a color
+        Uint32 color = SDL_MapRGBA(rgba, 255, 0, 0, 255);
+        for (uint32_t y = 0; y < 400; ++y) {
+            for (uint32_t x = 0; x < 400; ++x) {
+                uint32_t loop_count = y * width + x;
+
+                float color_index = (2.0 * (float)(x + y)) + additional_color_index;
+
+                float red = 512.0 - abs(remainderf(color_index, 1536.0));
+                if (red < 0.0)
+                {
+                    red = 0.0;
+                }
+                if (red > 255.0)
+                {
+                    red = 255.0;
+                }
+                float green = 512.0 - abs(remainderf(color_index - 512.0, 1536.0));
+                if (green < 0.0)
+                {
+                    green = 0.0;
+                }
+                if (green > 255.0)
+                {
+                    green = 255.0;
+                }
+                float blue = 512.0 - abs(remainderf(color_index - 1024.0, 1536.0));
+                if (blue < 0.0)
+                {
+                    blue = 0.0;
+                }
+                if (blue > 255.0)
+                {
+                    blue = 255.0;
+                }
+
+                pixelArray[loop_count] = SDL_MapRGBA(rgba, (Uint8)red, (Uint8)green, (Uint8)blue, 255);
+            }
+        }
+
+        SDL_UnlockTexture(texture); // Unlock when done
+    }
+
+    SDL_Rect temp_rect = { 0, 0, 400, 400 };
+
+    // Render the updated texture
+    SDL_RenderCopy(renderer, texture, NULL, &temp_rect);
+    //SDL_RenderPresent(renderer);
 }

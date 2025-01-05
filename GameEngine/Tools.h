@@ -1,9 +1,7 @@
 #pragma once
 
-#include "SDL.h"
-#include "SDL_image.h"
+#include "RectangleNew.h"
 #include "Camera.h"
-#include "SDL_mixer.h"
 #include <iostream>
 #include <algorithm>
 #include <random>
@@ -100,3 +98,26 @@ bool OverlapRectStructOneWithRectStructOne(const RectStructOne* const first_rect
 
 Point2D GetRelativePoint(const Point2D* const param_point, const Point2D reference_point, const Size2D reference_size_scale);
 Size2D GetRelativeSize(const Size2D* const param_size, const Size2D reference_size);
+
+
+
+
+
+
+// -----------------   RECTANGLENEW CONVERSIONS   -----------------
+
+SDL_Point Point2DNewToSDLPoint(const Point2DNew point, const RigidCentering pixel_side_horizontal, const RigidCentering pixel_side_vertical, const Camera* const camera);
+//Assumed outer pixel side
+SDL_Size Size2DNewToSDLSize(const Size2DNew size, const Point2DNew top_left_corner, const Camera* camera);
+//IMPORTANT!!: SDL_Rect does not include rotation or flipping, so essentially rotation is treated as 0 and flipping is treated as SDL_FLIP_NONE in this function!
+SDL_Rect RectangleNewToSDLRect(const RectangleNew* const rect, Camera* const camera);
+
+SDL_RectWithRotation RectangleNewToSDLRectWithRotation(const RectangleNew* const rect, Camera* const camera);
+SDL_RectWithRotation RectangleNewToSDLRectWithRotation(const Point2DNew* const pos, const Size2DNew* const unscaled_size, const Scale2DNew* const scale, const Centering2DNew* const centering, const Rotation2DNew* const rotation, const TotalFlip* const total_flip, Camera* const camera);
+
+
+SDL_RectWithRotation RefRectangleNewToSDLRectWithRotation(const RefRectangleNew* const rect, Camera* const camera);
+SDL_RectWithRotation RefRectangleNewToSDLRectWithRotation(const RefPoint2DNew* const pos, const Size2DNew* const unscaled_size, const RefScale2DNew* const scale, const Centering2DNew* const centering, const RefRotation2DNew* const rotation, const RefTotalFlip* const total_flip, Camera* const camera);
+
+SDL_RectWithRotation RefRectangleNewNewToSDLRectWithRotation(const RefRectangleNewNew* const rect, Camera* const camera);
+SDL_RectWithRotation RefRectangleNewNewToSDLRectWithRotation(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, Camera* const camera);

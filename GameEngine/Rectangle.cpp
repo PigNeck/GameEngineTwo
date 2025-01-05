@@ -108,6 +108,33 @@ void Direction::PrintProperties(const bool display_as_int)
         }
     }
 }
+Corner::Corner() : value(0) {}
+Corner::Corner(unsigned int param_value) : value(param_value) {};
+void Corner::PrintProperties(const bool display_as_int)
+{
+    if (display_as_int)
+    {
+        cout << "value: " << value;
+    }
+    else
+    {
+        switch (value)
+        {
+        case 0:
+            cout << "value: TOP-RIGHT";
+            break;
+        case 1:
+            cout << "value: BOTTOM-RIGHT";
+            break;
+        case 2:
+            cout << "value: BOTTOM-LEFT";
+            break;
+        case 3:
+            cout << "value: TOP-LEFT";
+            break;
+        }
+    }
+}
 
 RectStructOne::RectStructOne() {}
 RectStructOne::RectStructOne(const double param_uni_left_edge, const double param_uni_right_edge, const double param_uni_bottom_edge, const double param_uni_top_edge) : uni_left_edge(param_uni_left_edge), uni_right_edge(param_uni_right_edge), uni_bottom_edge(param_uni_bottom_edge), uni_top_edge(param_uni_top_edge) {}

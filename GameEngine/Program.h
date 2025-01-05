@@ -238,11 +238,12 @@ struct Program : RunDrawAndPostDrawRunMethods
 	//Initialize course paths
 	vector<CoursePath*> course_paths;
 
-	CoursePath intro_main;
-	CoursePath lesson_1_main;
-	CoursePath lesson_1_abstraction_justification;
-	CoursePath lesson_2_main;
-	CoursePath lesson_3_main;
+
+	bool previous_next_portion_button_accessibility = 0;
+	bool previous_previous_portion_button_accessibility = 0;
+	bool previous_finish_portion_button_accessibility = 0;
+	bool previous_previous_return_button_accessibility = 0;
+	bool previous_next_return_button_accessibility = 0;
 
 	SimpleTextButton next_portion_button;
 	SimpleTextButton previous_portion_button;
@@ -250,11 +251,14 @@ struct Program : RunDrawAndPostDrawRunMethods
 	SimpleTextButton next_return_portion_button;
 	SimpleTextButton previous_return_portion_button;
 
+	SimpleTextButton skedaddle_button;
+
 	double proportion_progress_bar_moved_reverse = 0.0;
 	Rectangle course_path_rectangle; //CURRENTLY CANNOT SCALE WITH RESOLUTION
 	TextBox course_path_text_box; //CURRENTLY CANNOT SCALE WITH RESOLUTION
 
 	vector<CoursePathPathData*> course_path_path;
+	size_t GetCurrentCoursePathPathDataIndex();
 	CoursePathPathData* GetCurrentCoursePathPathData();
 	CoursePath* GetCurrentCoursePath();
 	ProgressBar* GetCurrentCourseProgressBar();
@@ -297,6 +301,23 @@ struct Program : RunDrawAndPostDrawRunMethods
 
 
 
+	// ---------- COURSE SPECIFIC DATA ----------
+
+	CoursePath intro_main;
+	Texture goober_texture;
+	unsigned int goober_max_anim_counter = 0;
+	unsigned int goober_anim_counter = 0;
+	Rectangle goober_rectangle;
+
+	void UpdateGooberPos();
+
+	CoursePath lesson_1_main;
+	CoursePath lesson_1_abstraction_justification;
+	CoursePath lesson_2_main;
+	CoursePath lesson_3_main;
+
+
+
 
 
 
@@ -307,7 +328,7 @@ struct Program : RunDrawAndPostDrawRunMethods
 	vector<Lesson*> lessons; //LESSONS DO NOT SCALE WITH RESOLUTION YET
 
 	void AddLesson(const char* lesson_name, const unsigned int param_hour_estimate, const unsigned int param_minute_estimate, const size_t param_main_path_index);
-	void UpdateLessons();
+	bool UpdateLessons();
 	void DrawLessons();
 
 
@@ -401,6 +422,9 @@ struct Program : RunDrawAndPostDrawRunMethods
 	void UpdateCellSet(CellSet* const param_cell_set);
 	void DrawCellSet(CellSet* const param_cell_set, Camera* const camera);
 
+	void ResetCurrentVisableCharProgression(const double new_char_progression_value);
+
+	void SetCurrentPathAndPortionIndexesEx(const size_t param_path_index, size_t param_portion_index, const bool reset_course_path_path, const bool move_bars_instantly, const bool allow_semicomplete_portions);
 	//To start at the beginning of the portion, make param_visable_char_progression -1.0
 	void SetCurrentPathAndPortionIndexes(const size_t param_path_index, size_t param_portion_index, const bool reset_course_path_path, const bool move_bars_instantly);
 	//To start at the beginning of the portion, make param_visable_char_progression -1.0
@@ -472,4 +496,20 @@ struct Program : RunDrawAndPostDrawRunMethods
 	void RunScene9();
 	void DrawScene9();
 	void PostDrawRunScene9();
+
+
+
+
+	// ----------- TEST RECTANGLE ROTATION -----------
+
+	RefDoubleNew val_1_1 = RefDoubleNew({ 0.0, 0.0 });
+	RefDoubleNew val_1_2 = RefDoubleNew({ 1.0, 1.0 });
+	RefDoubleNew val_1_3 = RefDoubleNew({ 0.0 });
+	RefPoint2DNew val_2;
+
+	RefRectangleNewNew test_rect_new;
+	RefRectangleNewNew test_rect_new_two;
+	RefRectangleNewNew test_rect_new_three;
+
+	Point2DNew test_point = { 200.0, 150.0 };
 };

@@ -25,6 +25,8 @@ void SimpleTextButton::InitMost(Rectangle param_parent_rect, TextBox param_text_
 }
 void SimpleTextButton::InitWithMargin(Size2D parent_size_scale, string text, Font* param_font, Size2D param_scaled_margin_size, double param_scaled_border_width, double param_scaled_drop_amount)
 {
+	//WARNING: margin is confusing, as it defines the parent_rect_size, which includes the border and the drop_amount. Rephrase or change algorithm!
+
 	Rectangle temp_rectangle_data;
 
 	text_box.BasicInitTextBox(temp_rectangle_data, param_font, text);

@@ -19,3 +19,6 @@ TODO:
 
 Finish this by the year 2090
 
+
+- When a link is followed and the link was previously visited but not finished, the current_visable_char_progression is set incorrectly (finished for some reason)
+

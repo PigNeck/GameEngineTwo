@@ -145,6 +145,7 @@
     <ClCompile Include="Program.cpp" />
     <ClCompile Include="QueueSprite.cpp" />
     <ClCompile Include="Rectangle.cpp" />
+    <ClCompile Include="RectangleNew.cpp" />
     <ClCompile Include="ScrollBar.cpp" />
     <ClCompile Include="Sprite.cpp" />
     <ClCompile Include="TextBox.cpp" />
@@ -173,6 +174,7 @@
     <ClInclude Include="Program.h" />
     <ClInclude Include="QueueSprite.h" />
     <ClInclude Include="Rectangle.h" />
+    <ClInclude Include="RectangleNew.h" />
     <ClInclude Include="ScrollBar.h" />
     <ClInclude Include="Sprite.h" />
     <ClInclude Include="TextBox.h" />

@@ -339,6 +339,35 @@ void Program::SetCurrentTextPortionTextBoxProgression(const double target_visabl
 }
 
 
+size_t Program::GetCurrentCoursePathPathDataIndex()
+{
+	const size_t cpps = course_path_path.size();
+
+	if (removing_progress_bar)
+	{
+		if (cpps > size_t(1))
+		{
+			return cpps - size_t(2);
+		}
+		else
+		{
+			cout << "course_path_path.size() was 0 or 1 and removing_progress_bar was 1 :(. Sent by Program::GetCurrentCoursePathPathDataIndex()" << endl;
+			return numeric_limits<size_t>::max();
+		}
+	}
+	else
+	{
+		if (cpps > size_t(0))
+		{
+			return cpps - size_t(1);
+		}
+		else
+		{
+			cout << "course_path_path.size() was 0 :(. Sent by Program::GetCurrentCoursePathPathDataIndex()" << endl;
+			return numeric_limits<size_t>::max();
+		}
+	}
+}
 CoursePathPathData* Program::GetCurrentCoursePathPathData()
 {
 	const size_t cpps = course_path_path.size();
@@ -972,6 +1001,21 @@ void Program::ReduceStretchInCurrentTextPortionTextBox(const double rate)
 	}
 }
 
+void Program::UpdateGooberPos()
+{
+	if (!(((size_t)current_visable_char_progression == GetCurrentCoursePath()->GetCurrentPortion()->text.size()) && (goober_anim_counter == 0)))
+	{
+		goober_anim_counter++;
+		if (goober_anim_counter > goober_max_anim_counter)
+		{
+			goober_anim_counter = 0;
+		}
+	}
+
+	goober_rectangle.pos.y = (-pow((2.0 * (double)goober_anim_counter / (double)(goober_max_anim_counter + 1)) - 1.0, 2.0) + 1.0) * 30.0;
+
+}
+
 void Program::AddLesson(const char* lesson_name, const unsigned int param_hour_estimate, const unsigned int param_minute_estimate, const size_t param_main_path_index)
 {
 	const size_t lessons_size = lessons.size();
@@ -992,7 +1036,7 @@ void Program::AddLesson(const char* lesson_name, const unsigned int param_hour_e
 	lessons.back()->hour_estimate = param_hour_estimate;
 	lessons.back()->minute_estimate = param_minute_estimate;
 }
-void Program::UpdateLessons()
+bool Program::UpdateLessons()
 {
 	const size_t lessons_size = lessons.size();
 
@@ -1006,15 +1050,18 @@ void Program::UpdateLessons()
 		{
 			if (lessons[i]->main_path_index < course_paths.size())
 			{
-				SetCurrentPathAndPortionIndexes(lessons[i]->main_path_index, course_paths[lessons[i]->main_path_index]->current_portion_index, 1, 1);
+				SetCurrentPathAndPortionIndexesEx(lessons[i]->main_path_index, course_paths[lessons[i]->main_path_index]->current_portion_index, 1, 1, 0);
 			}
 			else
 			{
 				cout << "lessons[i]->main_path_index OUT OF RANGE!!!11!1 Set by UpdateLessons()." << endl;
 			}
 			SetScene(4, 0);
+			return 1;
 		}
 	}
+
+	return 0;
 }
 void Program::DrawLessons()
 {
@@ -1282,7 +1329,33 @@ void Program::DrawCellSet(CellSet* const param_cell_set, Camera* const camera)
 	}
 }
 
-void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, size_t param_portion_index, const bool reset_course_path_path, const bool move_bars_instantly)
+void Program::ResetCurrentVisableCharProgression(const double new_char_progression_value)
+{
+	current_visable_char_progression = new_char_progression_value;
+
+	const bool trunc_visable_char_progression_valid = (current_visable_char_progression >= 0.0);
+	size_t trunc_visable_char_progression = (size_t)current_visable_char_progression;
+	for (size_t i = 0; i < current_text_portion_text_box.chars.size(); i++)
+	{
+		//Determine visibility of chars based on param_visable_char_progression
+		if (trunc_visable_char_progression_valid)
+		{
+			if (i > trunc_visable_char_progression)
+			{
+				current_text_portion_text_box.chars[i]->a_mod = 0;
+			}
+			else
+			{
+				current_text_portion_text_box.chars[i]->a_mod = 255;
+			}
+		}
+		else
+		{
+			current_text_portion_text_box.chars[i]->a_mod = 0;
+		}
+	}
+}
+void Program::SetCurrentPathAndPortionIndexesEx(const size_t param_path_index, size_t param_portion_index, const bool reset_course_path_path, const bool move_bars_instantly, const bool allow_semicomplete_portions)
 {
 	bool changed_path_index = 0;
 
@@ -1476,92 +1549,82 @@ void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, siz
 
 
 		//Add all the chars from current_portion to current_text_portion_text_box (blue if part of a link).
-		if (changed_portion_index)
+		TextPortion* const current_portion = GetCurrentCoursePath()->GetCurrentPortion();
+
+		current_text_portion_text_box.Clear();
+		for (size_t i = 0; i < current_portion->text.size(); i++)
 		{
-			TextPortion* const current_portion = GetCurrentCoursePath()->GetCurrentPortion();
-
-			current_text_portion_text_box.Clear();
-			for (size_t i = 0; i < current_portion->text.size(); i++)
+			if (current_portion->CharPartOfLink(i) == numeric_limits<size_t>::max())
 			{
-				if (current_portion->CharPartOfLink(i) == numeric_limits<size_t>::max())
-				{
-					current_text_portion_text_box.AddChar(current_portion->text[i].value);
-				}
-				else
-				{
-					current_text_portion_text_box.AddChar(current_portion->text[i].value, 0, 0, 200, 255);
-				}
+				current_text_portion_text_box.AddChar(current_portion->text[i].value);
 			}
-			current_text_portion_text_box.UpdateCharPos();
-
-
-
-
-
-			//Set current_visable_char_progression and progress
-			const size_t current_portion_text_size = current_text_portion_text_box.chars.size();
-			if (!finished_portion)
+			else
 			{
-				if (*current_portion_index > *progress)
-				{
-					*progress = *current_portion_index;
-					changed_progress = 1;
+				current_text_portion_text_box.AddChar(current_portion->text[i].value, 0, 0, 200, 255);
+			}
+		}
+		current_text_portion_text_box.UpdateCharPos();
 
-					current_visable_char_progression = -1.0;
-				}
-				else
+
+
+
+
+		//Set current_visable_char_progression and progress
+		const size_t current_portion_text_size = current_text_portion_text_box.chars.size();
+		if (!finished_portion)
+		{
+			if (*current_portion_index > *progress)
+			{
+				*progress = *current_portion_index;
+				changed_progress = 1;
+
+				current_visable_char_progression = -1.0;
+			}
+			else
+			{
+				if (*current_portion_index == *progress)
 				{
-					if (*current_portion_index == *progress)
+					const double VISIBLE_CHAR_REDUCTION = 30.0;
+					const double VISIBLE_CHAR_FINISH_LENIENCY = 12.0;
+
+					current_visable_char_progression = GetCurrentCoursePath()->saved_visable_char_progression - VISIBLE_CHAR_REDUCTION;
+					if (current_visable_char_progression <= -1.0)
 					{
-						current_visable_char_progression = GetCurrentCoursePath()->saved_visable_char_progression - 30.0;
-						if (current_visable_char_progression <= -1.0)
+						current_visable_char_progression = -1.0;
+					}
+					else
+					{
+						if ((current_visable_char_progression + VISIBLE_CHAR_REDUCTION) >= ((double)current_portion_text_size - VISIBLE_CHAR_FINISH_LENIENCY))
 						{
-							current_visable_char_progression = -1.0;
+							current_visable_char_progression = (double)current_portion_text_size;
 						}
 						else
 						{
-							if ((current_visable_char_progression + 30.0) >= ((double)current_portion_text_size - 12.0))
+							if (changed_path_index || !allow_semicomplete_portions)
 							{
-								current_visable_char_progression = (double)current_portion_text_size;
+								current_visable_char_progression = -1.0;
 							}
 						}
-					}
-					else
-					{
-						current_visable_char_progression = (double)current_portion_text_size;
-					}
-				}
-			}
-
-
-
-
-
-			//Set the initial visibility of chars and push_back to saved_char_sizes
-			saved_char_sizes.clear();
-			const bool trunc_visable_char_progression_valid = (current_visable_char_progression >= 0.0);
-			size_t trunc_visable_char_progression = (size_t)current_visable_char_progression;
-			for (size_t i = 0; i < current_text_portion_text_box.chars.size(); i++)
-			{
-				//Determine visibility of chars based on param_visable_char_progression
-				if (trunc_visable_char_progression_valid)
-				{
-					if (i > trunc_visable_char_progression)
-					{
-						current_text_portion_text_box.chars[i]->a_mod = 0;
-					}
-					else
-					{
-						current_text_portion_text_box.chars[i]->a_mod = 255;
 					}
 				}
 				else
 				{
-					current_text_portion_text_box.chars[i]->a_mod = 0;
+					current_visable_char_progression = (double)current_portion_text_size;
 				}
-
-				saved_char_sizes.push_back(current_text_portion_text_box.chars[i]->rect.size);
 			}
+		}
+
+
+
+		ResetCurrentVisableCharProgression(current_visable_char_progression);
+
+
+
+		//Add to saved_char_sizes
+		saved_char_sizes.clear();
+		for (size_t i = 0; i < current_text_portion_text_box.chars.size(); i++)
+		{
+			saved_char_sizes.push_back(current_text_portion_text_box.chars[i]->rect.size);
 		}
 
 
@@ -1624,6 +1687,10 @@ void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, siz
 	{
 		cout << "course_text_size == 0, so function quit. Sent from SetCurrentTextPortionIndex(...)" << endl;
 	}
+}
+void Program::SetCurrentPathAndPortionIndexes(const size_t param_path_index, size_t param_portion_index, const bool reset_course_path_path, const bool move_bars_instantly)
+{
+	SetCurrentPathAndPortionIndexesEx(param_path_index, param_portion_index, reset_course_path_path, move_bars_instantly, 1);
 }
 void Program::SetCurrentTextPortionIndex(size_t param_portion_index, const bool reset_course_path_path, const bool move_bar_instantly)
 {
@@ -1847,6 +1914,12 @@ void Program::SetScene4()
 	next_return_portion_button.press_data.Reset();
 	finish_portion_button.press_data.Reset();
 
+	previous_next_portion_button_accessibility = 0;
+	previous_previous_portion_button_accessibility = 0;
+	previous_finish_portion_button_accessibility = 0;
+	previous_previous_return_button_accessibility = 0;
+	previous_next_return_button_accessibility = 0;
+
 	complete_lesson_cutscene_timer = -1.0;
 }
 void Program::EndScene4()
@@ -1862,6 +1935,8 @@ void Program::RunScene4()
 	const bool at_last_portion = (GetCurrentCoursePath()->current_portion_index + size_t(1)) >= GetCurrentCoursePath()->portions.size();
 	const bool all_portion_chars_visable = current_visable_char_progression >= (double)(current_text_portion_text_box.chars.size() - size_t(1));
 	const bool has_return_path_index = (GetCurrentCoursePath()->return_path_index != numeric_limits<size_t>::max());
+
+	
 
 	const bool next_portion_button_accessibility = all_portion_chars_visable && !at_last_portion;
 	next_portion_button.press_data.pressable = next_portion_button_accessibility;
@@ -1879,12 +1954,80 @@ void Program::RunScene4()
 	next_return_portion_button.press_data.pressable = next_return_button_accessibility;
 	next_return_portion_button.press_data.hoverable = next_return_button_accessibility;
 
+	if (next_portion_button_accessibility)
+	{
+		e->UpdateSimpleTextButton(&next_portion_button, e->blank_camera, &main_layer, 0, {});
+	}
+	else
+	{
+		if (previous_next_portion_button_accessibility)
+		{
+			next_portion_button.press_data.Reset();
+		}
+	}
 
-	e->UpdateSimpleTextButton(&next_portion_button, e->blank_camera, &main_layer, 0, { &main_layer });
-	e->UpdateSimpleTextButton(&previous_portion_button, e->blank_camera, &main_layer, 0, { &main_layer });
-	e->UpdateSimpleTextButton(&previous_return_portion_button, e->blank_camera, &main_layer, 0, { &main_layer });
-	e->UpdateSimpleTextButton(&next_return_portion_button, e->blank_camera, &main_layer, 0, { &main_layer });
-	e->UpdateSimpleTextButton(&finish_portion_button, e->blank_camera, &main_layer, 0, { &main_layer });
+	if (previous_portion_button_accessibility)
+	{
+		e->UpdateSimpleTextButton(&previous_portion_button, e->blank_camera, &main_layer, 0, {});
+	}
+	else
+	{
+		if (previous_previous_portion_button_accessibility)
+		{
+			previous_portion_button.press_data.Reset();
+		}
+	}
+
+	if (previous_return_button_accessibility)
+	{
+		e->UpdateSimpleTextButton(&previous_return_portion_button, e->blank_camera, &main_layer, 0, {});
+	}
+	else
+	{
+		if (previous_previous_return_button_accessibility)
+		{
+			previous_return_portion_button.press_data.Reset();
+		}
+	}
+
+	if (next_return_button_accessibility)
+	{
+		e->UpdateSimpleTextButton(&next_return_portion_button, e->blank_camera, &main_layer, 0, {});
+	}
+	else
+	{
+		if (previous_next_return_button_accessibility)
+		{
+			next_portion_button.press_data.Reset();
+		}
+	}
+
+	if (finish_portion_button_accessibility)
+	{
+		e->UpdateSimpleTextButton(&finish_portion_button, e->blank_camera, &main_layer, 0, {});
+	}
+	else
+	{
+		if (previous_finish_portion_button_accessibility)
+		{
+			finish_portion_button.press_data.Reset();
+		}
+	}
+
+	previous_next_portion_button_accessibility = next_portion_button_accessibility;
+	previous_previous_portion_button_accessibility = previous_portion_button_accessibility;
+	previous_finish_portion_button_accessibility = finish_portion_button_accessibility;
+	previous_previous_return_button_accessibility = previous_return_button_accessibility;
+	previous_next_return_button_accessibility = next_return_button_accessibility;
+
+
+	e->UpdateSimpleTextButton(&skedaddle_button, e->blank_camera, &main_layer, 0, {});
+	if (skedaddle_button.press_data.first_frame_released)
+	{
+		SetScene(5, 0);
+		return;
+	}
+
 
 
 	if (complete_lesson_cutscene_timer == -1.0)
@@ -1911,8 +2054,13 @@ void Program::RunScene4()
 			}
 		}
 
+
+		if (previous_return_portion_button.press_data.first_frame_released)
+		{
+			SetCurrentPathAndPortionIndexes(GetCurrentCoursePath()->return_path_index, numeric_limits<size_t>::max(), 0, 1);
+		}
 		
-		if (previous_return_portion_button.press_data.first_frame_released || next_return_portion_button.press_data.first_frame_released)
+		if (next_return_portion_button.press_data.first_frame_released)
 		{
 			SetCurrentTextPortionIndex(GetCurrentCoursePath()->portions.size(), 0, 0);
 			SetCurrentPathAndPortionIndexes(GetCurrentCoursePath()->return_path_index, numeric_limits<size_t>::max(), 0, 1);
@@ -1923,6 +2071,32 @@ void Program::RunScene4()
 		AdvanceCurrentTextPortionTextBox(0.64, { 0.66667, 1.5 }, 1);
 		CheckForLinkClicksAndGenerateSavedLinkRects(0.8, { 0.66667, 1.5 }, 1, 0);
 	}
+
+
+
+	// COURSE SPECIFIC UPDATING
+
+	const CoursePath* current_course_path = GetCurrentCoursePath();
+	const size_t current_portion_index = current_course_path->current_portion_index;
+
+	if (current_course_path)
+	{
+		if (current_course_path == &intro_main)
+		{
+			UpdateGooberPos();
+
+			switch (current_portion_index)
+			{
+			case 0:
+				break;
+			}
+		}
+	}
+
+
+
+
+
 	if (complete_lesson_cutscene_timer != -1.0)
 	{
 		if (complete_lesson_cutscene_timer >= 2.3)
@@ -1942,11 +2116,6 @@ void Program::RunScene4()
 	ReduceStretchInCurrentTextPortionTextBox(0.2);
 
 	UpdateCoursePathPathProgressBars();
-
-	if (update_and_draw_tool_tip_this_frame)
-	{
-		e->UpdateToolTip(&link_tool_tip, e->blank_camera);
-	}
 }
 void Program::DrawScene4()
 {
@@ -2043,11 +2212,40 @@ void Program::DrawScene4()
 		e->DrawSimpleTextButton(&previous_portion_button, e->blank_camera);
 	}
 
+	e->DrawSimpleTextButton(&skedaddle_button, e->blank_camera);
+
+
+	// COURSE SPECIFIC DRAWING
+
+	const CoursePath* current_course_path = GetCurrentCoursePath();
+	const size_t current_portion_index = current_course_path->current_portion_index;
+
+	if (current_course_path)
+	{
+		if (current_course_path == &intro_main)
+		{
+			e->DrawTexture(&goober_texture, e->blank_camera, &goober_rectangle);
+
+			switch (current_portion_index)
+			{
+			case 0:
+				break;
+			}
+		}
+	}
+
+
+
+
+
+
+
 	//Draw Confetti
 	DrawConfetti(e->blank_camera);
 
 	if (update_and_draw_tool_tip_this_frame)
 	{
+		e->UpdateToolTip(&link_tool_tip, e->blank_camera);
 		e->DrawToolTip(&link_tool_tip, e->blank_camera);
 
 		update_and_draw_tool_tip_this_frame = 0;
@@ -2083,7 +2281,10 @@ void Program::EndScene5()
 void Program::RunScene5()
 {
 	e->UpdateScrollBar(&lessons_scroll_bar, e->blank_camera, &main_layer, 0, { &main_layer });
-	UpdateLessons();
+	if (UpdateLessons())
+	{
+		return;
+	}
 }
 void Program::DrawScene5()
 {
@@ -2105,11 +2306,80 @@ void Program::EndScene6()
 }
 void Program::RunScene6()
 {
+	if (e->input.j.pressed)
+	{
+		//val_1_1.v[0] -= 1.0;
+		//val_1_1.v[1] -= 0.5;
 
+		test_rect_new.pos.x -= 1.0;
+		test_rect_new.pos.y -= 0.5;
+	}
+	if (e->input.k.pressed)
+	{
+		//val_1_1.v[0] += 1.0;
+		//val_1_1.v[1] += 0.5;
+
+		test_rect_new.pos.x += 1.0;
+		test_rect_new.pos.y += 0.5;
+	}
+
+	if (e->input.n.pressed)
+	{
+		//val_1_2.v[0] *= 0.8;
+		//val_1_2.v[1] *= 0.8;
+
+		test_rect_new.scale.width_scale *= 0.95;
+		test_rect_new.scale.height_scale *= 0.95;
+	}
+	if (e->input.m.pressed)
+	{
+		//val_1_2.v[0] *= 1.25;
+		//val_1_2.v[1] *= 1.25;
+
+		test_rect_new.scale.width_scale /= 0.95;
+		test_rect_new.scale.height_scale /= 0.95;
+	}
+
+	if (e->input.b.pressed)
+	{
+		test_rect_new.rotation.radians += 0.01;
+	}
+
+	val_1_3.v[0] += 0.02;
+
+	if (e->input.v.first_frame_pressed)
+	{
+		test_rect_new_two.pos.SetValueToFitUniValue({ test_point.x, test_point.y });
+		//test_rect_new_two.pos.v[0] += 5.0;
+	}
+
+	if (e->input.g.first_frame_pressed)
+	{
+		test_rect_new_two.total_flip.v.flip_horizontally = !test_rect_new_two.total_flip.v.flip_horizontally;
+	}
+	if (e->input.h.first_frame_pressed)
+	{
+		test_rect_new_two.total_flip.v.flip_vertically = !test_rect_new_two.total_flip.v.flip_vertically;
+	}
 }
 void Program::DrawScene6()
 {
+	const vector<double> temp_1 = val_1_1.GetUniValue();
+	const vector<double> temp_2 = val_2.GetUniValue();
 
+	Point2D p1 = { temp_1[0], temp_1[1] };
+	Point2D p2 = { temp_2[0], temp_2[1] };
+
+	e->DrawPoint(&p1, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
+	e->DrawPoint(&p2, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
+
+	e->DrawTextureWithRefRectangleNewNew(&test_rect_new, e->distinguishing_sides_t, nullptr, nullptr, e->blank_camera);
+	e->DrawTextureWithRefRectangleNewNew(&test_rect_new_two, e->distinguishing_sides_t, nullptr, nullptr, e->blank_camera);
+	e->DrawTextureWithRefRectangleNewNew(&test_rect_new_three, e->distinguishing_sides_t, nullptr, nullptr, e->blank_camera);
+
+	Point2D p3 = { test_point.x, test_point.y };
+
+	e->DrawPoint(&p3, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
 }
 void Program::PostDrawRunScene6()
 {
@@ -2190,7 +2460,7 @@ Program::Program() : e(nullptr)
 	const double blank_camera_left_edge = e->blank_camera->rect.GetUniEdge({ 2 });
 	const double blank_camera_top_edge = e->blank_camera->rect.GetUniEdge({ 3 });
 
-	
+
 
 
 
@@ -2252,13 +2522,20 @@ Program::Program() : e(nullptr)
 	finish_portion_button.press_data.pressable = 0;
 
 
+	skedaddle_button.InitWithMargin({ 4.0, 4.0 }, "Skeddadle", &e->default_font, { 24.0, 12.0 }, 4.0, 4.0);
+	skedaddle_button.parent_rect.SetPosWithUniEdge(blank_camera_left_edge, { 2 });
+	skedaddle_button.parent_rect.SetPosWithUniEdge(blank_camera_top_edge, { 3 });
+	skedaddle_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+
+
+
 
 
 
 	course_path_rectangle.size.width = e->blank_camera->rect.size.width;
 	course_path_rectangle.size.height = 26.0;
 	course_path_rectangle.SetBaseSizeWithSizeScale({ 2.0, 2.0 });
-	course_path_rectangle.SetPosWithUniEdge(previous_portion_button.parent_rect.GetUniEdge({3}), {1});
+	course_path_rectangle.SetPosWithUniEdge(previous_portion_button.parent_rect.GetUniEdge({ 3 }), { 1 });
 	course_path_rectangle.SetPosWithUniEdge(e->blank_camera->rect.GetUniEdge({ 2 }), { 2 });
 	course_path_rectangle.pos.x += 6.0;
 	course_path_rectangle.pos.y += 6.0;
@@ -2270,11 +2547,24 @@ Program::Program() : e(nullptr)
 	course_path_rectangle.pos.y -= 6.0;
 
 
+	link_tool_tip.InitLeast(&e->default_font);
 
 
 
 
-	// ----   CREATE COURSE DATA   ----
+
+	// ---------- COURSE SPECIFIC DATA ----------
+
+	goober_texture.LoadTexture(e->renderer, "images/program/little_fellow_fade_out_fix.png");
+	goober_max_anim_counter = round(e->frame_factor * 16);
+	if (goober_max_anim_counter == 0)
+	{
+		goober_max_anim_counter = 1;
+	}
+	goober_anim_counter = 0;
+	goober_rectangle.size = { 216.0, 208.0 };
+	goober_rectangle.pos = { 0.0, 0.0 };
+
 
 	intro_main.path_name = "Intro";
 
@@ -2365,12 +2655,7 @@ Program::Program() : e(nullptr)
 
 
 
-	SetCurrentPathAndPortionIndexes(0, 0, 1, 1);
-
-
-
-
-	link_tool_tip.InitLeast(&e->default_font);
+	SetCurrentPathAndPortionIndexes(0, 0, 1, 1); //This tecnically isn't course specific. However, it needs to be called after the courses are created (I think)
 
 
 
@@ -2398,7 +2683,7 @@ Program::Program() : e(nullptr)
 
 
 	// -----------------   INITIALIZE MOUSE LAYERS   -----------------
-	
+
 	main_layer.Init(&e->mouse_layers);
 
 
@@ -2410,7 +2695,7 @@ Program::Program() : e(nullptr)
 
 	const double window_width_scaling = (double)e->window_width / (double)DEFAULT_WINDOW_WIDTH;
 	const double window_height_scaling = (double)e->window_height / (double)DEFAULT_WINDOW_HEIGHT;
-	
+
 	double lesser_scale;
 	if (window_width_scaling <= window_height_scaling)
 	{
@@ -2427,7 +2712,7 @@ Program::Program() : e(nullptr)
 	const double editing_button_list_y = 400.0;
 	const double editing_button_spacing_y = 180.0;
 
-	code_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Code", & e->default_font, editing_button_size, five_lesser_scale, five_lesser_scale, {0.0, 0.0}, 0);
+	code_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Code", &e->default_font, editing_button_size, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
 	//code_button.CreateDebugData({ &e->engine_debug_data_container }, "Code Button", { 1 });
 	code_button.parent_rect.pos = { editing_button_list_x / window_width_scaling, (editing_button_list_y - (editing_button_spacing_y * 0.0)) / window_height_scaling };
 	code_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
@@ -2526,6 +2811,30 @@ Program::Program() : e(nullptr)
 	*/
 
 	test_container.InitLeast({}, &e->default_font, "Test Container", nullptr, {}, 1);
+
+
+
+
+
+	// ----------- TEST RECTANGLE ROTATION -----------
+
+	val_2.reference_point = &val_1_1;
+	val_2.reference_scale = &val_1_2;
+	val_2.reference_rotation = &val_1_3;
+	val_2.v[0] = 20.0;
+	val_2.v[1] = 40.0;
+
+	test_rect_new.centering = { 1.0, -1.0 };
+
+	test_rect_new_two.pos = { -100.0, 50.0 };
+	test_rect_new_two.unscaled_size = { 50.0, 25.0 };
+	test_rect_new_two.rotation = { 0.5 };
+	test_rect_new_two.SetReference(&test_rect_new);
+
+	test_rect_new_three.pos = { 80.0, 60.0 };
+	test_rect_new_three.unscaled_size = { 25.0, 50.0 };
+	test_rect_new_three.rotation = { 0.5 };
+	test_rect_new_three.SetReference(&test_rect_new_two);
 }
 Program::~Program()
 {
