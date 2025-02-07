@@ -9,7 +9,7 @@ using namespace std;
 
 struct Line
 {
-	Rectangle rect;
+	RectangleOld rect;
 	size_t first_index = 0;
 	size_t last_index = 0;
 
@@ -30,7 +30,7 @@ struct TextBox
 
 	// -----------------   PARAMETER DATA   -----------------
 
-	Rectangle parent_rect;
+	RectangleOld parent_rect;
 	Font* default_text_box_font;
 
 	RigidCentering horizontal_text_centering;
@@ -69,10 +69,10 @@ struct TextBox
 
 
 
-	void BasicInitTextBox(Rectangle param_parent_rectangle_data, Font* param_font, string param_chars);
+	void BasicInitTextBox(RectangleOld param_parent_rectangle_data, Font* param_font, string param_chars);
 
 	void InitLeast(Font* const param_default_font);
-	void InitMost(Font* const param_default_font, const Rectangle param_parent_rectangle_data, const char* const param_chars, const RigidCentering param_horizontal_centering, const RigidCentering param_vertical_centering, const bool param_text_wrap);
+	void InitMost(Font* const param_default_font, const RectangleOld param_parent_rectangle_data, const char* const param_chars, const RigidCentering param_horizontal_centering, const RigidCentering param_vertical_centering, const bool param_text_wrap);
 
 	void UpdateCharPos();
 	void GenerateLineSizes();
@@ -127,4 +127,12 @@ private:
 
 
 	double GetLineHeightWithPreviousSpacing(int index);
+};
+
+
+
+
+struct TextBoxNew
+{
+
 };

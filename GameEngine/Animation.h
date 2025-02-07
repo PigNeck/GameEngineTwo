@@ -10,11 +10,9 @@ using namespace std;
 
 struct Frame
 {
-	Texture* texture;
+	Texture* texture = nullptr;
 	//frame_length is measured in seconds
-	double frame_length;
-
-	Frame();
+	double frame_length = 0.1;
 };
 
 struct Animation
@@ -30,6 +28,6 @@ struct Animation
 
 	Frame* GetCurrentFrame();
 
-	void LoadFrames(SDL_Renderer* const renderer, const char* folder_path, const int number_of_frames, double frame_rate);
+	void LoadFrames(const char* const folder_path, const int number_of_frames, const double frame_rate);
 };
 

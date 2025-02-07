@@ -3,7 +3,7 @@
 
 struct Player
 {
-	Rectangle hitbox;
+	RectangleOld hitbox;
 
 	Sprite sprite;
 
@@ -58,11 +58,11 @@ struct Bar
 	double lighting_level = 0.0; //The percent of the secondary color that comes through. If =0, progress_color is drawn. If >=100, secondary_progress_color is drawn. Lowest possible value is 0.01
 	double lighting_advance_rate = 5.0; //The percent of lighting_level that is shaved off every 1/60 of a second.
 
-	Rectangle progress_rect; //Is a child rect of back_rect.
+	RectangleOld progress_rect; //Is a child rect of back_rect.
 	SDL_Color progress_color = { 0, 0, 0, 255 };
 	SDL_Color secondary_progress_color = { 255, 255, 255, 255 };
 
-	Rectangle* progress_back_rect_pointer = nullptr;
+	RectangleOld* progress_back_rect_pointer = nullptr;
 
 	//Call this function before Updating this instance of Bar. Percent filled = discrete_progress / discrete_capacity
 	void SetTargetWidth(const size_t discrete_progress, const size_t discrete_capacity, const bool light_bar);
@@ -79,9 +79,9 @@ struct ProgressBar //Rotation is not supported for ProgressBar :(
 {
 	vector<Bar*> bars;
 
-	Rectangle back_rect; //Is the parent rect of progress_back_rect. Treat it like a "parent_rect" which is also drawn to the screen as the "outline" of the progress bar.
+	RectangleOld back_rect; //Is the parent rect of progress_back_rect. Treat it like a "parent_rect" which is also drawn to the screen as the "outline" of the progress bar.
 	SDL_Color back_color = { 0, 0, 0, 255 };
-	Rectangle progress_back_rect; //Is a child rect of back_rect.
+	RectangleOld progress_back_rect; //Is a child rect of back_rect.
 	SDL_Color progress_back_color = { 215, 215, 215, 255 };
 
 	//Call this function before Updating this instance of Bar. Percent filled = discrete_progress / discrete_capacity
@@ -107,7 +107,7 @@ struct ProgressBar //Rotation is not supported for ProgressBar :(
 	//The suggested way to initialize an instance of ProgressBar is with one of the InitBasic(...) functions
 	void InitLeast();
 	//The suggested way to initialize an instance of ProgressBar is with one of the InitBasic(...) functions
-	void InitMost(const vector<Bar*> param_bars, const Rectangle param_back_rect, const SDL_Color param_back_color, const Rectangle param_progress_back_rect, const SDL_Color param_progress_back_color);
+	void InitMost(const vector<Bar*> param_bars, const RectangleOld param_back_rect, const SDL_Color param_back_color, const RectangleOld param_progress_back_rect, const SDL_Color param_progress_back_color);
 	//This is one of the suggested ways to initialize an instance of ProgressBar. There is also the other InitBasic(...) function (which takes different parameters).
 	void InitBasic(const Point2D position, const Size2D back_rect_size, const double outline_thickness, const size_t discrete_progress, const size_t discrete_capacity);
 	//This is one of the suggested ways to initialize an instance of ProgressBar. There is also the other InitBasic(...) function (which takes different parameters).
@@ -202,20 +202,20 @@ struct Program : RunDrawAndPostDrawRunMethods
 	Animation swim_anim;
 	Animation pride_anim;
 
-	Texture light_ground;
-	Texture dark_ground;
-	Texture grassy_ground;
-	Texture cobble_ground;
-	Texture ground_highlight;
+	Texture* light_ground = new Texture();
+	Texture* dark_ground = new Texture();
+	Texture* grassy_ground = new Texture();
+	Texture* cobble_ground = new Texture();
+	Texture* ground_highlight = new Texture();
 	Animation water_ground;
 
-	Texture tree;
+	Texture* tree = new Texture();
 
 	Ground ground;
 
 	Player player;
 
-	Rectangle test_rect;
+	RectangleOld test_rect;
 
 
 
@@ -254,7 +254,7 @@ struct Program : RunDrawAndPostDrawRunMethods
 	SimpleTextButton skedaddle_button;
 
 	double proportion_progress_bar_moved_reverse = 0.0;
-	Rectangle course_path_rectangle; //CURRENTLY CANNOT SCALE WITH RESOLUTION
+	RectangleOld course_path_rectangle; //CURRENTLY CANNOT SCALE WITH RESOLUTION
 	TextBox course_path_text_box; //CURRENTLY CANNOT SCALE WITH RESOLUTION
 
 	vector<CoursePathPathData*> course_path_path;
@@ -304,10 +304,10 @@ struct Program : RunDrawAndPostDrawRunMethods
 	// ---------- COURSE SPECIFIC DATA ----------
 
 	CoursePath intro_main;
-	Texture goober_texture;
+	Texture* goober_texture = new Texture();
 	unsigned int goober_max_anim_counter = 0;
 	unsigned int goober_anim_counter = 0;
-	Rectangle goober_rectangle;
+	RectangleOld goober_rectangle;
 
 	void UpdateGooberPos();
 
@@ -507,9 +507,16 @@ struct Program : RunDrawAndPostDrawRunMethods
 	RefDoubleNew val_1_3 = RefDoubleNew({ 0.0 });
 	RefPoint2DNew val_2;
 
-	RefRectangleNewNew test_rect_new;
-	RefRectangleNewNew test_rect_new_two;
-	RefRectangleNewNew test_rect_new_three;
+	//RefRectangleNewNew test_rect_new;
+	//RefRectangleNewNew test_rect_new_two;
+	//RefRectangleNewNew test_rect_new_three;
+
+	RefRectangleNewest test_rect_new;
+	RefRectangleNewest test_rect_new_two;
+	RefRectangleNewest test_rect_new_three;
 
 	Point2DNew test_point = { 200.0, 150.0 };
+
+	RefRectangle90 test_90_rect;
+	RefRectangle90 test_90_rect_two;
 };

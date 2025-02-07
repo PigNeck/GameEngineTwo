@@ -148,8 +148,9 @@ FontChar::FontChar(Texture* param_texture, char param_char_value, double param_d
 
 
 	//Define default_width and default_height
-	int int_width, int_height;
-	SDL_QueryTexture(texture->sdl_texture, NULL, NULL, &int_width, &int_height);
+	int int_width = 5;
+	int int_height = 7;
+	//SDL_QueryTexture(texture->sdl_texture, NULL, NULL, &int_width, &int_height);
 	default_width = (double)int_width;
 	default_height = (double)int_height;
 
@@ -158,4 +159,53 @@ FontChar::FontChar(Texture* param_texture, char param_char_value, double param_d
 	default_unscaled_y_offset = 0;
 
 	default_char_spacing = param_default_char_spacing;
+}
+
+
+
+
+
+BasicFontChar::BasicFontChar() {}
+BasicFontChar::BasicFontChar(const char i_char_value) : char_value(i_char_value) {}
+BasicFontChar::BasicFontChar(const char i_char_value, const Texture* const i_texture) : char_value(i_char_value), texture(i_texture), template_pixel_width(i_texture->width), template_pixel_height(i_texture->height) {}
+BasicFontChar::BasicFontChar(const char i_char_value, const Texture* const i_texture, const double i_template_pixel_width, const double i_template_pixel_height) : char_value(i_char_value), texture(i_texture), template_pixel_width(i_template_pixel_width), template_pixel_height(i_template_pixel_height) {}
+BasicFontChar::BasicFontChar(const char i_char_value, const Texture* const i_texture, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset) : char_value(i_char_value), texture(i_texture), template_pixel_width(i_texture->width), template_pixel_height(i_texture->height), template_pixel_x_offset(i_template_pixel_x_offset), template_pixel_y_offset(i_template_pixel_y_offset) {}
+BasicFontChar::BasicFontChar(const char i_char_value, const Texture* const i_texture, const double i_template_pixel_width, const double i_template_pixel_height, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset) : char_value(i_char_value), texture(i_texture), template_pixel_width(i_template_pixel_width), template_pixel_height(i_template_pixel_height), template_pixel_x_offset(i_template_pixel_x_offset), template_pixel_y_offset(i_template_pixel_y_offset) {}
+
+void BasicFontChar::InitLeast(const Texture* const i_texture, const char i_char_value)
+{
+	SetTexture(i_texture);
+	char_value = i_char_value;
+}
+void BasicFontChar::InitWithOffset(const Texture* const i_texture, const char i_char_value, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset)
+{
+	SetTexture(i_texture);
+	char_value = i_char_value;
+	template_pixel_x_offset = i_template_pixel_x_offset;
+	template_pixel_y_offset = i_template_pixel_y_offset;
+}
+void BasicFontChar::InitMost(const Texture* const i_texture, const char i_char_value, const double i_template_pixel_width, const double i_template_pixel_height, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset)
+{
+	texture = i_texture;
+	char_value = i_char_value;
+	template_pixel_width = i_template_pixel_width;
+	template_pixel_height = i_template_pixel_height;
+	template_pixel_x_offset = i_template_pixel_x_offset;
+	template_pixel_y_offset = i_template_pixel_y_offset;
+}
+
+void BasicFontChar::SetTexture(const Texture* const i_texture)
+{
+	if (i_texture)
+	{
+		texture = i_texture;
+
+		template_pixel_width = i_texture->width;
+		template_pixel_height = i_texture->height;
+	}
+	else
+	{
+		cerr << "Bruh, you passed nullptr (cringe). Sent by void BasicFontChar::SetTexture(const Texture* const i_texture)." << endl;
+		throw;
+	}
 }

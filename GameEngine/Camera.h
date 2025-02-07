@@ -6,6 +6,13 @@
 using namespace std;
 
 struct Camera {
-	Rectangle rect;
+	RectangleOld rect;
 	DebugDataContainer debug_data_container;
+};
+
+struct CameraNew {
+	RefRectangleNewest rect;
+};
+struct CameraNew90 {
+	RefRectangle90 rect;
 };

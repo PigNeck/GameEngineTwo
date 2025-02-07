@@ -19,7 +19,7 @@ void Line::CreateDebugData(const vector<DebugDataContainer*> param_owner_debug_d
 
 
 
-void TextBox::BasicInitTextBox(Rectangle param_parent_rectangle_data, Font* param_font, string param_chars)
+void TextBox::BasicInitTextBox(RectangleOld param_parent_rectangle_data, Font* param_font, string param_chars)
 {
 	Clear();
 
@@ -43,7 +43,7 @@ void TextBox::InitLeast(Font* const param_default_font)
 
 	SetDefaultFont(param_default_font);
 }
-void TextBox::InitMost(Font* const param_default_font, const Rectangle param_parent_rectangle_data, const char* const param_chars, const RigidCentering param_horizontal_centering, const RigidCentering param_vertical_centering, const bool param_text_wrap)
+void TextBox::InitMost(Font* const param_default_font, const RectangleOld param_parent_rectangle_data, const char* const param_chars, const RigidCentering param_horizontal_centering, const RigidCentering param_vertical_centering, const bool param_text_wrap)
 {
 	Clear();
 

@@ -10,7 +10,7 @@ void LineData::Init()
 
 
 
-void TextBoxData::BasicInitTextBox(Rectangle param_parent_rectangle, Font* param_font, string param_chars)
+void TextBoxData::BasicInitTextBox(RectangleOld param_parent_rectangle, Font* param_font, string param_chars)
 {
 	Clear();
 
@@ -37,7 +37,7 @@ void TextBoxData::InitLeast(Font* const param_default_font)
 	default_line_spacing = default_text_box_font->default_default_line_spacing;
 	default_line_height = default_text_box_font->default_default_line_height;
 }
-void TextBoxData::InitMost(Font* const param_default_font, const Rectangle param_parent_rectangle, const char* const param_chars, const RigidCentering param_horizontal_centering, const RigidCentering param_vertical_centering)
+void TextBoxData::InitMost(Font* const param_default_font, const RectangleOld param_parent_rectangle, const char* const param_chars, const RigidCentering param_horizontal_centering, const RigidCentering param_vertical_centering)
 {
 	Clear();
 
@@ -205,7 +205,7 @@ void TextBoxData::GenerateLine(const int starting_char_index, const int line_ind
 		lines.back()->rectangle.SetSizeWithSizeScale({ 1.0, 1.0 });
 		lines.back()->rectangle.reference_rectangle = &parent_rectangle;
 		lines.back()->first_index = starting_char_index;
-		lines.back()->last_index = chars.size() - 1;
+		lines.back()->last_index = (int)chars.size() - 1;
 
 		//No new line
 		*next_starting_index = -1;

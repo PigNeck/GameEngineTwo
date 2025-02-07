@@ -70,14 +70,14 @@ struct IndexedSize2D
 };
 struct IndexedRectangleData
 {
-	Rectangle* data_value;
+	RectangleOld* data_value;
 	const char* data_name;
 	int index;
 };
 
 struct DebugDataContainer
 {
-	Rectangle* clickable_rectangle;
+	RectangleOld* clickable_rectangle;
 
 
 	vector<IndexedBool> bools;
@@ -125,8 +125,8 @@ struct DebugDataContainer
 
 	~DebugDataContainer();
 
-	void InitLeast(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, Rectangle* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list);
-	void InitMost(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, Rectangle* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list, const double param_label_text_scale, const double param_label_scaled_margin_size);
+	void InitLeast(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, RectangleOld* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list);
+	void InitMost(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, RectangleOld* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list, const double param_label_text_scale, const double param_label_scaled_margin_size);
 
 	void AddBool(bool* value, const char* const value_name);
 	void AddChar(char* value, const char* const value_name);
@@ -139,7 +139,7 @@ struct DebugDataContainer
 	void AddRigidCentering(RigidCentering* value, const char* const value_name);
 	void AddPoint2D(Point2D* value, const char* const value_name);
 	void AddSize2D(Size2D* value, const char* const value_name);
-	void AddRectangleData(Rectangle* value, const char* const value_name);
+	void AddRectangleData(RectangleOld* value, const char* const value_name);
 
 	bool IsActive(const int current_scene);
 

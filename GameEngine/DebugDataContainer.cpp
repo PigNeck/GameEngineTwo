@@ -46,7 +46,7 @@ DebugDataContainer::~DebugDataContainer()
 	owners.clear();
 }
 
-void DebugDataContainer::InitLeast(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, Rectangle* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list)
+void DebugDataContainer::InitLeast(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, RectangleOld* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list)
 {
 	clickable_rectangle = param_clickable_rectangle;
 
@@ -87,7 +87,7 @@ void DebugDataContainer::InitLeast(const vector<DebugDataContainer*> param_owner
 		label.InitWithDescribingRectangleData(default_label_font, clickable_rectangle, param_label_chars, 4.0, 4.0);
 	}
 }
-void DebugDataContainer::InitMost(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, Rectangle* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list, const double param_label_text_scale, const double param_label_scaled_margin_size)
+void DebugDataContainer::InitMost(const vector<DebugDataContainer*> param_owners, Font* default_label_font, const char* const param_label_chars, RectangleOld* const param_clickable_rectangle, const vector<int> param_active_scenes, const bool param_white_list, const double param_label_text_scale, const double param_label_scaled_margin_size)
 {
 	clickable_rectangle = param_clickable_rectangle;
 
@@ -190,7 +190,7 @@ void DebugDataContainer::AddSize2D(Size2D* value, const char* const value_name)
 
 	current_length++;
 }
-void DebugDataContainer::AddRectangleData(Rectangle* value, const char* const value_name)
+void DebugDataContainer::AddRectangleData(RectangleOld* value, const char* const value_name)
 {
 	rectangle_datas.push_back({ value, value_name, current_length });
 

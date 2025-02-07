@@ -6,6 +6,12 @@
 #include <algorithm>
 #include <random>
 
+#define BASE_WINDOW_PIXEL_WIDTH 1920
+#define BASE_WINDOW_PIXEL_HEIGHT 1080
+
+const unsigned int HALF_BASE_WINDOW_PIXEL_WIDTH = BASE_WINDOW_PIXEL_WIDTH / 2;
+const unsigned int HALF_BASE_WINDOW_PIXEL_HEIGHT = BASE_WINDOW_PIXEL_HEIGHT / 2;
+
 using namespace std;
 
 struct SDL_Size
@@ -14,7 +20,22 @@ struct SDL_Size
 	int h;
 };
 
+struct GLColor
+{
+	float r = 1.f;
+	float g = 1.f;
+	float b = 1.f;
+	float a = 1.f;
+
+	GLColor();
+	GLColor(const float i_r, const float i_g, const float i_b);
+	GLColor(const float i_r, const float i_g, const float i_b, const float i_a);
+};
+
 // -----------------   CONVERSION FUNCTIONS   -----------------
+
+
+
 
 SDL_Rect RectStructTwoToSDLRect(const RectStructTwo* const param_rectangle, const Camera* const camera);
 
@@ -36,11 +57,11 @@ int UniXToSDLX(const double param_uni_x, const RigidCentering pixel_side, const 
 int UniYToSDLY(const double param_uni_y, const RigidCentering pixel_side, const Camera* const camera);
 SDL_Point UniPointToSDLPoint(const Point2D param_uni_point, const RigidCentering pixel_side_horizontal, const RigidCentering pixel_side_vertical, const Camera* const camera);
 
-//Assumed outer_pixel_side.  If finding the sdl_width of a "Rectangle," provide uni_left_edge.  If not, pass NULL for "param_uni_left_edge"
+//Assumed outer_pixel_side.  If finding the sdl_width of a "RectangleOld," provide uni_left_edge.  If not, pass NULL for "param_uni_left_edge"
 int UniWidthToSDLWidth(const double param_uni_width, const double param_uni_left_edge, const Camera* camera);
-//Assumed outer_pixel_side.  If finding the sdl_height of a "Rectangle," provide uni_top_edge.  If not, pass NULL for "param_uni_top_edge"
+//Assumed outer_pixel_side.  If finding the sdl_height of a "RectangleOld," provide uni_top_edge.  If not, pass NULL for "param_uni_top_edge"
 int UniHeightToSDLHeight(const double param_uni_height, const double param_uni_top_edge, const Camera* camera);
-//Assumed outer_pixel_side.  If finding the sdl_size of a "Rectangle," provide uni_top_left_corner.  If not, pass NULL for "param_uni_top_left_corner"
+//Assumed outer_pixel_side.  If finding the sdl_size of a "RectangleOld," provide uni_top_left_corner.  If not, pass NULL for "param_uni_top_left_corner"
 SDL_Size UniSizeToSDLSize(const Size2D param_uni_size, const Point2D param_uni_top_left_corner, const Camera* camera);
 
 
@@ -56,9 +77,9 @@ SDL_Rect GetSDLRectWithEdges(const int right_edge, const int bottom_edge, const 
 
 
 //Only one possible output per input
-SDL_Rect RectangleToSDLRect(const Rectangle* const param_rectangle, const Camera* const camera);
+SDL_Rect RectangleToSDLRect(const RectangleOld* const param_rectangle, const Camera* const camera);
 //Only one possible output per input
-SDL_Point RectangleToSDLCenterOfRotation(const Rectangle* const param_rectangle, const Camera* const camera);
+SDL_Point RectangleToSDLCenterOfRotation(const RectangleOld* const param_rectangle, const Camera* const camera);
 
 
 //Only one possible output per input
@@ -66,22 +87,50 @@ SDL_Rect RectStructOneToSDLRect(const RectStructOne* const param_rect_struct_one
 
 
 //Only one possible output per input
-RectStructTwo RectangleToBasicRectangle(const Rectangle* const param_rectangle);
+RectStructTwo RectangleToBasicRectangle(const RectangleOld* const param_rectangle);
 
 //Only one possible output per input
-RectStructOne RectangleToRectStructOne(const Rectangle* const param_rectangle);
+RectStructOne RectangleToRectStructOne(const RectangleOld* const param_rectangle);
 
 
 //Multiple possible outputs per input SO:   (offset = { 0.0, 0.0 }), (relativity_rules = RelativityRules()), (reference_rectangle = nullptr), (flip =  { 0 }), (base_size = size)
-Rectangle RectStructOneToRectangle(const RectStructOne* const param_rect_struct_one);
+RectangleOld RectStructOneToRectangle(const RectStructOne* const param_rect_struct_one);
+
+
+
+
+
+
+// -----------------   POINT CONVERSION FUNCTIONS BASED ON BASE WINDOW SIZE   -----------------
+
+//Returns the proportion x value for a given x value. A proportion x value of -1.0 is at the left edge of the screen and a proportion x value of 1.0 is at the right edge of the screen.
+double XToProportionX(const double x);
+//Returns the proportion y value for a given y value. A proportion y value of -1.0 is at the bottom edge of the screen and a proportion y value of 1.0 is at the top edge of the screen.
+double YToProportionY(const double y);
+
+//Returns the GLColor value that corresponds to a given SDL_Color. GLColor operates on values 0.0f to 1.0f, and SDL_Color operates on Uint8 values.
+GLColor SDLColorToGLColor(const SDL_Color sdl_color);
+//IMPORTANT!!!: Creates a GLColor object in the heap. Use delete on the return value to avoid memory leaking! Returns the GLColor value that corresponds to a given SDL_Color. GLColor operates on values 0.0f to 1.0f, and SDL_Color operates on Uint8 values.
+GLColor* SDLColorToGLColor(const SDL_Color* const sdl_color);
+//IMPORTANT!!!: narrowing conversion from float to Uint8 for r, g, b, and a;   Returns the SDL_Color value that corresponds to a given GL_Color. GLColor operates on values 0.0f to 1.0f, and SDL_Color operates on Uint8 values.
+SDL_Color GLColorToSDLColor(const GLColor gl_color);
+//IMPORTANT!!!: Creates a GLColor object in the heap. Use delete on the return value to avoid memory leaking! ALSO IMPORTANT!!!: narrowing conversion from float to Uint8 for r, g, b, and a;   Returns the SDL_Color value that corresponds to a given GL_Color. GLColor operates on values 0.0f to 1.0f, and SDL_Color operates on Uint8 values.
+SDL_Color* GLColorToSDLColor(const GLColor* const gl_color);
+
+//Returns the uni_point after being transformed to screen coords relative to a given camera. Pass nullptr for no camera
+Point2DNew UniPointToScreenPoint(const Point2DNew* const uni_point, const CameraNew* const camera);
+
+Quad UniQuadToScreenQuad(const Quad* const uni_quad, const CameraNew* const camera);
+
+
 
 
 
 
 // -----------------   COLLISION FUNCTIONS   -----------------
 
-bool OverlapPoint2DWithRectangleEx(const Point2D* const param_point, const Rectangle* const param_rectangle, const bool include_rectangle_right_edge, const bool include_rectangle_bottom_edge, const bool include_rectangle_left_edge, const bool include_rectangle_top_edge);
-bool OverlapPoint2DWithRectangle(const Point2D* const param_point, const Rectangle* const param_rectangle, const bool include_edge);
+bool OverlapPoint2DWithRectangleEx(const Point2D* const param_point, const RectangleOld* const param_rectangle, const bool include_rectangle_right_edge, const bool include_rectangle_bottom_edge, const bool include_rectangle_left_edge, const bool include_rectangle_top_edge);
+bool OverlapPoint2DWithRectangle(const Point2D* const param_point, const RectangleOld* const param_rectangle, const bool include_edge);
 
 bool OverlapPoint2DWithRectStructOneEx(const Point2D* const param_point, const RectStructOne* const param_rect_struct_one, const bool include_rect_struct_one_right_edge, const bool include_rect_struct_one_bottom_edge, const bool include_rect_struct_one_left_edge, const bool include_rect_struct_one_top_edge);
 bool OverlapPoint2DWithRectStructOne(const Point2D* const param_point, const RectStructOne* const param_rect_struct_one, const bool include_edge);

@@ -1,6 +1,6 @@
 #include "TextBoxCharData.h"
 
-void TextBoxCharData::InitLeast(Rectangle* const reference_rectangle, FontChar* const param_font_char)
+void TextBoxCharData::InitLeast(RectangleOld* const reference_rectangle, FontChar* const param_font_char)
 {
 	font_char = param_font_char;
 
@@ -15,7 +15,7 @@ void TextBoxCharData::InitLeast(Rectangle* const reference_rectangle, FontChar* 
 
 	char_spacing = (double)param_font_char->default_char_spacing;
 }
-void TextBoxCharData::InitMost(Rectangle* const reference_rectangle, FontChar* const param_font_char, const Uint8 param_r_mod, const Uint8 param_g_mod, const Uint8 param_b_mod, const Uint8 param_a_mod)
+void TextBoxCharData::InitMost(RectangleOld* const reference_rectangle, FontChar* const param_font_char, const Uint8 param_r_mod, const Uint8 param_g_mod, const Uint8 param_b_mod, const Uint8 param_a_mod)
 {
 	font_char = param_font_char;
 

@@ -7,7 +7,7 @@
 
 struct SimpleTextButton
 {
-	Rectangle parent_rect;
+	RectangleOld parent_rect;
 
 	ButtonSoundData sounds;
 
@@ -24,7 +24,7 @@ struct SimpleTextButton
 	~SimpleTextButton();
 
 	void InitLeast();
-	void InitMost(Rectangle param_parent_rect, TextBox param_text_box, double param_scaled_border_width, double param_scaled_drop_amount, const ButtonSoundData param_sounds);
+	void InitMost(RectangleOld param_parent_rect, TextBox param_text_box, double param_scaled_border_width, double param_scaled_drop_amount, const ButtonSoundData param_sounds);
 	void InitWithMargin(Size2D text_box_size_scale, string text, Font* param_font, Size2D param_scaled_margin_size, double param_scaled_border_width, double param_scaled_drop_amount);
 	void InitWithBaseSize(Size2D text_box_size_scale, string text, Font* param_font, Size2D param_parent_rect_base_size, double param_scaled_border_width, double param_scaled_drop_amount, Size2D param_scaled_margin_size, bool text_wrap);
 

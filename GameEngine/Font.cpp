@@ -1,11 +1,11 @@
 #include "Font.h"
 
-#define TBC(a) new FontChar(LoadCharTexture(renderer, ("images/fonts/" + param_name + "/" + GetTextureName(a)).c_str()), a, param_default_default_char_spacing)
+#define TBC(a) new FontChar(LoadCharTexture(("images/fonts/" + param_name + "/" + GetTextureName(a)).c_str()), a, param_default_default_char_spacing)
 
-Texture* Font::LoadCharTexture(SDL_Renderer* renderer, const char* path)
+Texture* Font::LoadCharTexture(const char* path)
 {
 	Texture* texture = new Texture();
-	texture->LoadTexture(renderer, path);
+	texture->LoadTexture(path);
 	if (!texture)
 	{
 		return NULL_texture;
@@ -123,7 +123,7 @@ void Font::Init(string param_name, SDL_Renderer* renderer, const double param_de
 	font_name = param_name;
 
 	NULL_texture = new Texture();
-	NULL_texture->LoadTexture(renderer, ("images/fonts/" + param_name + "/Char_null.png").c_str());
+	NULL_texture->LoadTexture(("images/fonts/" + param_name + "/Char_null.png").c_str());
 
 	A = TBC('A');
 	B = TBC('B');

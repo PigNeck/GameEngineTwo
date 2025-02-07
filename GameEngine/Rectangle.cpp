@@ -149,9 +149,9 @@ void RectStructOne::PrintProperties()
 
 // -----------------   CONSTRUCTORS   -----------------
 
-Rectangle::Rectangle() {}
+RectangleOld::RectangleOld() {}
 
-Rectangle::Rectangle(Rectangle* param_reference_rectangle_data) : reference_rectangle(param_reference_rectangle_data) {}
+RectangleOld::RectangleOld(RectangleOld* param_reference_rectangle_data) : reference_rectangle(param_reference_rectangle_data) {}
 
 
 
@@ -160,11 +160,11 @@ Rectangle::Rectangle(Rectangle* param_reference_rectangle_data) : reference_rect
 
 // -----------------   BASIC UNI-FUNCTIONS   -----------------
 
-Point2D Rectangle::GetUniPos() const
+Point2D RectangleOld::GetUniPos() const
 {
     return { GetUniX(), GetUniY() };
 }
-double Rectangle::GetUniX() const
+double RectangleOld::GetUniX() const
 {
     double ref_uni_x;
     if (reference_rectangle && relativity_rules.relative_x)
@@ -198,7 +198,7 @@ double Rectangle::GetUniX() const
 
     return (ref_uni_x + ((pos.x + ref_center_offset_x) * ref_uni_width_scale));
 }
-double Rectangle::GetUniY() const
+double RectangleOld::GetUniY() const
 {
     double ref_uni_y;
     if (reference_rectangle && relativity_rules.relative_y)
@@ -234,13 +234,13 @@ double Rectangle::GetUniY() const
 }
 
 //Changes pos
-void Rectangle::SetPosWithUniPos(Point2D param_uni_pos)
+void RectangleOld::SetPosWithUniPos(Point2D param_uni_pos)
 {
     SetXWithUniX(param_uni_pos.x);
     SetYWithUniY(param_uni_pos.y);
 }
 //Changes pos.x
-void Rectangle::SetXWithUniX(double param_uni_x)
+void RectangleOld::SetXWithUniX(double param_uni_x)
 {
     double ref_uni_x;
     if (reference_rectangle && relativity_rules.relative_x)
@@ -275,7 +275,7 @@ void Rectangle::SetXWithUniX(double param_uni_x)
     pos.x = ((param_uni_x - ref_uni_x) / ref_uni_width_scale) - ref_center_offset_x;
 }
 //Changes pos.y
-void Rectangle::SetYWithUniY(double param_uni_y)
+void RectangleOld::SetYWithUniY(double param_uni_y)
 {
     double temp_ref_y;
     if (reference_rectangle && relativity_rules.relative_y)
@@ -310,24 +310,24 @@ void Rectangle::SetYWithUniY(double param_uni_y)
     pos.y = ((param_uni_y - temp_ref_y) / temp_ref_height_scale) - ref_center_offset_y;
 }
 
-Point2D Rectangle::GetUniCenter()
+Point2D RectangleOld::GetUniCenter()
 {
     return { GetUniCenterX(), GetUniCenterY() };
 }
-double Rectangle::GetUniCenterX()
+double RectangleOld::GetUniCenterX()
 {
     return GetUniXFromUnscaledX(offset.x);
 }
-double Rectangle::GetUniCenterY()
+double RectangleOld::GetUniCenterY()
 {
     return GetUniYFromUnscaledY(offset.y);
 }
 
-Size2D Rectangle::GetUniSize() const
+Size2D RectangleOld::GetUniSize() const
 {
     return { GetUniWidth(), GetUniHeight() };
 }
-double Rectangle::GetUniWidth() const
+double RectangleOld::GetUniWidth() const
 {
     double temp_ref_uni_width_scale;
     if (reference_rectangle && relativity_rules.relative_width)
@@ -341,7 +341,7 @@ double Rectangle::GetUniWidth() const
 
     return (size.width * temp_ref_uni_width_scale);
 }
-double Rectangle::GetUniHeight() const
+double RectangleOld::GetUniHeight() const
 {
     double temp_ref_uni_height_scale;
     if (reference_rectangle && relativity_rules.relative_height)
@@ -357,13 +357,13 @@ double Rectangle::GetUniHeight() const
 }
 
 //Changes size
-void Rectangle::SetSizeWithUniSize(Size2D param_uni_size)
+void RectangleOld::SetSizeWithUniSize(Size2D param_uni_size)
 {
     SetWidthWithUniWidth(param_uni_size.width);
     SetHeightWithUniHeight(param_uni_size.height);
 }
 //Changes size.width
-void Rectangle::SetWidthWithUniWidth(double param_uni_width)
+void RectangleOld::SetWidthWithUniWidth(double param_uni_width)
 {
     double temp_ref_uni_width_scale;
     if (reference_rectangle && relativity_rules.relative_width)
@@ -378,7 +378,7 @@ void Rectangle::SetWidthWithUniWidth(double param_uni_width)
     size.width = param_uni_width / temp_ref_uni_width_scale;
 }
 //Changes size.height
-void Rectangle::SetHeightWithUniHeight(double param_uni_height)
+void RectangleOld::SetHeightWithUniHeight(double param_uni_height)
 {
     double temp_ref_uni_height_scale;
     if (reference_rectangle && relativity_rules.relative_height)
@@ -394,11 +394,11 @@ void Rectangle::SetHeightWithUniHeight(double param_uni_height)
 }
 
 
-Size2D Rectangle::GetUniBaseSize()
+Size2D RectangleOld::GetUniBaseSize()
 {
     return { GetUniBaseWidth(), GetUniBaseHeight() };
 }
-double Rectangle::GetUniBaseWidth()
+double RectangleOld::GetUniBaseWidth()
 {
     double temp_ref_uni_width_scale;
     if (reference_rectangle && relativity_rules.relative_width)
@@ -412,7 +412,7 @@ double Rectangle::GetUniBaseWidth()
 
     return (base_size.width * temp_ref_uni_width_scale);
 }
-double Rectangle::GetUniBaseHeight()
+double RectangleOld::GetUniBaseHeight()
 {
     double temp_ref_uni_height_scale;
     if (reference_rectangle && relativity_rules.relative_height)
@@ -428,13 +428,13 @@ double Rectangle::GetUniBaseHeight()
 }
 
 //Changes base_size
-void Rectangle::SetBaseSizeWithUniBaseSize(Size2D param_uni_base_size)
+void RectangleOld::SetBaseSizeWithUniBaseSize(Size2D param_uni_base_size)
 {
     SetBaseWidthWithUniBaseWidth(param_uni_base_size.width);
     SetBaseHeightWithUniBaseHeight(param_uni_base_size.height);
 }
 //Changes base_size.width
-void Rectangle::SetBaseWidthWithUniBaseWidth(double param_uni_base_width)
+void RectangleOld::SetBaseWidthWithUniBaseWidth(double param_uni_base_width)
 {
     double temp_ref_uni_width_scale;
     if (reference_rectangle && relativity_rules.relative_width)
@@ -449,7 +449,7 @@ void Rectangle::SetBaseWidthWithUniBaseWidth(double param_uni_base_width)
     base_size.width = param_uni_base_width / temp_ref_uni_width_scale;
 }
 //Changes base_size.height
-void Rectangle::SetBaseHeightWithUniBaseHeight(double param_uni_base_height)
+void RectangleOld::SetBaseHeightWithUniBaseHeight(double param_uni_base_height)
 {
     double temp_ref_uni_height_scale;
     if (reference_rectangle && relativity_rules.relative_height)
@@ -465,11 +465,11 @@ void Rectangle::SetBaseHeightWithUniBaseHeight(double param_uni_base_height)
 }
 
 
-Point2D Rectangle::GetUniOffset()
+Point2D RectangleOld::GetUniOffset()
 {
     return { GetUniXOffset(), GetUniYOffset() };
 }
-double Rectangle::GetUniXOffset()
+double RectangleOld::GetUniXOffset()
 {
     double temp_reference_uni_width_scale;
 
@@ -484,7 +484,7 @@ double Rectangle::GetUniXOffset()
 
     return offset.x * temp_reference_uni_width_scale;
 }
-double Rectangle::GetUniYOffset()
+double RectangleOld::GetUniYOffset()
 {
     double temp_reference_uni_height_scale;
 
@@ -501,59 +501,59 @@ double Rectangle::GetUniYOffset()
 }
 
 //Changes offset
-void Rectangle::SetOffsetWithUniOffset(Point2D param_uni_offset)
+void RectangleOld::SetOffsetWithUniOffset(Point2D param_uni_offset)
 {
     //I dunno
 }
 //Changes offset.x
-void Rectangle::SetXOffsetWithUniXOffset(Point2D param_uni_offset)
+void RectangleOld::SetXOffsetWithUniXOffset(Point2D param_uni_offset)
 {
     //I dunno
 }
 //Changes offset.y
-void Rectangle::SetYOffsetWithUniYOffset(Point2D param_uni_offset)
+void RectangleOld::SetYOffsetWithUniYOffset(Point2D param_uni_offset)
 {
     //I dunno
 }
 
 
-Point2D Rectangle::GetUniScaledOffset() const
+Point2D RectangleOld::GetUniScaledOffset() const
 {
     return { GetUniScaledXOffset(), GetUniScaledYOffset() };
 }
-double Rectangle::GetUniScaledXOffset() const
+double RectangleOld::GetUniScaledXOffset() const
 {
     return offset.x * GetUniWidthScale();
 }
-double Rectangle::GetUniScaledYOffset() const
+double RectangleOld::GetUniScaledYOffset() const
 {
     return offset.y * GetUniHeightScale();
 }
 
 //Changes offset
-void Rectangle::SetOffsetWithUniScaledOffset(Point2D param_uni_offset)
+void RectangleOld::SetOffsetWithUniScaledOffset(Point2D param_uni_offset)
 {
     //I dunno
 }
 //Changes offset.x
-void Rectangle::SetXOffsetWithUniScaledXOffset(Point2D param_uni_offset)
+void RectangleOld::SetXOffsetWithUniScaledXOffset(Point2D param_uni_offset)
 {
     //I dunno
 }
 //Changes offset.y
-void Rectangle::SetYOffsetWithUniScaledYOffset(Point2D param_uni_offset)
+void RectangleOld::SetYOffsetWithUniScaledYOffset(Point2D param_uni_offset)
 {
     //I dunno
 }
 
 
-double Rectangle::GetUniRotation() const
+double RectangleOld::GetUniRotation() const
 {
     return rotation;
 }
 
 //Changes rotation
-void Rectangle::SetRotationWithUniRotation(double param_uni_rotation)
+void RectangleOld::SetRotationWithUniRotation(double param_uni_rotation)
 {
     //I dunno
 }
@@ -565,58 +565,58 @@ void Rectangle::SetRotationWithUniRotation(double param_uni_rotation)
 
 // -----------------   OFFSET FUNCTIONS   -----------------
 
-Point2D Rectangle::GetScaledOffset() const
+Point2D RectangleOld::GetScaledOffset() const
 {
     return { GetScaledXOffset(), GetScaledYOffset() };
 }
-double Rectangle::GetScaledXOffset() const
+double RectangleOld::GetScaledXOffset() const
 {
     return (offset.x * GetWidthScale());
 }
-double Rectangle::GetScaledYOffset() const
+double RectangleOld::GetScaledYOffset() const
 {
     return (offset.y * GetHeightScale());
 }
 
 //Changes offset
-void Rectangle::SetOffsetWithScaledOffset(Point2D param_scaled_offset)
+void RectangleOld::SetOffsetWithScaledOffset(Point2D param_scaled_offset)
 {
     SetXOffsetWithScaledXOffset(param_scaled_offset.x);
     SetYOffsetWithScaledYOffset(param_scaled_offset.y);
 }
 //Changes offset.x
-void Rectangle::SetXOffsetWithScaledXOffset(double param_scaled_x_offset)
+void RectangleOld::SetXOffsetWithScaledXOffset(double param_scaled_x_offset)
 {
     offset.x = param_scaled_x_offset / GetWidthScale();
 }
 //Changes offset.y
-void Rectangle::SetYOffsetWithScaledYOffset(double param_scaled_y_offset)
+void RectangleOld::SetYOffsetWithScaledYOffset(double param_scaled_y_offset)
 {
     offset.y = param_scaled_y_offset / GetHeightScale();
 }
 
 
-Size2D Rectangle::GetCentering()
+Size2D RectangleOld::GetCentering()
 {
     return { GetWidthCentering(), GetHeightCentering() };
 }
-double Rectangle::GetWidthCentering()
+double RectangleOld::GetWidthCentering()
 {
     return ((offset.x / base_size.width) * 2.0);
 }
-double Rectangle::GetHeightCentering()
+double RectangleOld::GetHeightCentering()
 {
     return ((offset.y / base_size.height) * 2.0);
 }
 
 //Changes offset
-void Rectangle::SetOffsetWithCentering(Size2D param_centering, bool adjust_pos_to_remain_stationary)
+void RectangleOld::SetOffsetWithCentering(Size2D param_centering, bool adjust_pos_to_remain_stationary)
 {
     SetXOffsetWithWidthCentering(param_centering.width, adjust_pos_to_remain_stationary);
     SetYOffsetWithHeightCentering(param_centering.height, adjust_pos_to_remain_stationary);
 }
 //Changes offset.x
-void Rectangle::SetXOffsetWithWidthCentering(double param_width_centering, bool adjust_pos_to_remain_stationary)
+void RectangleOld::SetXOffsetWithWidthCentering(double param_width_centering, bool adjust_pos_to_remain_stationary)
 {
     if (adjust_pos_to_remain_stationary)
     {
@@ -632,7 +632,7 @@ void Rectangle::SetXOffsetWithWidthCentering(double param_width_centering, bool 
     }
 }
 //Changes offset.y
-void Rectangle::SetYOffsetWithHeightCentering(double param_height_centering, bool adjust_pos_to_remain_stationary)
+void RectangleOld::SetYOffsetWithHeightCentering(double param_height_centering, bool adjust_pos_to_remain_stationary)
 {
     if (adjust_pos_to_remain_stationary)
     {
@@ -655,7 +655,7 @@ void Rectangle::SetYOffsetWithHeightCentering(double param_height_centering, boo
 
 // -----------------   EDGE FUNCTIONS   -----------------
 
-double Rectangle::GetScaledEdge(const Direction direction) const
+double RectangleOld::GetScaledEdge(const Direction direction) const
 {
     switch (direction.value)
     {
@@ -676,7 +676,7 @@ double Rectangle::GetScaledEdge(const Direction direction) const
     return NULL;
 }
 //Changes offset
-void Rectangle::SetOffsetWithScaledEdge(double x_or_y_coordinate, Direction direction)
+void RectangleOld::SetOffsetWithScaledEdge(double x_or_y_coordinate, Direction direction)
 {
     switch (direction.value)
     {
@@ -695,7 +695,7 @@ void Rectangle::SetOffsetWithScaledEdge(double x_or_y_coordinate, Direction dire
     }
 }
 
-double Rectangle::GetUnscaledEdge(Direction direction)
+double RectangleOld::GetUnscaledEdge(Direction direction)
 {
     switch (direction.value)
     {
@@ -716,7 +716,7 @@ double Rectangle::GetUnscaledEdge(Direction direction)
     return NULL;
 }
 //Changes offset
-void Rectangle::SetOffsetWithUnscaledEdge(double x_or_y_coordinate, Direction direction)
+void RectangleOld::SetOffsetWithUnscaledEdge(double x_or_y_coordinate, Direction direction)
 {
     switch (direction.value)
     {
@@ -735,7 +735,7 @@ void Rectangle::SetOffsetWithUnscaledEdge(double x_or_y_coordinate, Direction di
     }
 }
 
-double Rectangle::GetUniEdge(const Direction direction) const
+double RectangleOld::GetUniEdge(const Direction direction) const
 {
     switch (direction.value)
     {
@@ -756,7 +756,7 @@ double Rectangle::GetUniEdge(const Direction direction) const
     return NULL;
 }
 //Changes pos
-void Rectangle::SetPosWithUniEdge(double x_or_y_coordinate, Direction direction)
+void RectangleOld::SetPosWithUniEdge(double x_or_y_coordinate, Direction direction)
 {
     double temp_uni_x_or_y_diff = x_or_y_coordinate - GetUniEdge(direction);
 
@@ -784,59 +784,59 @@ void Rectangle::SetPosWithUniEdge(double x_or_y_coordinate, Direction direction)
 
 // -----------------   LOW-LEVEL FUNCTIONS   -----------------
 
-Size2D Rectangle::GetSizeScale() const
+Size2D RectangleOld::GetSizeScale() const
 {
     return { GetWidthScale(), GetHeightScale() };
 }
-double Rectangle::GetWidthScale() const
+double RectangleOld::GetWidthScale() const
 {
     return (size.width / base_size.width);
 }
-double Rectangle::GetHeightScale() const
+double RectangleOld::GetHeightScale() const
 {
     return (size.height / base_size.height);
 }
 
 //Changes size
-void Rectangle::SetSizeWithSizeScale(Size2D param_size_scale)
+void RectangleOld::SetSizeWithSizeScale(Size2D param_size_scale)
 {
     SetWidthWithWidthScale(param_size_scale.width);
     SetHeightWithHeightScale(param_size_scale.height);
 }
 //Changes size.width
-void Rectangle::SetWidthWithWidthScale(double param_width_scale)
+void RectangleOld::SetWidthWithWidthScale(double param_width_scale)
 {
     size.width = base_size.width * param_width_scale;
 }
 //Changes size.height
-void Rectangle::SetHeightWithHeightScale(double param_height_scale)
+void RectangleOld::SetHeightWithHeightScale(double param_height_scale)
 {
     size.height = base_size.height * param_height_scale;
 }
 
 //Changes base_size
-void Rectangle::SetBaseSizeWithSizeScale(Size2D param_size_scale)
+void RectangleOld::SetBaseSizeWithSizeScale(Size2D param_size_scale)
 {
     SetBaseWidthWithWidthScale(param_size_scale.width);
     SetBaseHeightWithHeightScale(param_size_scale.height);
 }
 //Changes base_size.width
-void Rectangle::SetBaseWidthWithWidthScale(double param_width_scale)
+void RectangleOld::SetBaseWidthWithWidthScale(double param_width_scale)
 {
     base_size.width = size.width / param_width_scale;
 }
 //Changes base_size.height
-void Rectangle::SetBaseHeightWithHeightScale(double param_height_scale)
+void RectangleOld::SetBaseHeightWithHeightScale(double param_height_scale)
 {
     base_size.height = size.height / param_height_scale;
 }
 
 
-Size2D Rectangle::GetUniSizeScale() const
+Size2D RectangleOld::GetUniSizeScale() const
 {
     return { GetUniWidthScale(), GetUniHeightScale() };
 }
-double Rectangle::GetUniWidthScale() const
+double RectangleOld::GetUniWidthScale() const
 {
     double temp_ref_uni_width_scale;
     if (reference_rectangle && relativity_rules.relative_width)
@@ -850,7 +850,7 @@ double Rectangle::GetUniWidthScale() const
 
     return (GetWidthScale() * temp_ref_uni_width_scale);
 }
-double Rectangle::GetUniHeightScale() const
+double RectangleOld::GetUniHeightScale() const
 {
     double temp_ref_uni_height_scale;
     if (reference_rectangle && relativity_rules.relative_height)
@@ -866,13 +866,13 @@ double Rectangle::GetUniHeightScale() const
 }
 
 //Changes size
-void Rectangle::SetSizeWithUniSizeScale(Size2D param_uni_size_scale)
+void RectangleOld::SetSizeWithUniSizeScale(Size2D param_uni_size_scale)
 {
     SetWidthWithUniWidthScale(param_uni_size_scale.width);
     SetHeightWithUniHeightScale(param_uni_size_scale.height);
 }
 //Changes size.width
-void Rectangle::SetWidthWithUniWidthScale(double param_uni_width_scale)
+void RectangleOld::SetWidthWithUniWidthScale(double param_uni_width_scale)
 {
     double temp_ref_uni_width_scale;
     if (reference_rectangle && relativity_rules.relative_width)
@@ -887,7 +887,7 @@ void Rectangle::SetWidthWithUniWidthScale(double param_uni_width_scale)
     SetWidthWithWidthScale(param_uni_width_scale / temp_ref_uni_width_scale);
 }
 //Changes size.height
-void Rectangle::SetHeightWithUniHeightScale(double param_uni_height_scale)
+void RectangleOld::SetHeightWithUniHeightScale(double param_uni_height_scale)
 {
     double temp_ref_uni_height_scale;
     if (reference_rectangle && relativity_rules.relative_height)
@@ -903,13 +903,13 @@ void Rectangle::SetHeightWithUniHeightScale(double param_uni_height_scale)
 }
 
 //Changes base_size
-void Rectangle::SetBaseSizeWithUniSizeScale(Size2D param_uni_size_scale)
+void RectangleOld::SetBaseSizeWithUniSizeScale(Size2D param_uni_size_scale)
 {
     SetBaseWidthWithUniWidthScale(param_uni_size_scale.width);
     SetBaseHeightWithUniHeightScale(param_uni_size_scale.height);
 }
 //Changes base_size.width
-void Rectangle::SetBaseWidthWithUniWidthScale(double param_uni_width_scale)
+void RectangleOld::SetBaseWidthWithUniWidthScale(double param_uni_width_scale)
 {
     double temp_ref_uni_width_scale;
     if (reference_rectangle && relativity_rules.relative_width)
@@ -924,7 +924,7 @@ void Rectangle::SetBaseWidthWithUniWidthScale(double param_uni_width_scale)
     SetBaseWidthWithWidthScale(param_uni_width_scale / temp_ref_uni_width_scale);
 }
 //Changes base_size.height
-void Rectangle::SetBaseHeightWithUniHeightScale(double param_uni_height_scale)
+void RectangleOld::SetBaseHeightWithUniHeightScale(double param_uni_height_scale)
 {
     double temp_ref_uni_height_scale;
     if (reference_rectangle && relativity_rules.relative_height)
@@ -942,47 +942,47 @@ void Rectangle::SetBaseHeightWithUniHeightScale(double param_uni_height_scale)
 
 
 //Changes pos
-void Rectangle::SetScaledPointWithUniPoint(Point2D param_scaled_point, Point2D param_uni_point)
+void RectangleOld::SetScaledPointWithUniPoint(Point2D param_scaled_point, Point2D param_uni_point)
 {
     SetScaledXWithUniX(param_scaled_point.x, param_uni_point.x);
     SetScaledYWithUniY(param_scaled_point.y, param_uni_point.y);
 }
 //Changes pos.x
-void Rectangle::SetScaledXWithUniX(double param_scaled_x, double param_uni_x)
+void RectangleOld::SetScaledXWithUniX(double param_scaled_x, double param_uni_x)
 {
     pos.x += GetScaledXFromUniX(param_uni_x) - param_scaled_x;
 }
 //Changes pos.y
-void Rectangle::SetScaledYWithUniY(double param_scaled_y, double param_uni_y)
+void RectangleOld::SetScaledYWithUniY(double param_scaled_y, double param_uni_y)
 {
     pos.y += GetScaledYFromUniY(param_uni_y) - param_scaled_y;
 }
 
 
 //Changes pos
-void Rectangle::SetUnscaledPointWithUniPoint(Point2D param_unscaled_point, Point2D param_uni_point)
+void RectangleOld::SetUnscaledPointWithUniPoint(Point2D param_unscaled_point, Point2D param_uni_point)
 {
     SetUnscaledXWithUniX(param_unscaled_point.x, param_uni_point.x);
     SetUnscaledYWithUniY(param_unscaled_point.y, param_uni_point.y);
 }
 //Changes pos.x
-void Rectangle::SetUnscaledXWithUniX(double param_unscaled_x, double param_uni_x)
+void RectangleOld::SetUnscaledXWithUniX(double param_unscaled_x, double param_uni_x)
 {
     pos.x += GetUnscaledXFromUniX(param_uni_x) - param_unscaled_x;
 }
 //Changes pos.y
-void Rectangle::SetUnscaledYWithUniY(double param_unscaled_y, double param_uni_y)
+void RectangleOld::SetUnscaledYWithUniY(double param_unscaled_y, double param_uni_y)
 {
     pos.y += GetUnscaledYFromUniY(param_uni_y) - param_unscaled_y;
 }
 
 
 
-Point2D Rectangle::GetScaledPointFromUniPoint(Point2D param_uni_point)
+Point2D RectangleOld::GetScaledPointFromUniPoint(Point2D param_uni_point)
 {
     return { GetScaledXFromUniX(param_uni_point.x), GetScaledYFromUniY(param_uni_point.y) };
 }
-double Rectangle::GetScaledXFromUniX(double param_uni_x)
+double RectangleOld::GetScaledXFromUniX(double param_uni_x)
 {
     double ref_uni_width_scale;
     if (reference_rectangle && relativity_rules.relative_width)
@@ -996,7 +996,7 @@ double Rectangle::GetScaledXFromUniX(double param_uni_x)
 
     return ((param_uni_x - GetUniX()) / ref_uni_width_scale);
 }
-double Rectangle::GetScaledYFromUniY(double param_uni_y)
+double RectangleOld::GetScaledYFromUniY(double param_uni_y)
 {
     double ref_uni_height_scale;
     if (reference_rectangle && relativity_rules.relative_height)
@@ -1011,25 +1011,25 @@ double Rectangle::GetScaledYFromUniY(double param_uni_y)
     return ((param_uni_y - GetUniY()) / ref_uni_height_scale);
 }
 
-Point2D Rectangle::GetUnscaledPointFromUniPoint(Point2D param_uni_point)
+Point2D RectangleOld::GetUnscaledPointFromUniPoint(Point2D param_uni_point)
 {
     return { GetUnscaledXFromUniX(param_uni_point.x), GetUnscaledYFromUniY(param_uni_point.y) };
 }
-double Rectangle::GetUnscaledXFromUniX(double param_uni_x)
+double RectangleOld::GetUnscaledXFromUniX(double param_uni_x)
 {
     return ((param_uni_x - GetUniX()) / GetUniWidthScale());
 }
-double Rectangle::GetUnscaledYFromUniY(double param_uni_y)
+double RectangleOld::GetUnscaledYFromUniY(double param_uni_y)
 {
     return ((param_uni_y - GetUniY()) / GetUniHeightScale());
 }
 
 
-Point2D Rectangle::GetUniPointFromScaledPoint(const Point2D param_scaled_point) const
+Point2D RectangleOld::GetUniPointFromScaledPoint(const Point2D param_scaled_point) const
 {
     return { GetUniXFromScaledX(param_scaled_point.x), GetUniYFromScaledY(param_scaled_point.y) };
 }
-double Rectangle::GetUniXFromScaledX(const double param_scaled_x) const
+double RectangleOld::GetUniXFromScaledX(const double param_scaled_x) const
 {
     double ref_uni_width_scale;
     if (reference_rectangle && relativity_rules.relative_width)
@@ -1043,7 +1043,7 @@ double Rectangle::GetUniXFromScaledX(const double param_scaled_x) const
 
     return (GetUniX() + (ref_uni_width_scale * param_scaled_x));
 }
-double Rectangle::GetUniYFromScaledY(const double param_scaled_y) const
+double RectangleOld::GetUniYFromScaledY(const double param_scaled_y) const
 {
     double ref_uni_height_scale;
     if (reference_rectangle && relativity_rules.relative_height)
@@ -1058,44 +1058,44 @@ double Rectangle::GetUniYFromScaledY(const double param_scaled_y) const
     return (GetUniY() + (ref_uni_height_scale * param_scaled_y));
 }
 
-Point2D Rectangle::GetUniPointFromUnscaledPoint(Point2D param_unscaled_point)
+Point2D RectangleOld::GetUniPointFromUnscaledPoint(Point2D param_unscaled_point)
 {
     return { GetUniXFromUnscaledX(param_unscaled_point.x), GetUniYFromUnscaledY(param_unscaled_point.y) };
 }
-double Rectangle::GetUniXFromUnscaledX(double param_unscaled_x)
+double RectangleOld::GetUniXFromUnscaledX(double param_unscaled_x)
 {
     return (GetUniX() + (GetUniWidthScale() * param_unscaled_x));
 }
-double Rectangle::GetUniYFromUnscaledY(double param_unscaled_y)
+double RectangleOld::GetUniYFromUnscaledY(double param_unscaled_y)
 {
     return (GetUniY() + (GetUniHeightScale() * param_unscaled_y));
 }
 
 
-Point2D Rectangle::GetScaledPointFromUnscaledPoint(Point2D param_unscaled_point)
+Point2D RectangleOld::GetScaledPointFromUnscaledPoint(Point2D param_unscaled_point)
 {
     //return { GetScaledXFromUnscaledX(param_unscaled_point.x), GetScaledYFromUnscaledY(param_unscaled_point.y) };
     return { NULL, NULL };
 }
-double Rectangle::GetScaledXFromUnscaledX(double param_unscaled_x)
+double RectangleOld::GetScaledXFromUnscaledX(double param_unscaled_x)
 {
     return (param_unscaled_x * GetWidthScale());
 }
-double Rectangle::GetScaledYFromUnscaledY(double param_unscaled_y)
+double RectangleOld::GetScaledYFromUnscaledY(double param_unscaled_y)
 {
     return (param_unscaled_y * GetHeightScale());
 }
 
-Point2D Rectangle::GetUnscaledPointFromScaledPoint(Point2D param_scaled_point)
+Point2D RectangleOld::GetUnscaledPointFromScaledPoint(Point2D param_scaled_point)
 {
     //return { GetUnscaledXFromScaledX(param_scaled_point.x), GetUnscaledYFromScaledY(param_scaled_point.y) };
     return { NULL, NULL };
 }
-double Rectangle::GetUnscaledXFromScaledX(double param_scaled_x)
+double RectangleOld::GetUnscaledXFromScaledX(double param_scaled_x)
 {
     return (param_scaled_x / GetWidthScale());
 }
-double Rectangle::GetUnscaledYFromScaledY(double param_scaled_y)
+double RectangleOld::GetUnscaledYFromScaledY(double param_scaled_y)
 {
     return (param_scaled_y / GetHeightScale());
 }
@@ -1107,3 +1107,24 @@ double Rectangle::GetUnscaledYFromScaledY(double param_scaled_y)
 
 // -----------------   EXTRA FUNCTIONS   -----------------
 
+Point2D RectangleOld::GetUniCorner(const Corner param_corner) const
+{
+    switch (param_corner.value)
+    {
+    case 0:
+        return { GetUniEdge({ 0 }), GetUniEdge({ 3 }) };
+        break;
+    case 1:
+        return { GetUniEdge({ 0 }), GetUniEdge({ 1 }) };
+        break;
+    case 2:
+        return { GetUniEdge({ 2 }), GetUniEdge({ 1 }) };
+        break;
+    case 3:
+        return { GetUniEdge({ 2 }), GetUniEdge({ 3 }) };
+        break;
+    default:
+        cerr << "ILLEGAL CORNER VALUE!!! Sent from Point2D RectangleOld::GetUniCorner(const Corner param_corner) const\n";
+        throw;
+    }
+}

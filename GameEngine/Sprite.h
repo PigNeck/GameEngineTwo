@@ -3,10 +3,9 @@
 #include "Animation.h"
 
 struct Sprite {
-	Texture* texture;
-	Animation* animation;
-	Rectangle rect;
-	void LoadTexture(Texture* param_texture);
-	void LoadAnimation(Animation* param_animation);
-	Sprite();
+	Texture* texture = nullptr;
+	Animation* animation = nullptr;
+	RectangleOld rect;
+	void LoadTexture(Texture* const param_texture);
+	void LoadAnimation(Animation* const param_animation);
 };

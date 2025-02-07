@@ -120,7 +120,7 @@ ostream& operator<<(ostream& os, const RectStructOne& obj)
 
 // -----------------   RECTANGLE   -----------------
 
-struct Rectangle
+struct RectangleOld
 {
     Point2D pos;
     Size2D base_size;
@@ -130,7 +130,7 @@ struct Rectangle
     double rotation = 0.0;
 
     RelativityRules relativity_rules;
-    Rectangle* reference_rectangle = nullptr;
+    RectangleOld* reference_rectangle = nullptr;
 
 
 
@@ -139,8 +139,8 @@ struct Rectangle
 
     // -----------------   CONSTRUCTORS   -----------------
 
-    Rectangle();
-    Rectangle(Rectangle* param_reference_rectangle_data);
+    RectangleOld();
+    RectangleOld(RectangleOld* param_reference_rectangle_data);
 
 
 
@@ -362,4 +362,6 @@ struct Rectangle
 
 
     // -----------------   EXTRA FUNCTIONS   -----------------
+
+    Point2D GetUniCorner(const Corner param_corner) const;
 };

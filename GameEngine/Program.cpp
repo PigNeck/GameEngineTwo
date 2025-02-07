@@ -154,7 +154,7 @@ void ProgressBar::InitLeast()
 {
 	//Do nothing lamo (you)
 }
-void ProgressBar::InitMost(const vector<Bar*> param_bars, const Rectangle param_back_rect, const SDL_Color param_back_color, const Rectangle param_progress_back_rect, const SDL_Color param_progress_back_color)
+void ProgressBar::InitMost(const vector<Bar*> param_bars, const RectangleOld param_back_rect, const SDL_Color param_back_color, const RectangleOld param_progress_back_rect, const SDL_Color param_progress_back_color)
 {
 	bars = param_bars;
 	back_rect = param_back_rect;
@@ -500,7 +500,7 @@ void Program::UpdateConfetti()
 }
 void Program::DrawConfetti(Camera* const camera)
 {
-	Rectangle conf_rect;
+	RectangleOld conf_rect;
 	conf_rect.size.width = 20.0;
 	conf_rect.size.height = 10.0;
 	SDL_Color conf_color = { 0, 0, 0, 255 };
@@ -743,7 +743,7 @@ void Program::DrawCoursePathPathProgressBars()
 		DrawProgressBar(&course_path_path[i]->progress_bar, e->blank_camera);
 
 		const Point2D temp_blank_mouse = e->GetMousePos(e->blank_camera);
-		Rectangle temp_overlap_rect = course_path_path[i]->progress_bar.progress_back_rect;
+		RectangleOld temp_overlap_rect = course_path_path[i]->progress_bar.progress_back_rect;
 		temp_overlap_rect.size.height += 4.0;
 		if (i == 0)
 		{
@@ -1154,8 +1154,6 @@ void Program::UpdatePlayer(Player* param_player)
 	}
 
 	param_player->sprite.rect.pos = param_player->hitbox.pos;
-
-	//SDL_Rect temp_sdl_rect = RectangleToSDLRect(&param_player->sprite.rect, main_camera);
 }
 
 void Program::UpdateMainCamera()
@@ -1168,11 +1166,11 @@ void Program::UpdateMainCamera()
 
 void Program::DrawGround(Ground* param_ground, Camera* camera)
 {
-	Rectangle tile_rectangle_data;
+	RectangleOld tile_rectangle_data;
 	tile_rectangle_data.base_size = { 64.0, 24.0 };
 	tile_rectangle_data.SetSizeWithSizeScale({ 4.0, 4.0 });
 
-	//Rectangle accessory_rect;
+	//RectangleOld accessory_rect;
 	//accessory_rect.base_size = tree.size;
 	//accessory_rect.SetSizeScale({ 4.0, 4.0 });
 
@@ -1213,19 +1211,19 @@ void Program::DrawGround(Ground* param_ground, Camera* camera)
 					switch (param_ground->tile_data[x][y])
 					{
 					case 1:
-						e->DrawTexture(&light_ground, camera, &tile_rectangle_data);
+						e->DrawTexture(light_ground, camera, &tile_rectangle_data);
 						break;
 					case 2:
-						e->DrawTexture(&dark_ground, camera, &tile_rectangle_data);
+						e->DrawTexture(dark_ground, camera, &tile_rectangle_data);
 						break;
 					case 3:
-						e->DrawTexture(&grassy_ground, camera, &tile_rectangle_data);
+						e->DrawTexture(grassy_ground, camera, &tile_rectangle_data);
 						break;
 					case 4:
-						e->DrawTexture(&cobble_ground, camera, &tile_rectangle_data);
+						e->DrawTexture(cobble_ground, camera, &tile_rectangle_data);
 						break;
 					case 5:
-						e->DrawTexture(&grassy_ground, camera, &tile_rectangle_data);
+						e->DrawTexture(grassy_ground, camera, &tile_rectangle_data);
 
 						TIME_FOR_SINGLE_CYCLE = 2.0;
 						MIN_HIGHLIGHT_VALUE = 20.0;
@@ -1237,9 +1235,9 @@ void Program::DrawGround(Ground* param_ground, Camera* camera)
 
 						double_alpha = MIN_HIGHLIGHT_VALUE + (((sin_time + 1.0) / 2.0) * (MAX_HIGHLIGHT_VALUE - MIN_HIGHLIGHT_VALUE));
 
-						SDL_SetTextureAlphaMod(ground_highlight.sdl_texture, (int)round(double_alpha));
-						e->DrawTexture(&ground_highlight, camera, &tile_rectangle_data);
-						SDL_SetTextureAlphaMod(ground_highlight.sdl_texture, 255);
+						//SDL_SetTextureAlphaMod(ground_highlight.sdl_texture, (int)round(double_alpha)); REMOVED CAUSE RENDERER GOT YEETED
+						//e->DrawTexture(&ground_highlight, camera, &tile_rectangle_data); REMOVED CAUSE RENDERER GOT YEETED
+						//SDL_SetTextureAlphaMod(ground_highlight.sdl_texture, 255); REMOVED CAUSE RENDERER GOT YEETED
 						break;
 					case 6:
 						e->DrawTexture(water_ground.GetCurrentFrame()->texture, camera, &tile_rectangle_data);
@@ -1265,14 +1263,14 @@ void Program::UpdateCellSet(CellSet* const param_cell_set)
 		param_cell_set->set[i]->Update(e->frame_factor_inverse);
 	}
 
-	const Rectangle temp_full_hitbox = param_cell_set->GenerateFullHitbox();
+	const RectangleOld temp_full_hitbox = param_cell_set->GenerateFullHitbox();
 	const Point2D temp_mouse_pos = e->GetMousePos(e->blank_camera);
 
 	hovering_over_tset = 0;
 	if (OverlapPoint2DWithRectangle(&temp_mouse_pos, &temp_full_hitbox, 1))
 	{
 		size_t selected_index = 0;
-		Rectangle temp_cell_cropped_hitbox;
+		RectangleOld temp_cell_cropped_hitbox;
 		for (size_t i = 0; i < param_cell_set->set.size(); i++)
 		{
 			temp_cell_cropped_hitbox = param_cell_set->GenerateHitboxCropped(i);
@@ -1289,8 +1287,8 @@ void Program::DrawCellSet(CellSet* const param_cell_set, Camera* const camera)
 {
 	for (size_t i = 0; i < param_cell_set->set.size(); i++)
 	{
-		Rectangle outer_hitbox = param_cell_set->GenerateHitbox(i);
-		Rectangle inner_hitbox = param_cell_set->GenerateInnerHitbox(i);
+		RectangleOld outer_hitbox = param_cell_set->GenerateHitbox(i);
+		RectangleOld inner_hitbox = param_cell_set->GenerateInnerHitbox(i);
 
 		SDL_Color cell_color = { 0, 0, 0, 255 };
 		const double delta_y = param_cell_set->GetTrueScale().height * param_cell_set->set[i]->animation_movement_percent / 100.0;
@@ -2224,7 +2222,7 @@ void Program::DrawScene4()
 	{
 		if (current_course_path == &intro_main)
 		{
-			e->DrawTexture(&goober_texture, e->blank_camera, &goober_rectangle);
+			e->DrawTexture(goober_texture, e->blank_camera, &goober_rectangle);
 
 			switch (current_portion_index)
 			{
@@ -2328,38 +2326,54 @@ void Program::RunScene6()
 		//val_1_2.v[0] *= 0.8;
 		//val_1_2.v[1] *= 0.8;
 
-		test_rect_new.scale.width_scale *= 0.95;
-		test_rect_new.scale.height_scale *= 0.95;
+		test_rect_new.transformations.scale.width_scale *= 0.95;
+		test_rect_new.transformations.scale.height_scale *= 0.95;
 	}
 	if (e->input.m.pressed)
 	{
 		//val_1_2.v[0] *= 1.25;
 		//val_1_2.v[1] *= 1.25;
 
-		test_rect_new.scale.width_scale /= 0.95;
-		test_rect_new.scale.height_scale /= 0.95;
+		test_rect_new.transformations.scale.width_scale /= 0.95;
+		test_rect_new.transformations.scale.height_scale /= 0.95;
 	}
 
-	if (e->input.b.pressed)
+	if (e->input.b.first_frame_pressed)
 	{
-		test_rect_new.rotation.radians += 0.01;
+		//test_rect_new.transformations.rotation.radians += 0.01;
+
+		test_90_rect.transformations.RotateCounterclockwise(1);
 	}
 
 	val_1_3.v[0] += 0.02;
 
 	if (e->input.v.first_frame_pressed)
 	{
-		test_rect_new_two.pos.SetValueToFitUniValue({ test_point.x, test_point.y });
+		//test_rect_new_two.pos.SetValueToFitUniValue({ test_point.x, test_point.y });
 		//test_rect_new_two.pos.v[0] += 5.0;
+
+		//test_rect_new_two.transformations.rotation.radians += 0.01;
+
+		test_90_rect_two.transformations.RotateCounterclockwise(1);
 	}
 
-	if (e->input.g.first_frame_pressed)
+	if (e->input.g.pressed)
 	{
-		test_rect_new_two.total_flip.v.flip_horizontally = !test_rect_new_two.total_flip.v.flip_horizontally;
+		test_rect_new.transformations.scale.width_scale -= 0.02;
+
+		//test_rect_new_two.transformations.total_flip.flip_horizontally = !test_rect_new_two.rotate_scale_flip.total_flip.flip_horizontally;
 	}
-	if (e->input.h.first_frame_pressed)
+	if (e->input.h.pressed)
 	{
-		test_rect_new_two.total_flip.v.flip_vertically = !test_rect_new_two.total_flip.v.flip_vertically;
+		test_rect_new.transformations.scale.width_scale += 0.02;
+
+		//test_rect_new_two.transformations.total_flip.flip_vertically = !test_rect_new_two.rotate_scale_flip.total_flip.flip_vertically;
+	}
+
+	if (e->input.u.first_frame_pressed)
+	{
+		test_rect_new_two.SetUniCorner({ test_point.x, test_point.y }, CornerEnum::TOP_RIGHT);
+		//test_rect_new_two.pos.SetValueToFitUniValue({ test_point.x, test_point.y });
 	}
 }
 void Program::DrawScene6()
@@ -2370,12 +2384,15 @@ void Program::DrawScene6()
 	Point2D p1 = { temp_1[0], temp_1[1] };
 	Point2D p2 = { temp_2[0], temp_2[1] };
 
-	e->DrawPoint(&p1, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
-	e->DrawPoint(&p2, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
+	//e->DrawPoint(&p1, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
+	//e->DrawPoint(&p2, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
 
-	e->DrawTextureWithRefRectangleNewNew(&test_rect_new, e->distinguishing_sides_t, nullptr, nullptr, e->blank_camera);
-	e->DrawTextureWithRefRectangleNewNew(&test_rect_new_two, e->distinguishing_sides_t, nullptr, nullptr, e->blank_camera);
-	e->DrawTextureWithRefRectangleNewNew(&test_rect_new_three, e->distinguishing_sides_t, nullptr, nullptr, e->blank_camera);
+	e->DrawTextureWithRefRectangleNewest(&test_rect_new, nullptr, nullptr, nullptr, nullptr);
+	e->DrawTextureWithRefRectangleNewest(&test_rect_new_two, nullptr, nullptr, nullptr, nullptr);
+	e->DrawTextureWithRefRectangleNewest(&test_rect_new_three, nullptr, nullptr, nullptr, nullptr);
+
+	e->DrawTexturedRefRectangle90(&test_90_rect, nullptr, nullptr, nullptr, nullptr);
+	e->DrawTexturedRefRectangle90(&test_90_rect_two, nullptr, nullptr, nullptr, nullptr);
 
 	Point2D p3 = { test_point.x, test_point.y };
 
@@ -2467,87 +2484,90 @@ Program::Program() : e(nullptr)
 
 	//-----------------   COURSE STUFFS SCENE 4   -----------------
 
-	test_cset.InitLeast(&e->default_font);
-	test_cset.number_display.CreateDebugData({ &e->engine_debug_data_container }, &e->default_font, "number_display", { 2 }, 1);
-	test_cset.set.push_back(new Cell());
-	test_cset.set.push_back(new Cell());
-	test_cset.set.push_back(new Cell());
+	{
+		test_cset.InitLeast(&e->default_font);
+		test_cset.number_display.CreateDebugData({ &e->engine_debug_data_container }, &e->default_font, "number_display", { 2 }, 1);
+		test_cset.set.push_back(new Cell());
+		test_cset.set.push_back(new Cell());
+		test_cset.set.push_back(new Cell());
 
 
 
-	//Initialze portion_text_box
-	current_text_portion_text_box.InitLeast(&e->default_font);
-	current_text_portion_text_box.text_wrap = 1;
-	current_text_portion_text_box.parent_rect.size.width = e->blank_camera->rect.size.width;
-	current_text_portion_text_box.parent_rect.size.height = e->blank_camera->rect.size.height / 3.0;
-	current_text_portion_text_box.parent_rect.SetBaseSizeWithSizeScale({ 4.0, 4.0 });
-	current_text_portion_text_box.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
+		//Initialze portion_text_box
+		current_text_portion_text_box.InitLeast(&e->default_font);
+		current_text_portion_text_box.text_wrap = 1;
+		current_text_portion_text_box.parent_rect.size.width = e->blank_camera->rect.size.width;
+		current_text_portion_text_box.parent_rect.size.height = e->blank_camera->rect.size.height / 3.0;
+		current_text_portion_text_box.parent_rect.SetBaseSizeWithSizeScale({ 4.0, 4.0 });
+		current_text_portion_text_box.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
 
 
 
-	//Initialize the next, previous, return, and finish buttons
-	Size2D course_button_size = { 50.0, 13.0 };
+		//Initialize the next, previous, return, and finish buttons
+		Size2D course_button_size = { 50.0, 13.0 };
 
-	next_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Next", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
-	next_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_right_edge, { 0 });
-	next_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
-	next_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+		next_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Next", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
+		next_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_right_edge, { 0 });
+		next_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
+		next_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
 
-	previous_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Prev", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
-	previous_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_left_edge, { 2 });
-	previous_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
-	previous_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+		previous_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Prev", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
+		previous_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_left_edge, { 2 });
+		previous_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
+		previous_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
 
-	previous_return_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Return", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
-	previous_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_left_edge, { 2 });
-	previous_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
-	previous_return_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
-	previous_return_portion_button.press_data.hoverable = 0;
-	previous_return_portion_button.press_data.pressable = 0;
+		previous_return_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Return", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
+		previous_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_left_edge, { 2 });
+		previous_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
+		previous_return_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+		previous_return_portion_button.press_data.hoverable = 0;
+		previous_return_portion_button.press_data.pressable = 0;
 
-	//Maybe call "done"?
+		//Maybe call "done"?
 
-	next_return_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Return", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
-	next_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_right_edge, { 0 });
-	next_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
-	next_return_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
-	next_return_portion_button.press_data.hoverable = 0;
-	next_return_portion_button.press_data.pressable = 0;
+		next_return_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Return", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
+		next_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_right_edge, { 0 });
+		next_return_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
+		next_return_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+		next_return_portion_button.press_data.hoverable = 0;
+		next_return_portion_button.press_data.pressable = 0;
 
-	finish_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Finish", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
-	finish_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_right_edge, { 0 });
-	finish_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
-	finish_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
-	finish_portion_button.press_data.hoverable = 0;
-	finish_portion_button.press_data.pressable = 0;
-
-
-	skedaddle_button.InitWithMargin({ 4.0, 4.0 }, "Skeddadle", &e->default_font, { 24.0, 12.0 }, 4.0, 4.0);
-	skedaddle_button.parent_rect.SetPosWithUniEdge(blank_camera_left_edge, { 2 });
-	skedaddle_button.parent_rect.SetPosWithUniEdge(blank_camera_top_edge, { 3 });
-	skedaddle_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+		finish_portion_button.InitWithBaseSize({ 4.0, 4.0 }, "Finish", &e->default_font, course_button_size, 4.0, 4.0, { 0.0, 0.0 }, 0);
+		finish_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_right_edge, { 0 });
+		finish_portion_button.parent_rect.SetPosWithUniEdge(blank_camera_bottom_edge, { 1 });
+		finish_portion_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+		finish_portion_button.press_data.hoverable = 0;
+		finish_portion_button.press_data.pressable = 0;
 
 
+		skedaddle_button.InitWithMargin({ 4.0, 4.0 }, "Skeddadle", &e->default_font, { 24.0, 12.0 }, 4.0, 4.0);
+		skedaddle_button.parent_rect.SetPosWithUniEdge(blank_camera_left_edge, { 2 });
+		skedaddle_button.parent_rect.SetPosWithUniEdge(blank_camera_top_edge, { 3 });
+		skedaddle_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
 
 
 
 
-	course_path_rectangle.size.width = e->blank_camera->rect.size.width;
-	course_path_rectangle.size.height = 26.0;
-	course_path_rectangle.SetBaseSizeWithSizeScale({ 2.0, 2.0 });
-	course_path_rectangle.SetPosWithUniEdge(previous_portion_button.parent_rect.GetUniEdge({ 3 }), { 1 });
-	course_path_rectangle.SetPosWithUniEdge(e->blank_camera->rect.GetUniEdge({ 2 }), { 2 });
-	course_path_rectangle.pos.x += 6.0;
-	course_path_rectangle.pos.y += 6.0;
-
-	course_path_text_box.InitMost(&e->default_font, course_path_rectangle, "Path: main", { 0 }, { 0 }, 0);
-
-	course_path_rectangle.base_size = { 1.0, 1.0 };
-	course_path_rectangle.pos.x -= 6.0;
-	course_path_rectangle.pos.y -= 6.0;
 
 
-	link_tool_tip.InitLeast(&e->default_font);
+		course_path_rectangle.size.width = e->blank_camera->rect.size.width;
+		course_path_rectangle.size.height = 26.0;
+		course_path_rectangle.SetBaseSizeWithSizeScale({ 2.0, 2.0 });
+		course_path_rectangle.SetPosWithUniEdge(previous_portion_button.parent_rect.GetUniEdge({ 3 }), { 1 });
+		course_path_rectangle.SetPosWithUniEdge(e->blank_camera->rect.GetUniEdge({ 2 }), { 2 });
+		course_path_rectangle.pos.x += 6.0;
+		course_path_rectangle.pos.y += 6.0;
+
+		course_path_text_box.InitMost(&e->default_font, course_path_rectangle, "Path: main", { 0 }, { 0 }, 0);
+
+		course_path_rectangle.base_size = { 1.0, 1.0 };
+		course_path_rectangle.pos.x -= 6.0;
+		course_path_rectangle.pos.y -= 6.0;
+
+
+		link_tool_tip.InitLeast(&e->default_font);
+	}
+	
 
 
 
@@ -2555,108 +2575,111 @@ Program::Program() : e(nullptr)
 
 	// ---------- COURSE SPECIFIC DATA ----------
 
-	goober_texture.LoadTexture(e->renderer, "images/program/little_fellow_fade_out_fix.png");
-	goober_max_anim_counter = round(e->frame_factor * 16);
-	if (goober_max_anim_counter == 0)
 	{
-		goober_max_anim_counter = 1;
+		goober_texture->LoadTexture("images/program/little_fellow_fade_out_fix.png");
+		goober_max_anim_counter = (unsigned int)round(e->frame_factor * 16.0);
+		if (goober_max_anim_counter == 0)
+		{
+			goober_max_anim_counter = 1;
+		}
+		goober_anim_counter = 0;
+		goober_rectangle.size = { 216.0, 208.0 };
+		goober_rectangle.pos = { 0.0, 0.0 };
+
+
+		intro_main.path_name = "Intro";
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("Ello, it's me, lead developer of PLACEHOLDER!", 1);
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("I\'m going to assume that you wish to learn how to develop games, seeing as you clicked the \"how to develop games\" button.", 1);
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("If not, you can always skedaddle by clicking the aptly named \"skedaddle\" button.", 1);
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("For those of you who do wish to learn game development though, I should give you some information before we start the course.", 1);
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("First of all, game development takes a LOT of effort. Video games incorporate computer programming, digital art, and sound design all into one package.", 1);
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("Even simple-looking games like Undertale or Omori can easily take upwards of 5 years to complete!", 1);
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("Essentially, this is my reminder to be patient.", 1);
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("This course should only take around 20 hours to complete though (hopefully not 5 years).", 1);
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("And if you finish, you should be ready to start developing your first (or maybe not first) game!", 1);
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("You don\'t need to know anything about computer programming to take this course, but if you do, you can skip things you already know.", 1);
+
+		intro_main.portions.push_back(new TextPortion());
+		intro_main.portions.back()->InitLeast("Okay, that\'s it for the intro, good luck!", 1);
+
+		course_paths.push_back(&intro_main);
+
+
+
+		lesson_1_main.path_name = "Lesson 1";
+
+		lesson_1_main.portions.push_back(new TextPortion());
+		lesson_1_main.portions.back()->InitLeast("As I previously mentioned, a lot of parts go into making a video game, so let's simply try to recreate one part first.", 1);
+
+		lesson_1_main.portions.push_back(new TextPortion());
+		lesson_1_main.portions.back()->InitLeast("The part we are trying to recreate is going to be the score from \"Scooby-Doo\" for the ZX Spectrum, which we will finish in a couple of lessons.", 1);
+
+		lesson_1_main.portions.push_back(new TextPortion());
+		lesson_1_main.portions.back()->InitLeast("Look at those GRAPHICS", 1);
+
+		lesson_1_main.portions.push_back(new TextPortion());
+		lesson_1_main.portions.back()->InitLeast("Anyways, this score is a numerical value that is displayed on the screen and increments when the player defeats enemies, which are these little ghouls here.", 1);
+
+		lesson_1_main.portions.push_back(new TextPortion());
+		lesson_1_main.portions.back()->InitLeast("Seems pretty simple, right? (say yes please)", 1);
+
+		lesson_1_main.portions.push_back(new TextPortion());
+		lesson_1_main.portions.back()->InitLeast("As it turns out, not really.", 1);
+
+		lesson_1_main.portions.push_back(new TextPortion());
+		lesson_1_main.portions.back()->InitLeast("Like, how does the computer \"know\" what the number is at all times?", 1);
+
+		lesson_1_main.portions.push_back(new TextPortion());
+		lesson_1_main.portions.back()->InitLeast("How is it able to add a certain number of points to the number?", 1);
+
+		lesson_1_main.portions.push_back(new TextPortion());
+		lesson_1_main.portions.back()->InitLeast("How can it display this number on the screen?", 1);
+
+		lesson_1_main.portions.push_back(new TextPortion());
+		lesson_1_main.portions.back()->InitLeast("However, before we can even start to answer these questions, we need to learn about a core computer science concept: abstraction!", 1);
+		lesson_1_main.portions.back()->links.push_back(TextLink());
+		lesson_1_main.portions.back()->links.back().InitLeast(2, 0, 61, 128, 4);
+
+		course_paths.push_back(&lesson_1_main);
+
+
+
+		lesson_1_abstraction_justification.path_name = "Abstraction Justification";
+		lesson_1_abstraction_justification.return_path_index = 1;
+
+		lesson_1_abstraction_justification.portions.push_back(new TextPortion());
+		lesson_1_abstraction_justification.portions.back()->InitLeast("The rest of the course will not make sense if you are not aware of this concept, unfortunately. I would love it if you could get right into it, but this is quite necessary information as it turns out. Plus, abstraction is cool! (according to me)", 1);
+
+		course_paths.push_back(&lesson_1_abstraction_justification);
+
+
+
+
+
+		SetCurrentPathAndPortionIndexes(0, 0, 1, 1); //This tecnically isn't course specific. However, it needs to be called after the courses are created (I think)
+
 	}
-	goober_anim_counter = 0;
-	goober_rectangle.size = { 216.0, 208.0 };
-	goober_rectangle.pos = { 0.0, 0.0 };
-
-
-	intro_main.path_name = "Intro";
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("Ello, it's me, lead developer of PLACEHOLDER!", 1);
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("I\'m going to assume that you wish to learn how to develop games, seeing as you clicked the \"how to develop games\" button.", 1);
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("If not, you can always skedaddle by clicking the aptly named \"skedaddle\" button.", 1);
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("For those of you who do wish to learn game development though, I should give you some information before we start the course.", 1);
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("First of all, game development takes a LOT of effort. Video games incorporate computer programming, digital art, and sound design all into one package.", 1);
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("Even simple-looking games like Undertale or Omori can easily take upwards of 5 years to complete!", 1);
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("Essentially, this is my reminder to be patient.", 1);
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("This course should only take around 20 hours to complete though (hopefully not 5 years).", 1);
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("And if you finish, you should be ready to start developing your first (or maybe not first) game!", 1);
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("You don\'t need to know anything about computer programming to take this course, but if you do, you can skip things you already know.", 1);
-
-	intro_main.portions.push_back(new TextPortion());
-	intro_main.portions.back()->InitLeast("Okay, that\'s it for the intro, good luck!", 1);
-
-	course_paths.push_back(&intro_main);
-
-
-
-	lesson_1_main.path_name = "Lesson 1";
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("As I previously mentioned, a lot of parts go into making a video game, so let's simply try to recreate one part first.", 1);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("The part we are trying to recreate is going to be the score from \"Scooby-Doo\" for the ZX Spectrum, which we will finish in a couple of lessons.", 1);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("Look at those GRAPHICS", 1);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("Anyways, this score is a numerical value that is displayed on the screen and increments when the player defeats enemies, which are these little ghouls here.", 1);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("Seems pretty simple, right? (say yes please)", 1);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("As it turns out, not really.", 1);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("Like, how does the computer \"know\" what the number is at all times?", 1);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("How is it able to add a certain number of points to the number?", 1);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("How can it display this number on the screen?", 1);
-
-	lesson_1_main.portions.push_back(new TextPortion());
-	lesson_1_main.portions.back()->InitLeast("However, before we can even start to answer these questions, we need to learn about a core computer science concept: abstraction!", 1);
-	lesson_1_main.portions.back()->links.push_back(TextLink());
-	lesson_1_main.portions.back()->links.back().InitLeast(2, 0, 61, 128, 4);
-
-	course_paths.push_back(&lesson_1_main);
-
-
-
-	lesson_1_abstraction_justification.path_name = "Abstraction Justification";
-	lesson_1_abstraction_justification.return_path_index = 1;
-
-	lesson_1_abstraction_justification.portions.push_back(new TextPortion());
-	lesson_1_abstraction_justification.portions.back()->InitLeast("The rest of the course will not make sense if you are not aware of this concept, unfortunately. I would love it if you could get right into it, but this is quite necessary information as it turns out. Plus, abstraction is cool! (according to me)", 1);
-
-	course_paths.push_back(&lesson_1_abstraction_justification);
-
-
-
-
-
-	SetCurrentPathAndPortionIndexes(0, 0, 1, 1); //This tecnically isn't course specific. However, it needs to be called after the courses are created (I think)
-
+	
 
 
 
@@ -2693,84 +2716,93 @@ Program::Program() : e(nullptr)
 
 	// -----------------   INITIALIZE GAME HOME SCREEN   -----------------
 
-	const double window_width_scaling = (double)e->window_width / (double)DEFAULT_WINDOW_WIDTH;
-	const double window_height_scaling = (double)e->window_height / (double)DEFAULT_WINDOW_HEIGHT;
-
-	double lesser_scale;
-	if (window_width_scaling <= window_height_scaling)
 	{
-		lesser_scale = window_width_scaling;
+		const double window_width_scaling = (double)e->window_width / (double)DEFAULT_WINDOW_WIDTH;
+		const double window_height_scaling = (double)e->window_height / (double)DEFAULT_WINDOW_HEIGHT;
+
+		double lesser_scale;
+		if (window_width_scaling <= window_height_scaling)
+		{
+			lesser_scale = window_width_scaling;
+		}
+		else
+		{
+			lesser_scale = window_height_scaling;
+		}
+		const double five_lesser_scale = lesser_scale * 5.0;
+
+		Size2D editing_button_size = { 100.0, 24.0 };
+		const double editing_button_list_x = 600.0;
+		const double editing_button_list_y = 400.0;
+		const double editing_button_spacing_y = 180.0;
+
+		code_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Code", &e->default_font, editing_button_size, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
+		//code_button.CreateDebugData({ &e->engine_debug_data_container }, "Code Button", { 1 });
+		code_button.parent_rect.pos = { editing_button_list_x / window_width_scaling, (editing_button_list_y - (editing_button_spacing_y * 0.0)) / window_height_scaling };
+		code_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+
+		images_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Images", &e->default_font, editing_button_size, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
+		images_button.parent_rect.pos = { editing_button_list_x / window_width_scaling, (editing_button_list_y - (editing_button_spacing_y * 1.0)) / window_height_scaling };
+		images_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+
+		sounds_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Sounds", &e->default_font, editing_button_size, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
+		sounds_button.parent_rect.pos = { editing_button_list_x / window_width_scaling, (editing_button_list_y - (editing_button_spacing_y * 2.0)) / window_height_scaling };
+		sounds_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+
+		other_files_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Other Files", &e->default_font, editing_button_size, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
+		other_files_button.parent_rect.pos = { editing_button_list_x / window_width_scaling, (editing_button_list_y - (editing_button_spacing_y * 3.0)) / window_height_scaling };
+		other_files_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+
+		run_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Run", &e->default_font, { 200.0, 24.0 }, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
+		run_button.parent_rect.pos.x = -300.0 / window_width_scaling;
+		run_button.parent_rect.SetPosWithUniEdge(other_files_button.parent_rect.GetUniEdge({ 1 }), { 1 });
+		run_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
+
+
+		back_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Back", &e->default_font, { 14.0, e->window_height / five_lesser_scale }, five_lesser_scale, five_lesser_scale, { 14.0 * five_lesser_scale, 0.0 }, 1);
+		//back_button.CreateDebugData({ &e->engine_debug_data_container }, "Back Button", {});
+		back_button.parent_rect.SetPosWithUniEdge(main_camera->rect.GetUniEdge({ 2 }), { 2 });
+		back_button.text_box.text_wrap = 1;
+		back_button.text_box.parent_rect.base_size.width = 4.0;
+		back_button.text_box.parent_rect.size.width = 4.0;
+		back_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
 	}
-	else
+	
+
+
+
+
+	// -----------------   INITIALIZE ANIMATIONS?   -----------------
+
 	{
-		lesser_scale = window_height_scaling;
+		run_anim.LoadFrames("images/program/player/run_anim", 8, 10.0);
+
+		idle_anim.LoadFrames("images/program/player/idle_anim", 3, 2.0);
+		idle_anim.frames.back().frame_length = 0.1;
+
+		swim_anim.LoadFrames("images/program/player/swim_anim", 5, 10.0);
+
+		pride_anim.LoadFrames("images/program/player/pride_anim", 6, 10.0);
+		pride_anim.offset.x = 4.5;
+
+		player.hitbox.base_size = idle_anim.dimentions;
+		player.hitbox.SetSizeWithSizeScale(Size2D{ 4.0, 4.0 });
+		player.hitbox.base_size = player.hitbox.size;
+
+		player.sprite.rect = player.hitbox;
+		player.sprite.rect.SetBaseSizeWithSizeScale({ 4.0, 4.0 });
+		player.sprite.LoadAnimation(&idle_anim);
+
+		light_ground->LoadTexture("images/program/ground_tiles/light_ground.png");
+		dark_ground->LoadTexture("images/program/ground_tiles/dark_ground.png");
+		grassy_ground->LoadTexture("images/program/ground_tiles/grass.png");
+		cobble_ground->LoadTexture("images/program/ground_tiles/cobble.png");
+		ground_highlight->LoadTexture("images/program/ground_tiles/ground_highlight.png");
+		water_ground.LoadFrames("images/program/ground_tiles/water", 38, 5.0);
+
+		tree->LoadTexture("images/program/ground_accessories/tree.png");
 	}
-	const double five_lesser_scale = lesser_scale * 5.0;
-
-	Size2D editing_button_size = { 100.0, 24.0 };
-	const double editing_button_list_x = 600.0;
-	const double editing_button_list_y = 400.0;
-	const double editing_button_spacing_y = 180.0;
-
-	code_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Code", &e->default_font, editing_button_size, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
-	//code_button.CreateDebugData({ &e->engine_debug_data_container }, "Code Button", { 1 });
-	code_button.parent_rect.pos = { editing_button_list_x / window_width_scaling, (editing_button_list_y - (editing_button_spacing_y * 0.0)) / window_height_scaling };
-	code_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
-
-	images_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Images", &e->default_font, editing_button_size, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
-	images_button.parent_rect.pos = { editing_button_list_x / window_width_scaling, (editing_button_list_y - (editing_button_spacing_y * 1.0)) / window_height_scaling };
-	images_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
-
-	sounds_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Sounds", &e->default_font, editing_button_size, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
-	sounds_button.parent_rect.pos = { editing_button_list_x / window_width_scaling, (editing_button_list_y - (editing_button_spacing_y * 2.0)) / window_height_scaling };
-	sounds_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
-
-	other_files_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Other Files", &e->default_font, editing_button_size, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
-	other_files_button.parent_rect.pos = { editing_button_list_x / window_width_scaling, (editing_button_list_y - (editing_button_spacing_y * 3.0)) / window_height_scaling };
-	other_files_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
-
-	run_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Run", &e->default_font, { 200.0, 24.0 }, five_lesser_scale, five_lesser_scale, { 0.0, 0.0 }, 0);
-	run_button.parent_rect.pos.x = -300.0 / window_width_scaling;
-	run_button.parent_rect.SetPosWithUniEdge(other_files_button.parent_rect.GetUniEdge({ 1 }), { 1 });
-	run_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
-
-
-	back_button.InitWithBaseSize({ five_lesser_scale, five_lesser_scale }, "Back", &e->default_font, { 14.0, e->window_height / five_lesser_scale }, five_lesser_scale, five_lesser_scale, { 14.0 * five_lesser_scale, 0.0 }, 1);
-	//back_button.CreateDebugData({ &e->engine_debug_data_container }, "Back Button", {});
-	back_button.parent_rect.SetPosWithUniEdge(main_camera->rect.GetUniEdge({ 2 }), { 2 });
-	back_button.text_box.text_wrap = 1;
-	back_button.text_box.parent_rect.base_size.width = 4.0;
-	back_button.text_box.parent_rect.size.width = 4.0;
-	back_button.sounds = { nullptr, nullptr, e->click_press_sound, e->click_release_sound, 0 };
-
-
-	run_anim.LoadFrames(e->renderer, "images/program/player/run_anim", 8, 10.0);
-
-	idle_anim.LoadFrames(e->renderer, "images/program/player/idle_anim", 3, 2.0);
-	idle_anim.frames.back().frame_length = 0.1;
-
-	swim_anim.LoadFrames(e->renderer, "images/program/player/swim_anim", 5, 10.0);
-
-	pride_anim.LoadFrames(e->renderer, "images/program/player/pride_anim", 6, 10.0);
-	pride_anim.offset.x = 4.5;
-
-	player.hitbox.base_size = idle_anim.dimentions;
-	player.hitbox.SetSizeWithSizeScale(Size2D{ 4.0, 4.0 });
-	player.hitbox.base_size = player.hitbox.size;
-
-	player.sprite.rect = player.hitbox;
-	player.sprite.rect.SetBaseSizeWithSizeScale({ 4.0, 4.0 });
-	player.sprite.LoadAnimation(&idle_anim);
-
-
-	light_ground.LoadTexture(e->renderer, "images/program/ground_tiles/light_ground.png");
-	dark_ground.LoadTexture(e->renderer, "images/program/ground_tiles/dark_ground.png");
-	grassy_ground.LoadTexture(e->renderer, "images/program/ground_tiles/grass.png");
-	cobble_ground.LoadTexture(e->renderer, "images/program/ground_tiles/cobble.png");
-	ground_highlight.LoadTexture(e->renderer, "images/program/ground_tiles/ground_highlight.png");
-	water_ground.LoadFrames(e->renderer, "images/program/ground_tiles/water", 38, 5.0);
-
-	tree.LoadTexture(e->renderer, "images/program/ground_accessories/tree.png");
+	
 
 	for (int x = 0; x < 10; x++)
 	{
@@ -2828,13 +2860,21 @@ Program::Program() : e(nullptr)
 
 	test_rect_new_two.pos = { -100.0, 50.0 };
 	test_rect_new_two.unscaled_size = { 50.0, 25.0 };
-	test_rect_new_two.rotation = { 0.5 };
+	test_rect_new_two.transformations.rotation = { 0.5 };
 	test_rect_new_two.SetReference(&test_rect_new);
 
 	test_rect_new_three.pos = { 80.0, 60.0 };
 	test_rect_new_three.unscaled_size = { 25.0, 50.0 };
-	test_rect_new_three.rotation = { 0.5 };
+	test_rect_new_three.transformations.rotation = { 0.5 };
 	test_rect_new_three.SetReference(&test_rect_new_two);
+
+
+
+	test_90_rect.pos = { -200.0, -50.0 };
+
+	test_90_rect_two.pos = { 100.0, 50.0 };
+	test_90_rect_two.unscaled_size = { 50.0, 50.0 };
+	test_90_rect_two.SetReference(&test_90_rect);
 }
 Program::~Program()
 {

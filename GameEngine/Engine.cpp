@@ -4,6 +4,9 @@
 #include <sstream>
 #include <string>
 #include <limits>
+#include <glm.hpp>
+#include <gtc/matrix_transform.hpp> // For glm::ortho and other transformations
+#include <gtc/type_ptr.hpp>        // For glm::value_ptr
 
 #define DEBUG_DATA_TEXT_BOX_MARGIN blank_camera->rect.base_size.width / 80.0
 
@@ -17,6 +20,45 @@
 #define DEBUG_DATA_TEXT_COLOR_SIZE2D 190, 38, 0, 255
 
 using namespace std;
+
+void checkShaderCompile(GLuint shader) {
+    GLint success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+        std::cerr << "Shader Compilation Error: " << infoLog << std::endl;
+    }
+}
+
+void checkProgramLink(GLuint program) {
+    GLint success;
+    glGetProgramiv(program, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(program, 512, nullptr, infoLog);
+        std::cerr << "Program Linking Error: " << infoLog << std::endl;
+    }
+}
+
+std::array<float, 16> CreateOrthographicMatrix(float left, float right, float bottom, float top, float near, float far) {
+    std::array<float, 16> ortho_matrix = {
+
+        2.0f / (right - left),                   0.0f,                                    0.0f,                             0.0f,
+
+        0.0f,                                    2.0f / (top - bottom),                   0.0f,                             0.0f,
+
+        0.0f,                                    0.0f,                                    -2.0f / (far - near),             0.0f,
+
+        -(right + left) / (right - left),        -(top + bottom) / (top - bottom),        -(far + near) / (far - near),     1.0f
+
+    };
+    return ortho_matrix;
+}
+
+
+
+
 
 std::string DoubleToString(double value, int precision) {
     std::stringstream ss;
@@ -90,21 +132,44 @@ void Engine::MoveDebugCamera()
     }
 }
 
-void Engine::BasicBasicDrawRectangle(Rectangle* param_rectangle, SDL_Color color, Camera* camera)
+void Engine::BasicBasicDrawRectangle(RectangleOld* param_rectangle, SDL_Color color, Camera* camera)
 {
-    SDL_Rect rect = RectangleToSDLRect(param_rectangle, camera);
-    const SDL_Point center_of_rotation = RectangleToSDLCenterOfRotation(param_rectangle, camera);
+    /*
+    const double right_edge = XToProportionX(param_rectangle->GetUniEdge({ 0 }));
+    const double bottom_edge = YToProportionY(param_rectangle->GetUniEdge({ 1 }));
+    const double left_edge = XToProportionX(param_rectangle->GetUniEdge({ 2 }));
+    const double top_edge = YToProportionY(param_rectangle->GetUniEdge({ 3 }));
+    */
+    ///*
+    const float right_edge = (float)param_rectangle->GetUniEdge({ 0 });
+    const float bottom_edge = (float)param_rectangle->GetUniEdge({ 1 });
+    const float left_edge = (float)param_rectangle->GetUniEdge({ 2 });
+    const float top_edge = (float)param_rectangle->GetUniEdge({ 3 });
+    //*/
 
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    //SDL_RenderCopyEx(renderer, nullptr, nullptr, &rect, param_rectangle->rotation, &center_of_rotation, SDL_FLIP_NONE);
-    SDL_RenderFillRect(renderer, &rect);
+    float temp_vertices[16] = {
+        right_edge, top_edge, 1.0, 0.0,
+        right_edge, bottom_edge, 1.0, 1.0,
+        left_edge, bottom_edge, 0.0, 1.0,
+        left_edge, top_edge, 0.0, 0.0
+    };
+
+    glUniform1i(glGetUniformLocation(shader_program, "useTexture"), false);
+
+    const GLColor temp_color = SDLColorToGLColor(color);
+
+    glUniform4f(glGetUniformLocation(shader_program, "colorMod"), temp_color.r, temp_color.g, temp_color.b, temp_color.a); // Red color
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(temp_vertices), temp_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(rect_indices), rect_indices, GL_STATIC_DRAW);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
-void Engine::BasicDrawRectangle(Rectangle* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::BasicDrawRectangle(RectangleOld* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
     // -----------------   INITILIZE NECESSARY LOCAL VARIABLES   -----------------
 
     SDL_Rect sdl_rect;
-    Rectangle temp_rectangle_data = *param_rectangle;
+    RectangleOld temp_rectangle_data = *param_rectangle;
 
 
 
@@ -197,8 +262,8 @@ void Engine::BasicDrawRectangle(Rectangle* param_rectangle, SDL_Color filling_co
     {
         sdl_rect = GetSDLRectWithEdges(sdl_fill_right, sdl_fill_bottom, sdl_fill_left, sdl_fill_top);
 
-        SDL_SetRenderDrawColor(renderer, filling_color.r, filling_color.g, filling_color.b, filling_color.a);
-        SDL_RenderFillRect(renderer, &sdl_rect);
+        //SDL_SetRenderDrawColor(renderer, filling_color.r, filling_color.g, filling_color.b, filling_color.a); REMOVED CAUSE RENDERER GOT YEETED
+        //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
     }
 
 
@@ -247,20 +312,20 @@ void Engine::BasicDrawRectangle(Rectangle* param_rectangle, SDL_Color filling_co
         if (!has_invisible_border)
         {
             sdl_rect = GetSDLRectWithEdges(sdl_border_top_right, sdl_border_top_bottom, sdl_border_top_left, sdl_border_top_top);
-            SDL_SetRenderDrawColor(renderer, border_color.r, border_color.g, border_color.b, border_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, border_color.r, border_color.g, border_color.b, border_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
 
             sdl_rect = GetSDLRectWithEdges(sdl_border_bottom_right, sdl_border_bottom_bottom, sdl_border_bottom_left, sdl_border_bottom_top);
-            SDL_SetRenderDrawColor(renderer, border_color.r, border_color.g, border_color.b, border_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, border_color.r, border_color.g, border_color.b, border_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
 
             sdl_rect = GetSDLRectWithEdges(sdl_border_right_right, sdl_border_right_bottom, sdl_border_right_left, sdl_border_right_top);
-            SDL_SetRenderDrawColor(renderer, border_color.r, border_color.g, border_color.b, border_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, border_color.r, border_color.g, border_color.b, border_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
 
             sdl_rect = GetSDLRectWithEdges(sdl_border_left_right, sdl_border_left_bottom, sdl_border_left_left, sdl_border_left_top);
-            SDL_SetRenderDrawColor(renderer, border_color.r, border_color.g, border_color.b, border_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, border_color.r, border_color.g, border_color.b, border_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
         }
 
 
@@ -323,20 +388,20 @@ void Engine::BasicDrawRectangle(Rectangle* param_rectangle, SDL_Color filling_co
             // -----------------   DRAW SHADOW   -----------------
 
             sdl_rect = GetSDLRectWithEdges(sdl_shadow_top_right, sdl_shadow_top_bottom, sdl_shadow_top_left, sdl_shadow_top_top);
-            SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
 
             sdl_rect = GetSDLRectWithEdges(sdl_shadow_bottom_right, sdl_shadow_bottom_bottom, sdl_shadow_bottom_left, sdl_shadow_bottom_top);
-            SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
 
             sdl_rect = GetSDLRectWithEdges(sdl_shadow_right_right, sdl_shadow_right_bottom, sdl_shadow_right_left, sdl_shadow_right_top);
-            SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
 
             sdl_rect = GetSDLRectWithEdges(sdl_shadow_left_right, sdl_shadow_left_bottom, sdl_shadow_left_left, sdl_shadow_left_top);
-            SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
         }
     }
     else
@@ -397,38 +462,38 @@ void Engine::BasicDrawRectangle(Rectangle* param_rectangle, SDL_Color filling_co
             // -----------------   DRAW SHADOW   -----------------
 
             sdl_rect = GetSDLRectWithEdges(sdl_shadow_top_right, sdl_shadow_top_bottom, sdl_shadow_top_left, sdl_shadow_top_top);
-            SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
 
             sdl_rect = GetSDLRectWithEdges(sdl_shadow_bottom_right, sdl_shadow_bottom_bottom, sdl_shadow_bottom_left, sdl_shadow_bottom_top);
-            SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
 
             sdl_rect = GetSDLRectWithEdges(sdl_shadow_right_right, sdl_shadow_right_bottom, sdl_shadow_right_left, sdl_shadow_right_top);
-            SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
 
             sdl_rect = GetSDLRectWithEdges(sdl_shadow_left_right, sdl_shadow_left_bottom, sdl_shadow_left_left, sdl_shadow_left_top);
-            SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a);
-            SDL_RenderFillRect(renderer, &sdl_rect);
+            //SDL_SetRenderDrawColor(renderer, shadow_color.r, shadow_color.g, shadow_color.b, shadow_color.a); REMOVED CAUSE RENDERER GOT YEETED
+            //SDL_RenderFillRect(renderer, &sdl_rect); REMOVED CAUSE RENDERER GOT YEETED
         }
     }
 
     //All done :) (phew)
 }
-void Engine::BasicDrawRectangleScaledBorder(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
+void Engine::BasicDrawRectangleScaledBorder(RectangleOld* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
 {
     BasicDrawRectangle(param_rectangle, filling_color, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_color, { 0.0, 0.0 }, { 0, 0, 0, 0 }, camera);
 }
-void Engine::BasicDrawRectangleScaledBorderScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::BasicDrawRectangleScaledBorderScaledShadow(RectangleOld* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
     BasicDrawRectangle(param_rectangle, filling_color, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_color, shadow_scaled_offset, shadow_color, camera);
 }
-void Engine::BasicDrawRectangleScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::BasicDrawRectangleScaledShadow(RectangleOld* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
     BasicDrawRectangle(param_rectangle, filling_color, 0.0, { 0 }, 0.0, { 0 }, 0.0, { 0 }, 0.0, { 0 }, { 0, 0, 0, 0 }, shadow_scaled_offset, shadow_color, camera);
 }
-void Engine::BasicDrawRectangleOutline(Rectangle* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
+void Engine::BasicDrawRectangleOutline(RectangleOld* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
 {
     BasicDrawRectangle(param_rectangle, { 0, 0, 0, 0 }, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_scaled_size, border_centering, border_color, { 0.0, 0.0 }, { 0, 0, 0, 0 }, camera);
 }
@@ -437,8 +502,8 @@ void Engine::BasicDrawRectStructOne(RectStructOne* param_rect_struct_one, SDL_Co
 {
     SDL_Rect rect = RectStructOneToSDLRect(param_rect_struct_one, camera);
 
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    SDL_RenderFillRect(renderer, &rect);
+    //SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a); REMOVED CAUSE RENDERER GOT YEETED
+    //SDL_RenderFillRect(renderer, &rect); REMOVED CAUSE RENDERER GOT YEETED
 }
 
 
@@ -583,24 +648,54 @@ void Engine::BasicDrawDebugLabel(DebugLabel* const param_debug_label)
 
 void Engine::BasicDrawPoint(Point2D* param_point, Size2D param_size, SDL_Color color, Camera* camera)
 {
-    Rectangle temp_rectangle;
+    RectangleOld temp_rectangle;
 
     temp_rectangle.pos = *param_point;
     temp_rectangle.base_size = param_size;
     temp_rectangle.SetSizeWithSizeScale({ 1.0, 1.0 });
 
-    SDL_Rect rect = RectangleToSDLRect(&temp_rectangle, camera);
-
-    SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    SDL_RenderFillRect(renderer, &rect);
+    BasicBasicDrawRectangle(&temp_rectangle, color, camera);
 }
-void Engine::BasicDrawTexture(const Texture* const texture, const Camera* const camera, const Rectangle* const param_rectangle)
+void Engine::BasicDrawTexture(const Texture* const texture, const GLColor* const color_and_alpha_mod, const Camera* const camera, const RectangleOld* const param_rectangle)
 {
+    const float right_edge = (float)param_rectangle->GetUniEdge({ 0 });
+    const float bottom_edge = (float)param_rectangle->GetUniEdge({ 1 });
+    const float left_edge = (float)param_rectangle->GetUniEdge({ 2 });
+    const float top_edge = (float)param_rectangle->GetUniEdge({ 3 });
+
+    float temp_vertices[16] = {
+        right_edge, top_edge, 1.0, 0.0,
+        right_edge, bottom_edge, 1.0, 1.0,
+        left_edge, bottom_edge, 0.0, 1.0,
+        left_edge, top_edge, 0.0, 0.0
+    };
+    
+    glBindTexture(GL_TEXTURE_2D, texture->gl_texture_id);
+
+    glUniform1i(glGetUniformLocation(shader_program, "useTexture"), true);
+
+    if (color_and_alpha_mod)
+    {
+        glUniform4f(glGetUniformLocation(shader_program, "colorMod"), color_and_alpha_mod->r, color_and_alpha_mod->g, color_and_alpha_mod->b, color_and_alpha_mod->a);
+    }
+    else
+    {
+        glUniform4f(glGetUniformLocation(shader_program, "colorMod"), 1.0, 1.0, 1.0, 1.0); // White color
+    }
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(temp_vertices), temp_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(rect_indices), rect_indices, GL_STATIC_DRAW);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+
+    /*
+
     SDL_Rect temp_rect = RectangleToSDLRect(param_rectangle, camera);
 
     if ((param_rectangle->flip.value == 0) && (param_rectangle->rotation == 0.0))
     {
-        SDL_RenderCopy(renderer, texture->sdl_texture, NULL, &temp_rect);
+        //SDL_RenderCopy(renderer, texture->sdl_texture, NULL, &temp_rect); REMOVED CAUSE RENDERER GOT YEETED
     }
     else
     {
@@ -609,19 +704,20 @@ void Engine::BasicDrawTexture(const Texture* const texture, const Camera* const 
         switch (param_rectangle->flip.value)
         {
         case 0:
-            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation(), &sdl_center, SDL_FLIP_NONE);
+            //SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation(), &sdl_center, SDL_FLIP_NONE); REMOVED CAUSE RENDERER GOT YEETED
             break;
         case 1:
-            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation(), &sdl_center, SDL_FLIP_HORIZONTAL);
+            //SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation(), &sdl_center, SDL_FLIP_HORIZONTAL); REMOVED CAUSE RENDERER GOT YEETED
             break;
         case 2:
-            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation(), &sdl_center, SDL_FLIP_VERTICAL);
+            //SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation(), &sdl_center, SDL_FLIP_VERTICAL); REMOVED CAUSE RENDERER GOT YEETED
             break;
         case 3:
-            SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation() + 180.0, &sdl_center, SDL_FLIP_NONE);
+            //SDL_RenderCopyEx(renderer, texture->sdl_texture, NULL, &temp_rect, param_rectangle->GetUniRotation() + 180.0, &sdl_center, SDL_FLIP_NONE); REMOVED CAUSE RENDERER GOT YEETED
             break;
         }
     }
+    */
 }
 void Engine::BasicDrawSprite(Sprite* sprite, Camera* camera)
 {
@@ -630,7 +726,7 @@ void Engine::BasicDrawSprite(Sprite* sprite, Camera* camera)
         sprite->texture = sprite->animation->GetCurrentFrame()->texture;
     }
 
-    BasicDrawTexture(sprite->texture, camera, &sprite->rect);
+    BasicDrawTexture(sprite->texture, nullptr, camera, &sprite->rect);
 }
 void Engine::BasicDrawTextBoxData(TextBoxData* param_text_box, Camera* camera)
 {
@@ -642,9 +738,8 @@ void Engine::BasicDrawTextBoxData(TextBoxData* param_text_box, Camera* camera)
             const Texture* const current_texture = current_char->font_char->texture;
             if (current_char->a_mod != 0)
             {
-                SDL_SetTextureColorMod(current_texture->sdl_texture, current_char->r_mod, current_char->g_mod, current_char->b_mod);
-                SDL_SetTextureAlphaMod(current_texture->sdl_texture, current_char->a_mod);
-                BasicDrawTexture(current_texture, camera, &current_char->rectangle);
+                const GLColor temp_color = GLColor(current_char->r_mod / 255.0f, current_char->g_mod / 255.0f, current_char->b_mod / 255.0f, current_char->a_mod / 255.0f);
+                BasicDrawTexture(current_texture, &temp_color, camera, &current_char->rectangle);
             }
         }
     }
@@ -659,9 +754,8 @@ void Engine::BasicDrawTextBox(TextBox* param_text_box, Camera* camera)
             const Texture* const current_texture = current_char->font_char->texture;
             if (current_char->a_mod != 0)
             {
-                SDL_SetTextureColorMod(current_texture->sdl_texture, current_char->r_mod, current_char->g_mod, current_char->b_mod);
-                SDL_SetTextureAlphaMod(current_texture->sdl_texture, current_char->a_mod);
-                BasicDrawTexture(current_texture, camera, &current_char->rect);
+                const GLColor temp_color = GLColor(current_char->r_mod / 255.0f, current_char->g_mod / 255.0f, current_char->b_mod / 255.0f, current_char->a_mod / 255.0f);
+                BasicDrawTexture(current_texture, &temp_color, camera, &current_char->rect);
             }
         }
     }
@@ -701,7 +795,7 @@ void Engine::BasicDrawTextButton(TextButton* param_text_button, Camera* camera)
 }
 void Engine::BasicDrawSimpleTextButton(SimpleTextButton* param_simple_text_button, Camera* camera)
 {
-    Rectangle temp_rect_data = param_simple_text_button->parent_rect;
+    RectangleOld temp_rect_data = param_simple_text_button->parent_rect;
 
     if (!param_simple_text_button->press_data.pressed)
     {
@@ -766,7 +860,7 @@ void Engine::BasicDrawScrollBar(ScrollBar* param_scroll_bar, Camera* camera)
 }
 
 
-void Engine::DrawRectangle(Rectangle* param_rectangle, SDL_Color color, Camera* camera)
+void Engine::DrawRectangle(RectangleOld* param_rectangle, SDL_Color color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
@@ -775,7 +869,7 @@ void Engine::DrawRectangle(Rectangle* param_rectangle, SDL_Color color, Camera* 
 
     BasicBasicDrawRectangle(param_rectangle, color, temp_cam_pointer);
 }
-void Engine::DrawRectangleScaledBorder(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
+void Engine::DrawRectangleScaledBorder(RectangleOld* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
@@ -784,7 +878,7 @@ void Engine::DrawRectangleScaledBorder(Rectangle* param_rectangle, SDL_Color fil
 
     BasicDrawRectangleScaledBorder(param_rectangle, filling_color, border_scaled_size, border_centering, border_color, temp_cam_pointer);
 }
-void Engine::DrawRectangleScaledBorderScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::DrawRectangleScaledBorderScaledShadow(RectangleOld* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
@@ -793,7 +887,7 @@ void Engine::DrawRectangleScaledBorderScaledShadow(Rectangle* param_rectangle, S
 
     BasicDrawRectangleScaledBorderScaledShadow(param_rectangle, filling_color, border_scaled_size, border_centering, border_color, shadow_scaled_offset, shadow_color, temp_cam_pointer);
 }
-void Engine::DrawRectangleEx(Rectangle* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::DrawRectangleEx(RectangleOld* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
@@ -802,7 +896,7 @@ void Engine::DrawRectangleEx(Rectangle* param_rectangle, SDL_Color filling_color
 
     BasicDrawRectangle(param_rectangle, filling_color, right_border_scaled_size, right_border_centering, bottom_border_scaled_size, bottom_border_centering, left_border_scaled_size, left_border_centering, top_border_scaled_size, top_border_centering, border_color, shadow_scaled_offset, shadow_color, temp_cam_pointer);
 }
-void Engine::DrawRectangleScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
+void Engine::DrawRectangleScaledShadow(RectangleOld* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
@@ -811,7 +905,7 @@ void Engine::DrawRectangleScaledShadow(Rectangle* param_rectangle, SDL_Color fil
 
     BasicDrawRectangleScaledShadow(param_rectangle, filling_color, shadow_scaled_offset, shadow_color, temp_cam_pointer);
 }
-void Engine::DrawRectangleOutline(Rectangle* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
+void Engine::DrawRectangleOutline(RectangleOld* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
 
@@ -850,19 +944,14 @@ void Engine::DrawSprite(Sprite* sprite, Camera* camera)
         BasicBasicDrawRectangle(&sprite->rect, SDL_Color{ 0, 0, 255, 50 }, temp_cam_pointer);
     }
 }
-void Engine::DrawTexture(Texture* texture, Camera* camera, Rectangle* param_rectangle)
+void Engine::DrawTexture(Texture* texture, Camera* camera, RectangleOld* param_rectangle)
 {
     Camera* temp_cam_pointer = nullptr;
 
     if (debug_mode) { temp_cam_pointer = debug_camera; }
     else { temp_cam_pointer = camera; }
 
-    BasicDrawTexture(texture, temp_cam_pointer, param_rectangle);
-
-    if (boundary_view)
-    {
-        BasicBasicDrawRectangle(param_rectangle, SDL_Color{ 255, 0, 0, 50 }, temp_cam_pointer);
-    }
+    BasicDrawTexture(texture, nullptr, temp_cam_pointer, param_rectangle);
 }
 void Engine::DrawTextBox(TextBox* param_text_box, Camera* camera)
 {
@@ -873,7 +962,7 @@ void Engine::DrawTextBox(TextBox* param_text_box, Camera* camera)
 
     if (debug_mode && boundary_view)
     {
-        Rectangle parent_rectangle_data_copy = param_text_box->parent_rect;
+        RectangleOld parent_rectangle_data_copy = param_text_box->parent_rect;
 
         if (param_text_box->parent_rect.GetUniWidth() < 4.0)
         {
@@ -1019,10 +1108,10 @@ Camera* Engine::NewCamera(const char* const name)
     temp_cam->rect.base_size.height = (double)window_height;
     temp_cam->rect.SetSizeWithSizeScale(Size2D{ 1.0, 1.0 });
 
-    temp_cam->debug_data_container.InitLeast({ &engine_debug_data_container }, &default_font, name, &temp_cam->rect, {}, 0);
-    temp_cam->debug_data_container.camera_container = 1;
+    //temp_cam->debug_data_container.InitLeast({ &engine_debug_data_container }, &default_font, name, &temp_cam->rect, {}, 0); REMOVED CAUSE RENDERER GOT YEETED
+    //temp_cam->debug_data_container.camera_container = 1; REMOVED CAUSE RENDERER GOT YEETED
 
-    temp_cam->debug_data_container.AddRectangleData(&temp_cam->rect, "Rectangle");
+    //temp_cam->debug_data_container.AddRectangleData(&temp_cam->rect, "RectangleOld"); REMOVED CAUSE RENDERER GOT YEETED
     
 
     cameras.push_back(temp_cam);
@@ -1047,57 +1136,44 @@ Point2D Engine::GetMousePos(Camera* const reference_camera, const RigidCentering
 }
 
 
-void Engine::LoadEngineTexture(Texture* param_texture, const char path[])
+void Engine::LoadEngineTexture(Texture** const param_texture, const char* path)
 {
-    param_texture->LoadTexture(renderer, path);
-    textures.push_back(param_texture);
+    delete (*param_texture);
+    *param_texture = new Texture();
+    (*param_texture)->LoadTexture(path);
+    textures.push_back((*param_texture));
 }
 void Engine::LoadEngineTextures() {
-    solid_color_pixel_texture = new Texture();
-    LoadEngineTexture(solid_color_pixel_texture, "images/solid.png");
+    LoadEngineTexture(&default_texture, "images/default_texture.png");
 
-    solid_color_circle_8_texture = new Texture();
-    LoadEngineTexture(solid_color_circle_8_texture, "images/8x8_circle.png");
+    LoadEngineTexture(&solid_color_pixel_texture, "images/solid.png");
 
-    solid_color_circle_32_texture = new Texture();
-    LoadEngineTexture(solid_color_circle_32_texture, "images/32x32_circle.png");
+    LoadEngineTexture(&solid_color_circle_8_texture, "images/8x8_circle.png");
+    LoadEngineTexture(&solid_color_circle_32_texture, "images/32x32_circle.png");
 
-    example_texture = new Texture();
-    LoadEngineTexture(example_texture, "images/nineteen.png");
+    LoadEngineTexture(&example_texture, "images/nineteen.png");
 
-    corner_outline_t = new Texture();
-    LoadEngineTexture(corner_outline_t, "images/corner_outline.png");
+    LoadEngineTexture(&corner_outline_t, "images/corner_outline.png");
 
-    camera_icon_t = new Texture();
-    LoadEngineTexture(camera_icon_t, "images/camera_icon_small.png");
+    LoadEngineTexture(&camera_icon_t, "images/camera_icon_small.png");
 
-    pause_icon_t = new Texture();
-    LoadEngineTexture(pause_icon_t, "images/pause_icon.png");
+    LoadEngineTexture(&pause_icon_t, "images/pause_icon.png");
+    LoadEngineTexture(&play_icon_t, "images/play_icon.png");
 
-    play_icon_t = new Texture();
-    LoadEngineTexture(play_icon_t, "images/play_icon.png");
+    LoadEngineTexture(&example_button_pressed_t, "images/example_button_pressed.png");
+    LoadEngineTexture(&example_button_released_t, "images/example_button_released.png");
+    LoadEngineTexture(&example_button_hovering_t, "images/example_button_hovering.png");
 
-    example_button_pressed_t = new Texture();
-    LoadEngineTexture(example_button_pressed_t, "images/example_button_pressed.png");
-    example_button_released_t = new Texture();
-    LoadEngineTexture(example_button_released_t, "images/example_button_released.png");
-    example_button_hovering_t = new Texture();
-    LoadEngineTexture(example_button_hovering_t, "images/example_button_hovering.png");
+    LoadEngineTexture(&boundary_view_pressed_t, "images/boundary_view_pressed.png");
+    LoadEngineTexture(&boundary_view_released_t, "images/boundary_view_released.png");
+    LoadEngineTexture(&boundary_view_hovering_t, "images/boundary_view_hovering.png");
 
-    boundary_view_pressed_t = new Texture();
-    LoadEngineTexture(boundary_view_pressed_t, "images/boundary_view_pressed.png");
-    boundary_view_released_t = new Texture();
-    LoadEngineTexture(boundary_view_released_t, "images/boundary_view_released.png");
-    boundary_view_hovering_t = new Texture();
-    LoadEngineTexture(boundary_view_hovering_t, "images/boundary_view_hovering.png");
-
-    distinguishing_sides_t = new Texture();
-    LoadEngineTexture(distinguishing_sides_t, "images/distinguishing_sides.png");
+    LoadEngineTexture(&distinguishing_sides_t, "images/distinguishing_sides.png");
 }
 void Engine::DeleteEngineTextures() {
     for (int i = 0; i < textures.size(); i++)
     {
-        SDL_DestroyTexture(textures[i]->sdl_texture);
+        //SDL_DestroyTexture(textures[i]->sdl_texture); REMOVED CAUSE RENDERER GOT YEETED
     }
 }
 
@@ -1148,7 +1224,7 @@ void Engine::UpdateTextBox(TextBox* param_text_box)
         }
     }
 }
-void Engine::UpdatePressData(PressData* param_press_data, Rectangle* param_hitbox, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
+void Engine::UpdatePressData(PressData* param_press_data, RectangleOld* param_hitbox, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers)
 {
     param_press_data->previous_frame_hovering = param_press_data->hovering;
     param_press_data->previous_frame_pressed = param_press_data->pressed;
@@ -2059,7 +2135,7 @@ void Engine::DrawDebugData()
     //Draw debug_data_sidebar if applicable
     if (selected_debug_data_container != &engine_debug_data_container)
     {
-        Rectangle temp_rectangle_data;
+        RectangleOld temp_rectangle_data;
 
         temp_rectangle_data.size.height = blank_camera->rect.base_size.height;
         temp_rectangle_data.size.width = blank_camera->rect.base_size.width / 4.0;
@@ -2106,7 +2182,7 @@ void Engine::DrawDebugDataContainer(DebugDataContainer* const param_debug_data_c
         debug_data_container_name_text_box.AddString(param_debug_data_container->name);
         debug_data_container_name_text_box.UpdateCharPos();
 
-        Rectangle temp_back_rectangle_data = debug_data_container_name_text_box.lines[0].rect;
+        RectangleOld temp_back_rectangle_data = debug_data_container_name_text_box.lines[0].rect;
 
         BasicBasicDrawRectangle(&temp_back_rectangle_data, { 255, 255, 255, 175 }, debug_camera);
         BasicDrawTextBox(&debug_data_container_name_text_box, debug_camera);
@@ -2234,24 +2310,139 @@ void Engine::DeactivateMouseLayers(const bool white_list, vector<MouseLayer*> ta
 
 
 Engine::Engine() : rd(), gen(rd()) {
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-    IMG_Init(IMG_INIT_PNG);
-    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+    //Initialize SDL and OpenGL window. This includes creating a vertex shader, a fragment shader, loading a texture and more.
+    {
+        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+        IMG_Init(IMG_INIT_PNG);
+        Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
 
-    window = SDL_CreateWindow("GameEngine",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        600, 400,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL);
+        // Set OpenGL attributes
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0); // Disable multisampling (antialiasing aka. smoothing out images (bad for pixel art))
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0); // No multisample samples
 
-    SDL_GetWindowSize(window, &window_width, &window_height);
+        window = SDL_CreateWindow("GameEngine",
+            SDL_WINDOWPOS_CENTERED,
+            SDL_WINDOWPOS_CENTERED,
+            600, 400,
+            SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL);
+
+        SDL_GetWindowSize(window, &window_width, &window_height);
+
+        gl_context = SDL_GL_CreateContext(window);
+        if (!gl_context) {
+            std::cerr << "SDL_GL_CreateContext Error: " << SDL_GetError() << std::endl;
+            SDL_DestroyWindow(window);
+            SDL_Quit();
+            return;
+        }
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_CULL_FACE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        glewExperimental = GL_TRUE;
+        if (glewInit() != GLEW_OK) {
+            std::cerr << "Failed to initialize GLEW" << std::endl;
+            SDL_GL_DeleteContext(gl_context);
+            SDL_DestroyWindow(window);
+            SDL_Quit();
+            return;
+        }
+
+        glGenVertexArrays(1, &VAO);
+        glGenBuffers(1, &VBO);
+        glGenBuffers(1, &EBO);
+
+        glBindVertexArray(VAO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+        /*
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(rect_indices), rect_indices, GL_STATIC_DRAW);
+        */
+
+        //Code for making OpenGL accept 2D rectangle format I think?
+        {
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+            glEnableVertexAttribArray(0);
+
+            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+            glEnableVertexAttribArray(1);
+        }
+
+        // Compile vertex shader
+        vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vertex_shader, 1, &vertex_shader_source, nullptr);
+        glCompileShader(vertex_shader);
+        checkShaderCompile(vertex_shader);
+
+        // Compile fragment shader
+        fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fragment_shader, 1, &fragment_shader_source, nullptr);
+        glCompileShader(fragment_shader);
+        checkShaderCompile(fragment_shader);
+
+        // Link shaders into a program
+        shader_program = glCreateProgram();
+        glAttachShader(shader_program, vertex_shader);
+        glAttachShader(shader_program, fragment_shader);
+        glLinkProgram(shader_program);
+        checkProgramLink(shader_program);
+
+        // Delete shaders (no longer needed after linking)
+        glDeleteShader(vertex_shader);
+        glDeleteShader(fragment_shader);
+
+
+        glUseProgram(shader_program);
+
+        glActiveTexture(GL_TEXTURE0);
+
+
+
+        glUniform1i(glGetUniformLocation(shader_program, "ourTexture"), 0); //Select TEXTURE0 texture unit
+
+        
+        const float half_window_width = window_width / 2.0f;
+        const float half_window_height = window_height / 2.0f;
+
+        //ortho_matrix = CreateOrthographicMatrix(-half_window_width, half_window_width, -half_window_height, half_window_height, -1.0f, 1.0f);
+        
+        //cout << ortho_matrix[0] << ", " << ortho_matrix[1] << ", " << ortho_matrix[2] << ", " << ortho_matrix[3] << ", \n" << ortho_matrix[4] << ", " << ortho_matrix[5] << ", " << ortho_matrix[6] << ", " << ortho_matrix[7] << ", \n" << ortho_matrix[8] << ", " << ortho_matrix[9] << ", " << ortho_matrix[10] << ", " << ortho_matrix[11] << ", \n" << ortho_matrix[12] << ", " << ortho_matrix[13] << ", " << ortho_matrix[14] << ", " << ortho_matrix[15] << endl;
+        
+        glm::mat4 ortho_matrix = glm::ortho(
+            -half_window_width, half_window_width,   // Left, Right
+            -half_window_height, half_window_height,  // Bottom, Top
+            0.0f, 1.0f           // Near, Far
+        );
+
+        const int projection_loc = glGetUniformLocation(shader_program, "projection");
+
+        if (projection_loc == -1)
+        {
+            cerr << "Uniform location not found!!!!" << endl;
+        }
+
+        //glUniformMatrix4fv(projection_loc, 1, GL_FALSE, ortho_matrix.data());
+        glUniformMatrix4fv(projection_loc, 1, GL_FALSE, glm::value_ptr(ortho_matrix));
+    }
+
+
+    testing_rect.base_size = { 100.0, 100.0 };
+    testing_rect.size = { 100.0, 100.0 };
+    testing_texture.LoadTexture("images/Program/little_fellow_fade_out_fix.png");
 
 
 
 
 
-
-    scene = 1;
 
     // -----------------   MOUSE LAYER FRAMEWORK   -----------------
 
@@ -2280,25 +2471,14 @@ Engine::Engine() : rd(), gen(rd()) {
 
 
 
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
 
+    //renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED); REMOVED CAUSE RENDERER GOT YEETED
+    //SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND); REMOVED CAUSE RENDERER GOT YEETED
 
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    default_font.Init("default_white", nullptr, 1.0, 2.0, 7.0);
 
-    default_font.Init("default_white", renderer, 1.0, 2.0, 7.0);
-
-    input = {};
     input.FormatKeys();
-
-    frame_rate = 144.0;
-    frame_factor = frame_rate / 60.0;
-    frame_factor_inverse = (60.0 / frame_rate);
-    frame_delay = (Uint32)(1000.0 / frame_rate);
-
-    debug_mode = 0;
-    running_game = 1;
-
-    boundary_view = 0;
     
 
     blank_camera = NewCamera("blank_camera");
@@ -2312,16 +2492,14 @@ Engine::Engine() : rd(), gen(rd()) {
     LoadEngineTextures();
     LoadEngineSounds();
 
-    boundary_view_button.InitWithTexturesAndSizeScale(boundary_view_released_t, boundary_view_hovering_t, boundary_view_pressed_t, Size2D{4.0, 4.0});
+    boundary_view_button.InitWithTexturesAndSizeScale(boundary_view_released_t, boundary_view_hovering_t, boundary_view_pressed_t, { 4.0, 4.0 });
     boundary_view_button.pressed_sprite.rect.pos.y = -2.0;
 
     boundary_view_button.parent_rect.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 0 }), { 0 });
     boundary_view_button.parent_rect.SetPosWithUniEdge(blank_camera->rect.GetUniEdge({ 3 }), { 3 });
 
 
-
-    rgba = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
-    pixel_access_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 400, 400);
+    //pixel_access_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 400, 400); REMOVED CAUSE RENDERER GOT YEETED
 
 
 
@@ -2375,7 +2553,7 @@ Engine::Engine() : rd(), gen(rd()) {
 
     // -----------------   CREATE DEBUG DATA SCROLL BAR   -----------------
 
-    Rectangle temp_rectangle_data;
+    RectangleOld temp_rectangle_data;
 
     temp_rectangle_data.size.height = blank_camera->rect.base_size.height;
     temp_rectangle_data.size.width = blank_camera->rect.base_size.width / 4.0;
@@ -2418,7 +2596,14 @@ Engine::~Engine()
 {
     DeleteEngineTextures();
     DeleteEngineSounds();
-    SDL_DestroyRenderer(renderer);
+
+    glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);
+    glDeleteBuffers(1, &EBO);
+    glDeleteProgram(shader_program);
+
+    //SDL_DestroyRenderer(renderer);
+    SDL_GL_DeleteContext(gl_context);
     SDL_DestroyWindow(window);
     IMG_Quit();
     Mix_CloseAudio();
@@ -2437,29 +2622,29 @@ void Engine::DrawScreen()
                 Size2D temp_size_scale = debug_camera->rect.GetUniSizeScale();
 
 
-                Rectangle temp_rectangle_data = {};
-                temp_rectangle_data.base_size = corner_outline_t->size;
+                RectangleOld temp_rectangle_data = {};
+                temp_rectangle_data.base_size = { (double)corner_outline_t->width, (double)corner_outline_t->height };
                 temp_rectangle_data.SetSizeWithSizeScale(Size2D{ 4.0 * temp_size_scale.width, 4.0 * temp_size_scale.height });
 
                 temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.GetUniEdge({ 2 }), { 2 });
                 temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.GetUniEdge({ 3 }), { 3 });
                 temp_rectangle_data.flip = { 0 };
-                BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
+                BasicDrawTexture(corner_outline_t, nullptr, debug_camera, &temp_rectangle_data);
 
                 temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.GetUniEdge({ 0 }), { 0 });
                 temp_rectangle_data.flip = { 1 };
-                BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
+                BasicDrawTexture(corner_outline_t, nullptr, debug_camera, &temp_rectangle_data);
 
                 temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.GetUniEdge({ 1 }), { 1 });
                 temp_rectangle_data.flip = { 3 };
-                BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
+                BasicDrawTexture(corner_outline_t, nullptr, debug_camera, &temp_rectangle_data);
 
                 temp_rectangle_data.SetPosWithUniEdge(cameras[i]->rect.GetUniEdge({ 2 }), { 2 });
                 temp_rectangle_data.flip = { 2 };
-                BasicDrawTexture(corner_outline_t, debug_camera, &temp_rectangle_data);
+                BasicDrawTexture(corner_outline_t, nullptr, debug_camera, &temp_rectangle_data);
 
                 //Draw camera icon
-                temp_rectangle_data.base_size = camera_icon_t->size;
+                temp_rectangle_data.base_size = { (double)camera_icon_t->width, (double)camera_icon_t->height };
                 temp_rectangle_data.SetSizeWithSizeScale(Size2D{ 4.0 * temp_size_scale.width, 4.0 * temp_size_scale.height });
                 Point2D temp_cam_point;
                 temp_cam_point.x = cameras[i]->rect.GetUniEdge({ 2 });
@@ -2467,7 +2652,7 @@ void Engine::DrawScreen()
                 temp_rectangle_data.SetPosWithUniEdge(temp_cam_point.x, { 2 });
                 temp_rectangle_data.SetPosWithUniEdge(temp_cam_point.y + (4.0 * temp_size_scale.height), { 1 });
                 temp_rectangle_data.flip = { 0 };
-                BasicDrawTexture(camera_icon_t, debug_camera, &temp_rectangle_data);
+                BasicDrawTexture(camera_icon_t, nullptr, debug_camera, &temp_rectangle_data);
 
 
 
@@ -2477,8 +2662,8 @@ void Engine::DrawScreen()
 
         if (running_game)
         {
-            Rectangle temp_rectangle_data = {};
-            temp_rectangle_data.base_size = play_icon_t->size;
+            RectangleOld temp_rectangle_data = {};
+            temp_rectangle_data.base_size = { (double)play_icon_t->width, (double)play_icon_t->height };
             temp_rectangle_data.SetSizeWithSizeScale(Size2D{ 4.0, 4.0 });
 
             Point2D temp_blank_cam_point;
@@ -2487,12 +2672,12 @@ void Engine::DrawScreen()
             temp_rectangle_data.SetPosWithUniEdge(temp_blank_cam_point.x + 12.0, { 2 });
             temp_rectangle_data.SetPosWithUniEdge(temp_blank_cam_point.y - 12.0, { 3 });
 
-            BasicDrawTexture(play_icon_t, blank_camera, &temp_rectangle_data);
+            BasicDrawTexture(play_icon_t, nullptr, blank_camera, &temp_rectangle_data);
         }
         else
         {
-            Rectangle temp_rectangle_data = {};
-            temp_rectangle_data.base_size = pause_icon_t->size;
+            RectangleOld temp_rectangle_data = {};
+            temp_rectangle_data.base_size = { (double)pause_icon_t->width, (double)pause_icon_t->height };
             temp_rectangle_data.SetSizeWithSizeScale(Size2D{ 4.0, 4.0 });
 
             Point2D temp_blank_cam_point;
@@ -2501,7 +2686,7 @@ void Engine::DrawScreen()
             temp_rectangle_data.SetPosWithUniEdge(temp_blank_cam_point.x + 12.0, { 2 });
             temp_rectangle_data.SetPosWithUniEdge(temp_blank_cam_point.y - 12.0, { 3 });
 
-            BasicDrawTexture(pause_icon_t, blank_camera, &temp_rectangle_data);
+            BasicDrawTexture(pause_icon_t, nullptr, blank_camera, &temp_rectangle_data);
         }
 
         BasicDrawButton(&boundary_view_button, blank_camera);
@@ -2944,8 +3129,11 @@ void Engine::Run()
     while (running) {
         frame_start = SDL_GetTicks();
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-        SDL_RenderClear(renderer);
+        //SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); REMOVED CAUSE RENDERER GOT YEETED
+        //SDL_RenderClear(renderer); REMOVED CAUSE RENDERER GOT YEETED
+
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // White background
+        glClear(GL_COLOR_BUFFER_BIT); // Clears the screen with the currently set clear color.
 
         UpdateInput();
 
@@ -3006,10 +3194,18 @@ void Engine::Run()
 
         DrawScreen();
 
-        ModifyPixels(pixel_access_texture);
+        //ModifyPixels(pixel_access_texture); REMOVED CAUSE RENDERER GOT YEETED
         additional_color_index -= 2.0;
 
-        SDL_RenderPresent(renderer);
+        BasicDrawTexture(&testing_texture, nullptr, blank_camera, &testing_rect);
+
+
+
+
+        SDL_GL_SwapWindow(window);   // Displays the newly rendered frame by swapping the buffers.
+
+
+
 
         frame_duration = SDL_GetTicks() - frame_start;
         if (frame_duration < frame_delay) {
@@ -3027,29 +3223,29 @@ void Engine::Run()
 
 void Engine::DrawSDLRectWithRotation(const SDL_RectWithRotation* const rect, const SDL_Color fill_color)
 {
-    SDL_SetTextureColorMod(solid_color_pixel_texture->sdl_texture, fill_color.r, fill_color.g, fill_color.b);
-    SDL_SetTextureAlphaMod(solid_color_pixel_texture->sdl_texture, fill_color.a);
-    SDL_RenderCopyEx(renderer, solid_color_pixel_texture->sdl_texture, nullptr, &rect->rect, rect->GetDegrees(), &rect->center, rect->flip);
+    //SDL_SetTextureColorMod(solid_color_pixel_texture->sdl_texture, fill_color.r, fill_color.g, fill_color.b); REMOVED CAUSE RENDERER GOT YEETED
+    //SDL_SetTextureAlphaMod(solid_color_pixel_texture->sdl_texture, fill_color.a); REMOVED CAUSE RENDERER GOT YEETED
+    //SDL_RenderCopyEx(renderer, solid_color_pixel_texture->sdl_texture, nullptr, &rect->rect, rect->GetDegrees(), &rect->center, rect->flip); REMOVED CAUSE RENDERER GOT YEETED
 }
 void Engine::DrawTextureWithSDLRectWithRotation(const SDL_RectWithRotation* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod)
 {
     if (color_and_alpha_mod)
     {
-        SDL_SetTextureColorMod(texture->sdl_texture, color_and_alpha_mod->r, color_and_alpha_mod->g, color_and_alpha_mod->b);
-        SDL_SetTextureAlphaMod(texture->sdl_texture, color_and_alpha_mod->a);
+        //SDL_SetTextureColorMod(texture->sdl_texture, color_and_alpha_mod->r, color_and_alpha_mod->g, color_and_alpha_mod->b); REMOVED CAUSE RENDERER GOT YEETED
+        //SDL_SetTextureAlphaMod(texture->sdl_texture, color_and_alpha_mod->a); REMOVED CAUSE RENDERER GOT YEETED
     }
     else
     {
-        SDL_SetTextureColorMod(texture->sdl_texture, 255, 255, 255);
-        SDL_SetTextureAlphaMod(texture->sdl_texture, 255);
+        //SDL_SetTextureColorMod(texture->sdl_texture, 255, 255, 255); REMOVED CAUSE RENDERER GOT YEETED
+        //SDL_SetTextureAlphaMod(texture->sdl_texture, 255); REMOVED CAUSE RENDERER GOT YEETED
     }
 
-    SDL_RenderCopyEx(renderer, texture->sdl_texture, nullptr, &rect->rect, rect->GetDegrees(), &rect->center, rect->flip);
+    //SDL_RenderCopyEx(renderer, texture->sdl_texture, nullptr, &rect->rect, rect->GetDegrees(), &rect->center, rect->flip); REMOVED CAUSE RENDERER GOT YEETED
 
     if (color_and_alpha_mod)
     {
-        SDL_SetTextureColorMod(texture->sdl_texture, 255, 255, 255);
-        SDL_SetTextureAlphaMod(texture->sdl_texture, 255);
+        //SDL_SetTextureColorMod(texture->sdl_texture, 255, 255, 255); REMOVED CAUSE RENDERER GOT YEETED
+        //SDL_SetTextureAlphaMod(texture->sdl_texture, 255); REMOVED CAUSE RENDERER GOT YEETED
     }
 }
 
@@ -3116,9 +3312,50 @@ void Engine::DrawRefRectangleNewNew(const RefRectangleNewNew* const rect, const 
 }
 void Engine::DrawTextureWithRefRectangleNewNew(const RefRectangleNewNew* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera)
 {
+    const Point2DNew top_right = rect->GetUniCorner(CornerEnum::TOP_RIGHT);
+    const Point2DNew bottom_right = rect->GetUniCorner(CornerEnum::BOTTOM_RIGHT);
+    const Point2DNew bottom_left = rect->GetUniCorner(CornerEnum::BOTTOM_LEFT);
+    const Point2DNew top_left = rect->GetUniCorner(CornerEnum::TOP_LEFT);
+
+    float temp_vertices[16] = {
+        (float)top_right.x, (float)top_right.y, 1.0, 0.0,
+        (float)bottom_right.x, (float)bottom_right.y, 1.0, 1.0,
+        (float)bottom_left.x, (float)bottom_left.y, 0.0, 1.0,
+        (float)top_left.x, (float)top_left.y, 0.0, 0.0
+    };
+
+    glBindTexture(GL_TEXTURE_2D, texture->gl_texture_id);
+
+    glUniform1i(glGetUniformLocation(shader_program, "useTexture"), true);
+
+    if (color_and_alpha_mod)
+    {
+        glUniform4f(glGetUniformLocation(shader_program, "colorMod"), color_and_alpha_mod->r, color_and_alpha_mod->g, color_and_alpha_mod->b, color_and_alpha_mod->a);
+    }
+    else
+    {
+        glUniform4f(glGetUniformLocation(shader_program, "colorMod"), 1.0, 1.0, 1.0, 1.0); // White color
+    }
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(temp_vertices), temp_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(rect_indices), rect_indices, GL_STATIC_DRAW);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+
+
+
+
+
+
+
+
+
+
+    /*
     const SDL_RectWithRotation sdl_rect_with_rotation = RefRectangleNewNewToSDLRectWithRotation(rect, camera);
 
     DrawTextureWithSDLRectWithRotation(&sdl_rect_with_rotation, texture, source_rect, color_and_alpha_mod);
+    */
 }
 
 void Engine::DrawRefRectangleNewNew(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera)
@@ -3133,6 +3370,137 @@ void Engine::DrawTextureWithRefRectangleNewNew(const RefPoint2DNewNew* const pos
 
     DrawTextureWithSDLRectWithRotation(&sdl_rect_with_rotation, texture, source_rect, color_and_alpha_mod);
 }
+
+
+
+
+
+// ------------ RectangleNewest functions -------------
+
+void Engine::DrawScreenQuad(const Quad* const screen_quad, const GLColor* color, const bool align_90) const
+{
+    Quad cloned_quad = *screen_quad;
+    if (align_90)
+    {
+        cloned_quad.Align90(100);
+    }
+
+    //Setting vertice values:
+    float temp_vertices[16] = {
+        (float)cloned_quad.top_right.x, (float)cloned_quad.top_right.y, 1.0, 0.0,
+        (float)cloned_quad.bottom_right.x, (float)cloned_quad.bottom_right.y, 1.0, 1.0,
+        (float)cloned_quad.bottom_left.x, (float)cloned_quad.bottom_left.y, 0.0, 1.0,
+        (float)cloned_quad.top_left.x, (float)cloned_quad.top_left.y, 0.0, 0.0
+    };
+
+    //OpenGL code:
+    {
+        glUniform1i(glGetUniformLocation(shader_program, "useTexture"), false);
+
+        if (color)
+        {
+            glUniform4f(glGetUniformLocation(shader_program, "colorMod"), color->r, color->g, color->b, color->a);
+        }
+        else
+        {
+            glUniform4f(glGetUniformLocation(shader_program, "colorMod"), 1.0, 1.0, 1.0, 1.0); // White color
+        }
+
+        glBufferData(GL_ARRAY_BUFFER, sizeof(temp_vertices), temp_vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(rect_indices), rect_indices, GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+}
+void Engine::DrawTexturedScreenQuad(const Quad* const screen_quad, const Texture* const texture, const GLColor* color_and_alpha_mod, const bool align_90) const
+{
+    Quad cloned_quad = *screen_quad;
+    if (align_90)
+    {
+        cloned_quad.Align90(100);
+    }
+
+    //Setting vertice values:
+    float temp_vertices[16] = {
+        (float)cloned_quad.top_right.x, (float)cloned_quad.top_right.y, 1.0, 0.0,
+        (float)cloned_quad.bottom_right.x, (float)cloned_quad.bottom_right.y, 1.0, 1.0,
+        (float)cloned_quad.bottom_left.x, (float)cloned_quad.bottom_left.y, 0.0, 1.0,
+        (float)cloned_quad.top_left.x, (float)cloned_quad.top_left.y, 0.0, 0.0
+    };
+
+    //OpenGL code:
+    {
+        if (texture && texture->gl_texture_id != 0)
+        {
+            glBindTexture(GL_TEXTURE_2D, texture->gl_texture_id);
+        }
+        else
+        {
+            glBindTexture(GL_TEXTURE_2D, default_texture->gl_texture_id);
+        }
+
+        glUniform1i(glGetUniformLocation(shader_program, "useTexture"), true);
+
+        if (color_and_alpha_mod)
+        {
+            glUniform4f(glGetUniformLocation(shader_program, "colorMod"), color_and_alpha_mod->r, color_and_alpha_mod->g, color_and_alpha_mod->b, color_and_alpha_mod->a);
+        }
+        else
+        {
+            glUniform4f(glGetUniformLocation(shader_program, "colorMod"), 1.0, 1.0, 1.0, 1.0); // White color
+        }
+
+        glBufferData(GL_ARRAY_BUFFER, sizeof(temp_vertices), temp_vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(rect_indices), rect_indices, GL_STATIC_DRAW);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+}
+
+void Engine::DrawQuad(const Quad* const quad, const GLColor* const color, const CameraNew* const camera)
+{
+    if (camera)
+    {
+        const Quad screen_quad = UniQuadToScreenQuad(quad, camera);
+        DrawScreenQuad(&screen_quad, color);
+    }
+    else
+    {
+        DrawScreenQuad(quad, color);
+    }
+}
+void Engine::DrawTexturedQuad(const Quad* const quad, const Texture* const texture, const GLColor* const color_and_alpha_mod, const CameraNew* const camera)
+{
+    if (camera)
+    {
+        const Quad screen_quad = UniQuadToScreenQuad(quad, camera);
+        DrawTexturedScreenQuad(&screen_quad, texture, color_and_alpha_mod);
+    }
+    else
+    {
+        DrawTexturedScreenQuad(quad, texture, color_and_alpha_mod);
+    }
+}
+
+void Engine::DrawTextureWithRefRectangleNewest(const RefRectangleNewest* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera)
+{
+    const Quad temp_quad = rect->GetUniQuad();
+
+    const GLColor* const temp_color_and_alpha_mod = SDLColorToGLColor(color_and_alpha_mod);
+    DrawTexturedQuad(&temp_quad, texture, SDLColorToGLColor(color_and_alpha_mod), camera);
+    delete temp_color_and_alpha_mod;
+}
+
+void Engine::DrawTexturedRefRectangle90(const RefRectangle90* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera)
+{
+    const Quad temp_quad = rect->GetUniQuad();
+
+    const GLColor* const temp_color_and_alpha_mod = SDLColorToGLColor(color_and_alpha_mod);
+    DrawTexturedQuad(&temp_quad, texture, SDLColorToGLColor(color_and_alpha_mod), camera);
+    delete temp_color_and_alpha_mod;
+}
+
+
+
+
 
 
 
@@ -3151,34 +3519,34 @@ void Engine::ModifyPixels(SDL_Texture* texture) {
             for (uint32_t x = 0; x < 400; ++x) {
                 uint32_t loop_count = y * width + x;
 
-                float color_index = (2.0 * (float)(x + y)) + additional_color_index;
+                float color_index = (2.f * (float)(x + y)) + additional_color_index;
 
-                float red = 512.0 - abs(remainderf(color_index, 1536.0));
-                if (red < 0.0)
+                float red = 512.f - abs(remainderf(color_index, 1536.f));
+                if (red < 0.f)
                 {
-                    red = 0.0;
+                    red = 0.f;
                 }
-                if (red > 255.0)
+                if (red > 255.f)
                 {
-                    red = 255.0;
+                    red = 255.f;
                 }
-                float green = 512.0 - abs(remainderf(color_index - 512.0, 1536.0));
-                if (green < 0.0)
+                float green = 512.f - abs(remainderf(color_index - 512.f, 1536.f));
+                if (green < 0.f)
                 {
-                    green = 0.0;
+                    green = 0.f;
                 }
-                if (green > 255.0)
+                if (green > 255.f)
                 {
-                    green = 255.0;
+                    green = 255.f;
                 }
-                float blue = 512.0 - abs(remainderf(color_index - 1024.0, 1536.0));
-                if (blue < 0.0)
+                float blue = 512.f - abs(remainderf(color_index - 1024.f, 1536.f));
+                if (blue < 0.f)
                 {
-                    blue = 0.0;
+                    blue = 0.f;
                 }
-                if (blue > 255.0)
+                if (blue > 255.f)
                 {
-                    blue = 255.0;
+                    blue = 255.f;
                 }
 
                 pixelArray[loop_count] = SDL_MapRGBA(rgba, (Uint8)red, (Uint8)green, (Uint8)blue, 255);
@@ -3191,6 +3559,6 @@ void Engine::ModifyPixels(SDL_Texture* texture) {
     SDL_Rect temp_rect = { 0, 0, 400, 400 };
 
     // Render the updated texture
-    SDL_RenderCopy(renderer, texture, NULL, &temp_rect);
+    //SDL_RenderCopy(renderer, texture, NULL, &temp_rect); REMOVED CAUSE RENDERER GOT YEETED
     //SDL_RenderPresent(renderer);
 }

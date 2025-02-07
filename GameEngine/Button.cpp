@@ -18,7 +18,7 @@ void Button::InitLeast()
 {
 	//Do nothing lmao
 }
-void Button::InitMost(const Rectangle param_parent_rect, const Rectangle param_hitbox, const Sprite param_released_sprite, const Sprite param_hovering_sprite, const Sprite param_pressed_sprite, const ButtonSoundData param_sounds)
+void Button::InitMost(const RectangleOld param_parent_rect, const RectangleOld param_hitbox, const Sprite param_released_sprite, const Sprite param_hovering_sprite, const Sprite param_pressed_sprite, const ButtonSoundData param_sounds)
 {
 	parent_rect = param_parent_rect;
 	hitbox = param_hitbox;

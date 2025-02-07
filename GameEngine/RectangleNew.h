@@ -1,9 +1,10 @@
 #pragma once
 
+#include "GL/glew.h"
 #include "SDL.h"
-//#include "SDL_opengl.h"
 #include "SDL_image.h"
 #include "SDL_mixer.h"
+#include "SDL_opengl.h"
 #include <iostream>
 #include <limits>
 #include <vector>
@@ -11,6 +12,27 @@
 
 
 using namespace std;
+
+struct EdgeData
+{
+    bool y_axis = 0;
+    bool subtract_one = 0;
+    bool flip = 0;
+
+    double GetSubtractOneDouble() const;
+    double GetFlipDouble() const;
+};
+
+
+// -----------------   IDEK WHAT TO CALL THIS. SNAP FUNCTIONS MAYBE?   -----------------
+
+void SnapDouble(double* const double_pointer, const double m, const double b, const unsigned int accepted_epsilon_difference);
+void SnapAwayDouble(double* const double_pointer, const double m, const double b, const unsigned int accepted_epsilon_difference);
+
+//IMPORTANT!!!: [degree_snap_factor] must be an int factor of 360! Converts [radians] to a corresponding degree value, and then snaps any value [accepted_epsilon_difference] distance away from a multiple of [degree_snap_factor]. This function always returns values in the range [0.0, 360.0). The [accepted_epsilon_difference] should be greater for lower values of [degree_snap_factor], but also depends on the precision of [radians]. A good (fairly safe) [accepted_epsilon_difference] would be 1000, 
+double SnapRadiansToDegrees(const double radians, const unsigned int degree_snap_factor, const unsigned int accepted_epsilon_difference);
+
+
 
 struct SDL_RectWithRotation
 {
@@ -27,23 +49,86 @@ struct SDL_RectWithRotation
 
 // -----------------   NON-REFERENCE STRUCTS   -----------------
 
-/*
-enum class TotalFlip : unsigned char
+enum class CornerEnum : unsigned char
 {
-    FLIP_NONE,
-    FLIP_HORIZONTAL,
-    FLIP_VERTICAL,
-    FLIP_BOTH
+    TOP_RIGHT,
+    BOTTOM_RIGHT,
+    BOTTOM_LEFT,
+    TOP_LEFT
 };
-*/
-
-struct TotalFlip
+enum class Direction90 : unsigned char
+{
+    RIGHT,
+    BOTTOM,
+    LEFT,
+    TOP
+};
+enum class Rotation90 : unsigned char
+{
+    DEGREES_0,
+    DEGREES_90,
+    DEGREES_180,
+    DEGREES_270
+};
+struct Scale90;
+struct Flip90
 {
     bool flip_horizontally = 0;
     bool flip_vertically = 0;
 
+    Flip90();
+    Flip90(const bool i_flip_horizontally, const bool i_flip_vertically);
+
+    Scale90 GetFlipScale() const;
+    double GetHorizontalFlipDouble() const;
+    double GetVerticalFlipDouble() const;
+};
+struct Scale90
+{
+    double width_scale = 1.0;
+    double height_scale = 1.0;
+
+    Scale90();
+    Scale90(const double i_width_scale, const double i_height_scale);
+};
+struct Transformations;
+struct Transformations90
+{
+    Rotation90 rotation = Rotation90::DEGREES_0;
+    Scale90 scale;
+    Flip90 flip;
+
+    Transformations90();
+
+    Transformations90(const Rotation90 i_rotation);
+    Transformations90(const Scale90 i_scale);
+    Transformations90(const Flip90 i_flip);
+
+    Transformations90(const Rotation90 i_rotation, const Scale90 i_scale);
+    Transformations90(const Rotation90 i_rotation, const Flip90 i_flip);
+    Transformations90(const Scale90 i_scale, const Flip90 i_flip);
+
+    Transformations90(const Rotation90 i_rotation, const Scale90 i_scale, const Flip90 i_flip);
+
+
+    void RotateCounterclockwise(const unsigned char number_of_counterclockwise_90_degree_rotations);
+    void RotateClockwise(const unsigned char number_of_clockwise_90_degree_rotations);
+
+
+    Transformations GetTransformations() const;
+};
+
+struct TotalFlip
+{
+    bool flip_horizontally = 0;
+    double horizontal_direction_offset = 0.0;
+
+    bool flip_vertically = 0;
+    double vertical_direction_offset = 0.0;
+
     TotalFlip();
     TotalFlip(const bool i_flip_horizontally, const bool i_flip_vertically);
+    TotalFlip(const bool i_flip_horizontally, const double i_horizontal_direction_offset, const bool i_flip_vertically, const double i_vertical_direction_offset);
 
     //IMPORTANT!!!: If both flip_horizontally and flip_vertically are true, this function returns SDL_FLIP_NONE (SDL_RendererFlip does not support flipping in both directions). This case should be handled outside the function.
     SDL_RendererFlip GetSDLFlip() const;
@@ -56,14 +141,31 @@ struct Point2DNew
 
     Point2DNew();
     Point2DNew(const double i_x, const double i_y);
+
+    void ListProperties() const;
+};
+struct Line2D
+{
+    Point2DNew v_1 = { 0.0, 0.0 };
+    Point2DNew v_2 = { 100.0, 100.0 };
+
+    Line2D();
+    Line2D(const Point2DNew i_v_1, const Point2DNew i_v_2);
+    Line2D(const double i_x_1, const double i_y_1, const double i_x_2, const double i_y_2);
+
+    void ListProperties() const;
 };
 struct Scale2DNew
 {
     double width_scale = 1.0;
+    double width_direction_offset = 0.0; //In radians
+
     double height_scale = 1.0;
+    double height_direction_offset = 0.0; //In radians
 
     Scale2DNew();
     Scale2DNew(const double i_width_scale, const double i_height_scale);
+    Scale2DNew(const double i_width_scale, const double i_width_direction_offset, const double i_height_scale, const double i_height_direction_offset);
 };
 struct Size2DNew
 {
@@ -98,6 +200,67 @@ struct Rotation2DNew
 
     double GetDegrees() const;
     void SetWithDegrees(const double degrees);
+};
+struct DirectionOffset2DNew
+{
+    double x_axis = 0.0;
+    double y_axis = 0.0;
+
+    DirectionOffset2DNew();
+    DirectionOffset2DNew(const double i_x_axis, const double i_y_axis);
+};
+struct Transformations
+{
+    Rotation2DNew rotation;
+    Scale2DNew scale;
+    TotalFlip total_flip;
+
+    Transformations();
+    Transformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const TotalFlip i_total_flip);
+
+    Transformations90 GetTransformations90() const;
+
+    void ListProperties() const;
+};
+struct Quad
+{
+    Point2DNew top_right;
+    Point2DNew bottom_right;
+    Point2DNew bottom_left;
+    Point2DNew top_left;
+
+    Quad();
+    Quad(const double right_edge, const double bottom_edge, const double left_edge, const double top_edge);
+    Quad(const Point2DNew i_top_right, const Point2DNew i_bottom_right, const Point2DNew i_bottom_left, const Point2DNew i_top_left);
+
+    void Align90(const unsigned int WILL_BE_SCALED_accepted_epsilon_difference);
+
+    void ListProperties() const;
+};
+struct Rectangle90
+{
+    Point2DNew pos;
+    Size2DNew unscaled_size;
+    Centering2DNew centering;
+    Transformations90 transformations;
+
+    //TO-DO? Currently only includes commonly used constructors
+    Rectangle90();
+    Rectangle90(const Point2DNew i_pos);
+    Rectangle90(const Point2DNew i_pos, const Size2DNew i_unscaled_size);
+    Rectangle90(const Point2DNew i_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering);
+    Rectangle90(const Point2DNew i_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering, const Transformations90 i_transformations);
+
+
+    //IMPORTANT!!!: edge rotates and flips with [transformations.rotation] and [transformations.flip], so for example, Direction90::RIGHT won't always be referencing the apparent right edge.
+    double GetEdge(const Direction90 edge) const;
+    //Alters [pos] to align the given [edge] to either an x or y value (defined by [target_coord]).
+    void SetEdge(const Direction90 edge, const double target_coord);
+
+    //IMPORTANT!!!: corner rotates and flips with [transformations.rotation] and [transformations.flip], so for example, CornerEnum::TOP_RIGHT won't always be referencing the apparent top-right corner.
+    Point2DNew GetCorner(const CornerEnum corner) const;
+    //Alters [pos] to align the given [corner] to a given [target_point].
+    void SetCorner(const CornerEnum corner, const Point2DNew target_point);
 };
 struct RectangleNew
 {
@@ -141,6 +304,66 @@ struct RectangleNew
     Offset2DNew GetScaledOffset() const;
     double GetScaledOffsetX() const;
     double GetScaledOffsetY() const;
+
+
+    // -------- MISCELLANEOUS --------
+
+    void ListProperties() const;
+};
+struct RectangleNewest
+{
+    // -------- DATA --------
+
+    Point2DNew pos;
+    Transformations transformations;
+    Size2DNew unscaled_size;
+    Centering2DNew centering;
+
+
+    Quad GetQuad() const;
+
+    Point2DNew GetCorner(const CornerEnum corner) const;
+
+
+    //TO-DO: add all the methods for this class
+
+    // -------- EDGE FUNCTIONS --------
+
+    //Returns a line that contains the two corners of a given edge. The returned [v_2] will be the corner further along clockwise than [v_1], although this rarely matters.
+    Line2D GetEdge(const Direction90 edge) const;
+
+
+
+
+    // -------- SCALE FUNCTIONS --------
+
+    //IMPORTANT!!!: Does not account for [width_direction_offset] or [height_direction_offset] in calculation (may produce potentially unexpected results in some cases). For more information, look at function body.
+    Size2DNew GetScaledSize() const;
+    //IMPORTANT!!!: Does not account for [width_direction_offset] in calculation (may produce potentially unexpected results in some cases). For more information, look at function body.
+    double GetScaledWidth() const;
+    //IMPORTANT!!!: Does not account for [height_direction_offset] in calculation (may produce potentially unexpected results in some cases). For more information, look at function body.
+    double GetScaledHeight() const;
+
+
+
+
+    // -------- CENTERING/OFFSET FUNCTIONS --------
+
+    Offset2DNew GetUnscaledOffset() const;
+    double GetUnscaledOffsetX() const;
+    double GetUnscaledOffsetY() const;
+
+    //IMPORTANT!!!: Does not account for [width_direction_offset] or [height_direction_offset] in calculation (may produce potentially unexpected results in some cases). For more information, look at function body.
+    Offset2DNew GetScaledOffset() const;
+    //IMPORTANT!!!: Does not account for [width_direction_offset] in calculation (may produce potentially unexpected results in some cases). For more information, look at function body.
+    double GetScaledOffsetX() const;
+    //IMPORTANT!!!: Does not account for [height_direction_offset] in calculation (may produce potentially unexpected results in some cases). For more information, look at function body.
+    double GetScaledOffsetY() const;
+
+
+    // -------- MISCELLANEOUS --------
+
+    void ListProperties() const;
 };
 
 
@@ -150,11 +373,45 @@ struct RectangleNew
 
 // -----------------   REFERENCE STRUCTS   -----------------
 
+struct RefTransformations;
+struct RefTransformations90;
+
+enum class TransformationsPointerState : unsigned char
+{
+    TRANSFORMATIONS_POINTER_IS_ACTIVE,
+    TRANSFORMATIONS90_POINTER_IS_ACTIVE,
+    NEITHER_ARE_ACTIVE
+};
+
+class TransformationsPointer //This class contains both a pointer to RefTransformations and RefTransformations90, but it only uses one at a time.
+{
+    const RefTransformations* transformations_pointer = nullptr;
+    const RefTransformations90* transformations90_pointer = nullptr;
+
+
+public:
+    TransformationsPointer();
+    TransformationsPointer(const RefTransformations* const i_transformations_pointer);
+    TransformationsPointer(const RefTransformations90* const i_transformations90_pointer);
+
+    //If one of the pointers is active, and the other is set, then the first pointer will be set to nullptr (so that only one pointer is active at any given time)
+    void SetPointer(const RefTransformations* const new_transformations_pointer);
+    //If one of the pointers is active, and the other is set, then the first pointer will be set to nullptr (so that only one pointer is active at any given time)
+    void SetPointer(const RefTransformations90* const new_transformations90_pointer);
+
+    TransformationsPointerState GetState() const;
+    TransformationsPointerState GetDepthState(const unsigned int depth_index) const;
+    TransformationsPointerState GetUniState() const;
+
+    const RefTransformations* GetTransformationsPointer() const;
+    const RefTransformations90* GetTransformations90Pointer() const;
+};
+
 struct RefTotalFlip //RefTotalFlip is the referenceable version of TotalFlip, which contains data about horizontal and vertical flips or the lack there of;      Ex: If, say, an instance of RefTotalFlip has a flip value of FLIP_HORIZONTAL, and its reference_total_flip also has a flip value of FLIP_HORIZONTAL (and a reference_total_flip of nullptr), then the uni flip value would be FLIP_NONE (they cancel each other out).
 {
     TotalFlip v;
     
-    RefTotalFlip* reference_total_flip = nullptr;
+    const RefTotalFlip* reference_total_flip = nullptr;
 
     //PSEUDO PRIVATE;  Essentially, this method does provide functionality unique to itself, but it has basically no use cases. It is meant to be basically just used by other member functions. Unless you know what you are doing, use GetUniValue or GetDepthValue instead :)
     TotalFlip GetDereferencedValue(const unsigned int depth_index, const RefTotalFlip* const depth_pointer) const;
@@ -175,20 +432,111 @@ struct RefTotalFlip //RefTotalFlip is the referenceable version of TotalFlip, wh
     //Sets the value of v so that the v value dereferenced to the depth defined by depth_value (stops dereferencing at the instance of RefTotalFlip that corresponds to depth_pointer) is equal to the parameter "depth_value." 
     void SetValueToFitDepthValue(const RefTotalFlip* const depth_pointer, const TotalFlip depth_value);
 };
+struct RefTransformations
+{
+    Rotation2DNew rotation;
+
+    Scale2DNew scale;
+
+    TotalFlip total_flip;
+
+
+    TransformationsPointer reference_transformations;
+    
+
+    RefTransformations();
+    RefTransformations(const Transformations non_ref_transformations);
+    RefTransformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const TotalFlip i_total_flip);
+    RefTransformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const TotalFlip i_total_flip, const TransformationsPointer i_reference_transformations);
+    //RefTransformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const DirectionOffset2DNew i_scale_direction_offset, const TotalFlip i_total_flip, const DirectionOffset2DNew i_total_flip_direction_offset);
+    //RefTransformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const DirectionOffset2DNew i_scale_direction_offset, const TotalFlip i_total_flip, const DirectionOffset2DNew i_total_flip_direction_offset, RefRotateScaleFlip2DNewNew* const i_reference);
+
+
+
+    RefTransformations90 GetRefTransformations90() const;
+
+    Transformations GetDepthValue(const unsigned int depth_index) const;
+    Transformations90 GetDepthValue90(const unsigned int depth_index) const;
+
+    //Rotation2DNew GetDepthRotation(...) etc... TO-DO
+
+    //void SetValueToFitDepthValue(const unsigned int depth_index, const Transformations depth_value); TO-DO
+    //void SetRotationToFitDepthValue(...) etc... TO-DO
+
+
+    Transformations GetUniValue() const;
+    Transformations90 GetUniValue90() const;
+    //Rotation2DNew GetUniRotation(...) etc... TO-DO
+
+    //void SetValueToFitUniValue(const Transformations uni_value); TO-DO
+    //void SetRotationToFitUniValue(...) etc... TO-DO
+
+
+    unsigned int GetDepthIndex(const RefTransformations* const depth_pointer) const;
+
+    Transformations GetDepthValue(const RefTransformations* const depth_pointer) const;
+    //Rotation2DNew GetDepthRotation(...) etc... TO-DO
+
+    //void SetValueToFitDepthValue(const RefTransformations* const depth_pointer, const Transformations depth_value); TO-DO
+    //void SetRotationToFitDepthValue(...) etc... TO-DO
+
+    void ListProperties() const;
+};
+
+struct RefTransformations90
+{
+    Rotation90 rotation = Rotation90::DEGREES_0;
+    Scale90 scale;
+    Flip90 flip;
+
+    TransformationsPointer reference_transformations;
+
+
+    RefTransformations90();
+
+    RefTransformations90(const Rotation90 i_rotation);
+    RefTransformations90(const Scale90 i_scale);
+    RefTransformations90(const Flip90 i_flip);
+
+    RefTransformations90(const Rotation90 i_rotation, const Scale90 i_scale);
+    RefTransformations90(const Rotation90 i_rotation, const Flip90 i_flip);
+    RefTransformations90(const Scale90 i_scale, const Flip90 i_flip);
+
+    RefTransformations90(const Rotation90 i_rotation, const Scale90 i_scale, const Flip90 i_flip);
+
+    RefTransformations90(const Rotation90 i_rotation, const Scale90 i_scale, const Flip90 i_flip, const TransformationsPointer i_reference_transformations);
+
+
+    void RotateCounterclockwise(const unsigned char number_of_counterclockwise_90_degree_rotations);
+    void RotateClockwise(const unsigned char number_of_clockwise_90_degree_rotations);
+
+    RefTransformations GetRefTransformations() const;
+
+    Transformations90 GetDepthValue90(const unsigned int depth_index) const;
+    //Make sure you don't mean GetDepthValue90! This function returns an instance of Transformations, not Transformations90.
+    Transformations GetDepthValue(const unsigned int depth_index) const;
+
+    Transformations90 GetUniValue90() const;
+    //Make sure you don't mean GetUniValue90! This function returns an instance of Transformations, not Transformations90.
+    Transformations GetUniValue() const;
+};
 
 //WARNING: When RefScale2DNewNew has different width and height scales and there is a rotated rectangle (in a non-cardinal direction) referencing it, the rectangle would become a rhombus which is ILLEGAL (we have rhombuses). Idk how to solve this problem
 struct RefScale2DNewNew
 {
     double width_scale = 1.0;
-    double height_scale = 1.0;
+    double width_direction_offset = 0.0; //In radians
 
-    RefScale2DNewNew* reference_scale = nullptr;
+    double height_scale = 1.0;
+    double height_direction_offset = 0.0; //In radians
+
+    const RefScale2DNewNew* reference_scale = nullptr;
 
 
 
     RefScale2DNewNew();
     RefScale2DNewNew(const double i_width_scale, const double i_height_scale);
-    RefScale2DNewNew(const double i_width_scale, const double i_height_scale, RefScale2DNewNew* const i_reference_scale);
+    RefScale2DNewNew(const double i_width_scale, const double i_height_scale, const RefScale2DNewNew* const i_reference_scale);
 
 
 
@@ -226,13 +574,13 @@ struct RefSize2DNewNew
     double width = 100.0;
     double height = 100.0;
 
-    RefScale2DNewNew* reference_scale = nullptr;
+    const RefScale2DNewNew* reference_scale = nullptr;
 
 
 
     RefSize2DNewNew();
     RefSize2DNewNew(const double i_width, const double i_height);
-    RefSize2DNewNew(const double i_width, const double i_height, RefScale2DNewNew* const i_reference_scale);
+    RefSize2DNewNew(const double i_width, const double i_height, const RefScale2DNewNew* const i_reference_scale);
 
 
 
@@ -269,13 +617,13 @@ struct RefRotation2DNewNew
 {
     double radians = 0.0; //In radians
 
-    RefRotation2DNewNew* reference_rotation = nullptr;
-    RefTotalFlip* reference_total_flip = nullptr;
+    const RefRotation2DNewNew* reference_rotation = nullptr;
+    const RefTotalFlip* reference_total_flip = nullptr;
 
 
     RefRotation2DNewNew();
     RefRotation2DNewNew(const double i_radians);
-    RefRotation2DNewNew(const double i_radians, RefRotation2DNewNew* const i_reference_rotation, RefTotalFlip* const i_reference_total_flip);
+    RefRotation2DNewNew(const double i_radians, const RefRotation2DNewNew* const i_reference_rotation, const RefTotalFlip* const i_reference_total_flip);
 
 
     Rotation2DNew GetDepthValue(const unsigned int depth_index) const;
@@ -294,16 +642,16 @@ struct RefPoint2DNewNew
     double x = 0.0;
     double y = 0.0;
 
-    RefPoint2DNewNew* reference_point = nullptr;
-    RefScale2DNewNew* reference_scale = nullptr;
-    RefRotation2DNewNew* reference_rotation = nullptr;
-    RefTotalFlip* reference_total_flip = nullptr;
+    const RefPoint2DNewNew* reference_point = nullptr;
+    const RefScale2DNewNew* reference_scale = nullptr;
+    const RefRotation2DNewNew* reference_rotation = nullptr;
+    const RefTotalFlip* reference_total_flip = nullptr;
 
 
 
     RefPoint2DNewNew();
     RefPoint2DNewNew(const double i_x, const double i_y);
-    RefPoint2DNewNew(const double i_x, const double i_y, RefPoint2DNewNew* const i_reference_point, RefScale2DNewNew* const i_reference_scale, RefRotation2DNewNew* const i_reference_rotation, RefTotalFlip* const i_reference_total_flip);
+    RefPoint2DNewNew(const double i_x, const double i_y, const RefPoint2DNewNew* const i_reference_point, const RefScale2DNewNew* const i_reference_scale, const RefRotation2DNewNew* const i_reference_rotation, const RefTotalFlip* const i_reference_total_flip);
 
 
 
@@ -342,6 +690,116 @@ struct RefPoint2DNewNew
     void SetValueToFitDepthY(const RefPoint2DNewNew* const depth_pointer, const double depth_y);
 };
 
+struct RefPoint2DNewest
+{
+    double x = 0.0;
+    double y = 0.0;
+
+    const RefPoint2DNewest* reference_point = nullptr;
+    TransformationsPointer reference_transformations;
+
+
+
+    RefPoint2DNewest();
+    RefPoint2DNewest(const double i_x, const double i_y);
+    RefPoint2DNewest(const Point2DNew non_ref_point);
+    RefPoint2DNewest(const double i_x, const double i_y, const RefPoint2DNewest* const i_reference_point, const TransformationsPointer i_reference_transformations);
+    RefPoint2DNewest(const Point2DNew non_ref_point, const RefPoint2DNewest* const i_reference_point, const TransformationsPointer i_reference_transformations);
+
+
+    //All commented out lines (except for method descriptions) are TO-DO
+    Point2DNew GetDepthValue(const unsigned int depth_index) const;
+    //double GetDepthX(const unsigned int depth_index) const;
+    //double GetDepthY(const unsigned int depth_index) const;
+
+    void SetValueToFitDepthValue(const unsigned int depth_index, const Point2DNew depth_value);
+    //Moves point HORIZONTALLY (on the plane defined by depth_index) to fit depth_x. If rotation is not 0 or pi, this function WILL ALSO CHANGE Y (very spooky). Also if rotation is pi/2 or 3pi/2, x won't change.
+    //void SetValueToFitDepthX(const unsigned int depth_index, const double depth_x);
+    //Moves point VERTICALLY (on the plane defined by depth_index) to fit depth_y. If rotation is not 0 or pi, this function WILL ALSO CHANGE X (very spooky). Also if rotation is pi/2 or 3pi/2, y won't change.
+    //void SetValueToFitDepthY(const unsigned int depth_index, const double depth_x);
+
+
+    Point2DNew GetUniValue() const;
+    //double GetUniX() const;
+    //double GetUniY() const;
+
+    void SetValueToFitUniValue(const Point2DNew uni_value);
+    //Moves point HORIZONTALLY to fit uni_x. If rotation is not 0 or pi, this function WILL ALSO CHANGE Y (very spooky). Also if rotation is pi/2 or 3pi/2, x won't change.
+    //void SetValueToFitUniX(const double uni_x);
+    //Moves point VERTICALLY to fit uni_y. If rotation is not 0 or pi, this function WILL ALSO CHANGE X (very spooky). Also if rotation is pi/2 or 3pi/2, y won't change.
+    //void SetValueToFitUniY(const double uni_y);
+
+
+    unsigned int GetDepthIndex(const RefPoint2DNewest* const depth_pointer) const;
+
+    Point2DNew GetDepthValue(const RefPoint2DNewest* const depth_pointer) const;
+    //double GetDepthX(const RefPoint2DNewNew* const depth_pointer) const;
+    //double GetDepthY(const RefPoint2DNewNew* const depth_pointer) const;
+
+    //void SetValueToFitDepthValue(const RefPoint2DNewNew* const depth_pointer, const Point2DNew depth_value);
+    //Moves point HORIZONTALLY (on the plane defined by depth_pointer) to fit depth_x. If rotation is not 0 or pi, this function WILL ALSO CHANGE Y (very spooky). Also if rotation is pi/2 or 3pi/2, x won't change.
+    //void SetValueToFitDepthX(const RefPoint2DNewNew* const depth_pointer, const double depth_x);
+    //Moves point VERTICALLY (on the plane defined by depth_pointer) to fit depth_y. If rotation is not 0 or pi, this function WILL ALSO CHANGE X (very spooky). Also if rotation is pi/2 or 3pi/2, y won't change.
+    //void SetValueToFitDepthY(const RefPoint2DNewNew* const depth_pointer, const double depth_y);
+};
+
+struct RefRectangleNewest;
+struct RefRectangle90
+{
+    RefPoint2DNewest pos;
+    Size2DNew unscaled_size;
+    Centering2DNew centering;
+    RefTransformations90 transformations;
+
+    //TO-DO? Currently only includes commonly used constructors
+    RefRectangle90();
+    RefRectangle90(const RefPoint2DNewest i_pos);
+    RefRectangle90(const RefPoint2DNewest i_pos, const Size2DNew i_unscaled_size);
+    RefRectangle90(const RefPoint2DNewest i_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering);
+    RefRectangle90(const RefPoint2DNewest i_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering, const RefTransformations90 i_transformations);
+
+
+    Rectangle90 GetUniValue() const;
+    Rectangle90 GetDepthValue(const unsigned int depth_index) const;
+
+    Quad GetUniQuad() const;
+    Quad GetDepthQuad(const unsigned int depth_index) const;
+
+    //IMPORTANT!!!: edge rotates and flips with [transformations.rotation] and [transformations.flip], so for example, Direction90::RIGHT won't always be referencing the edge that appears on the right.
+    double GetDepthEdge(const Direction90 edge, const unsigned int depth_index) const;
+    //Alters [pos] to align the given [edge] to either an x or y value (defined by [target_coord]).
+    void SetDepthEdge(const Direction90 edge, const double target_depth_coord, const unsigned int depth_index);
+
+    //IMPORTANT!!!: corner rotates and flips with [transformations.rotation] and [transformations.flip], so for example, CornerEnum::TOP_RIGHT won't always be referencing the corner that appears on the top right.
+    Point2DNew GetDepthCorner(const CornerEnum corner, const unsigned int depth_index) const;
+    //Alters [pos] to align the given [corner] to a given [target_point].
+    void SetDepthCorner(const CornerEnum corner, const Point2DNew target_depth_point, const unsigned int depth_index);
+
+
+    void SetReference(const RefRectangle90* const reference_rectangle);
+    void SetReference(const RefRectangleNewest* const reference_rectangle);
+
+    /*
+    RectangleNewest GetRectangleNewest() const;
+
+    Quad GetUniQuad() const;
+    Quad GetDepthQuad(const unsigned int depth_index) const;
+
+    Point2DNew GetUniCorner(const CornerEnum corner) const;
+    Point2DNew GetDepthCorner(const unsigned int depth_index, const CornerEnum corner) const;
+
+    //void SetPosToFitUniCorner(...), SetPosToFitDepthCorner(...) (define later)!
+
+    void SetReference(const RefRectangleNewest* const reference_rectangle);
+
+
+
+    // -------- MISCELLANEOUS --------
+
+    void ListProperties() const;
+    */
+};
+
 struct RefRectangleNewNew
 {
     RefPoint2DNewNew pos;
@@ -353,7 +811,49 @@ struct RefRectangleNewNew
 
     RectangleNew GetRectangleNew() const;
 
+    Point2DNew GetUniCorner(const CornerEnum corner) const;
+    Point2DNew GetDepthCorner(const unsigned int depth_index, const CornerEnum corner) const;
+
+    //void SetPosToFitUniCorner(...), SetPosToFitDepthCorner(...) (define later)!
+
     void SetReference(RefRectangleNewNew* const reference_rectangle);
+};
+
+struct RefRectangleNewest
+{
+    RefPoint2DNewest pos;
+    RefTransformations transformations;
+    Size2DNew unscaled_size;
+    Centering2DNew centering;
+
+    RefRectangleNewest();
+    RefRectangleNewest(const RefPoint2DNewest i_pos, const RefTransformations i_transformations, const Size2DNew i_unscaled_size, const Centering2DNew i_centering);
+    RefRectangleNewest(const RectangleNewest non_ref_rectangle);
+
+
+    RectangleNewest GetUniValue() const;
+    RectangleNewest GetDepthValue(const unsigned int depth_index) const;
+
+    Quad GetUniQuad() const;
+    Quad GetDepthQuad(const unsigned int depth_index) const;
+
+    Point2DNew GetUniCorner(const CornerEnum corner) const;
+    Point2DNew GetDepthCorner(const CornerEnum corner, const unsigned int depth_index) const;
+
+    void SetPosToFitCurrentPlanePointToDepthPoint(const Point2DNew depth_point, const Point2DNew current_plane_point, const unsigned int depth_index);
+
+    void SetDepthCorner(const Point2DNew depth_corner, const CornerEnum corner_identity, const unsigned int depth_index);
+    void SetUniCorner(const Point2DNew uni_corner, const CornerEnum corner_identity);
+
+
+    void SetReference(const RefRectangleNewest* const reference_rectangle);
+    void SetReference(const RefRectangle90* const reference_rectangle);
+
+
+
+    // -------- MISCELLANEOUS --------
+
+    void ListProperties() const;
 };
 
 

@@ -4,6 +4,15 @@
 
 using namespace std;
 
+GLColor::GLColor() {}
+GLColor::GLColor(const float i_r, const float i_g, const float i_b) : r(i_r), g(i_g), b(i_b), a(1.0) {}
+GLColor::GLColor(const float i_r, const float i_g, const float i_b, const float i_a) : r(i_r), g(i_g), b(i_b), a(i_a) {}
+
+
+
+
+
+
 // -----------------   CONVERSION FUNCTIONS   -----------------
 
 SDL_Rect RectStructTwoToSDLRect(const RectStructTwo* const param_rectangle, const Camera* const camera)
@@ -152,7 +161,7 @@ SDL_Point UniPointToSDLPoint(const Point2D param_uni_point, const RigidCentering
 	*/
 }
 
-//-- USE GETSDLWIDTHWITHTWOSDLX INSTEAD -- Assumed outer_pixel_side.  If finding the sdl_width of a "Rectangle," provide uni_left_edge.  If not, pass NULL for "param_uni_left_edge"
+//-- USE GETSDLWIDTHWITHTWOSDLX INSTEAD -- Assumed outer_pixel_side.  If finding the sdl_width of a "RectangleOld," provide uni_left_edge.  If not, pass NULL for "param_uni_left_edge"
 int UniWidthToSDLWidth(const double param_uni_width, const double param_uni_left_edge, const Camera* camera)
 {
 	if (param_uni_left_edge != NULL)
@@ -172,7 +181,7 @@ int UniWidthToSDLWidth(const double param_uni_width, const double param_uni_left
 		return (int)round((param_uni_width / camera->rect.GetUniWidthScale()));
 	}
 }
-//-- USE GETSDLHEIGHTWITHTWOSDLY INSTEAD -- Assumed outer_pixel_side.  If finding the sdl_height of a "Rectangle," provide uni_top_edge.  If not, pass NULL for "param_uni_top_edge"
+//-- USE GETSDLHEIGHTWITHTWOSDLY INSTEAD -- Assumed outer_pixel_side.  If finding the sdl_height of a "RectangleOld," provide uni_top_edge.  If not, pass NULL for "param_uni_top_edge"
 int UniHeightToSDLHeight(const double param_uni_height, const double param_uni_top_edge, const Camera* camera)
 {
 	if (param_uni_top_edge != NULL)
@@ -193,7 +202,7 @@ int UniHeightToSDLHeight(const double param_uni_height, const double param_uni_t
 		return (int)round(param_uni_height / camera->rect.GetUniHeightScale());
 	}
 }
-//-- USE GETSDLSIZEWITHTWOSDLPOINTS INSTEAD -- Assumed outer_pixel_side.  If finding the sdl_size of a "Rectangle," provide uni_top_left_corner.  If not, pass NULL for "param_uni_top_left_corner"
+//-- USE GETSDLSIZEWITHTWOSDLPOINTS INSTEAD -- Assumed outer_pixel_side.  If finding the sdl_size of a "RectangleOld," provide uni_top_left_corner.  If not, pass NULL for "param_uni_top_left_corner"
 SDL_Size UniSizeToSDLSize(const Size2D param_uni_size, const Point2D param_uni_top_left_corner, const Camera* camera)
 {
 	return { UniWidthToSDLWidth(param_uni_size.width, param_uni_top_left_corner.x, camera), UniHeightToSDLHeight(param_uni_size.height, param_uni_top_left_corner.y, camera) };
@@ -260,7 +269,7 @@ SDL_Rect GetSDLRectWithEdges(const int right_edge, const int bottom_edge, const 
 
 
 
-SDL_Rect RectangleToSDLRect(const Rectangle* const param_rectangle, const Camera* const camera)
+SDL_Rect RectangleToSDLRect(const RectangleOld* const param_rectangle, const Camera* const camera)
 {
 	const int sdl_right = UniXToSDLX(param_rectangle->GetUniEdge({ 0 }), { 2 }, camera);
 	const int sdl_bottom = UniYToSDLY(param_rectangle->GetUniEdge({ 1 }), { 0 }, camera);
@@ -269,7 +278,7 @@ SDL_Rect RectangleToSDLRect(const Rectangle* const param_rectangle, const Camera
 
 	return GetSDLRectWithEdges(sdl_right, sdl_bottom, sdl_left, sdl_top);
 }
-SDL_Point RectangleToSDLCenterOfRotation(const Rectangle* const param_rectangle, const Camera* const camera)
+SDL_Point RectangleToSDLCenterOfRotation(const RectangleOld* const param_rectangle, const Camera* const camera)
 {
 	Point2D temp_uni_offset = param_rectangle->GetUniScaledOffset();
 
@@ -295,7 +304,7 @@ SDL_Rect RectStructOneToSDLRect(const RectStructOne* const param_rect_struct_one
 }
 
 
-RectStructTwo RectangleToBasicRectangle(const Rectangle* const param_rectangle)
+RectStructTwo RectangleToBasicRectangle(const RectangleOld* const param_rectangle)
 {
 	RectStructTwo temp_basic_rect;
 
@@ -317,7 +326,7 @@ RectStructTwo RectangleToBasicRectangle(const Rectangle* const param_rectangle)
 	return temp_basic_rect;
 }
 
-RectStructOne RectangleToRectStructOne(const Rectangle* const param_rectangle)
+RectStructOne RectangleToRectStructOne(const RectangleOld* const param_rectangle)
 {
 	return {
 	param_rectangle->GetUniEdge({ 2 }),
@@ -328,9 +337,9 @@ RectStructOne RectangleToRectStructOne(const Rectangle* const param_rectangle)
 }
 
 
-Rectangle RectStructOneToRectangle(const RectStructOne* const param_rect_struct_one)
+RectangleOld RectStructOneToRectangle(const RectStructOne* const param_rect_struct_one)
 {
-	Rectangle temp_rectangle;
+	RectangleOld temp_rectangle;
 
 	temp_rectangle.size.width = (param_rect_struct_one->uni_right_edge - param_rect_struct_one->uni_left_edge);
 	temp_rectangle.size.height = (param_rect_struct_one->uni_top_edge - param_rect_struct_one->uni_bottom_edge);
@@ -348,15 +357,95 @@ Rectangle RectStructOneToRectangle(const RectStructOne* const param_rect_struct_
 
 
 
+// -----------------   POINT CONVERSION FUNCTIONS BASED ON BASE WINDOW SIZE   -----------------
+
+double XToProportionX(const double x)
+{
+	return (x / HALF_BASE_WINDOW_PIXEL_WIDTH);
+}
+double YToProportionY(const double y)
+{
+	return (y / HALF_BASE_WINDOW_PIXEL_HEIGHT);
+}
+
+GLColor SDLColorToGLColor(const SDL_Color sdl_color)
+{
+	return GLColor((float)sdl_color.r / 255.f, (float)sdl_color.g / 255.f, (float)sdl_color.b / 255.f, (float)sdl_color.a / 255.f);
+}
+GLColor* SDLColorToGLColor(const SDL_Color* const sdl_color)
+{
+	if (sdl_color)
+	{
+		return new GLColor((float)sdl_color->r / 255.f, (float)sdl_color->g / 255.f, (float)sdl_color->b / 255.f, (float)sdl_color->a / 255.f);
+	}
+	else
+	{
+		return nullptr;
+	}
+}
+SDL_Color GLColorToSDLColor(const GLColor gl_color)
+{
+	return { (Uint8)round(gl_color.r * 255.f), (Uint8)round(gl_color.g * 255.f), (Uint8)round(gl_color.b * 255.f), (Uint8)round(gl_color.a * 255.f) };
+}
+SDL_Color* GLColorToSDLColor(const GLColor* const gl_color)
+{
+	if (gl_color)
+	{
+		return new SDL_Color{ (Uint8)round(gl_color->r * 255.f), (Uint8)round(gl_color->g * 255.f), (Uint8)round(gl_color->b * 255.f), (Uint8)round(gl_color->a * 255.f) };
+	}
+	else
+	{
+		return nullptr;
+	}
+}
+
+
+
+Point2DNew UniPointToScreenPoint(const Point2DNew* const uni_point, const CameraNew* const camera)
+{
+	if (camera)
+	{
+		const RefPoint2DNewest temp_point(*uni_point, &camera->rect.pos, &camera->rect.transformations);
+		//TO-DO: make this "temp_point.SetUniValue(...), return temp_point.x, temp_point.y";
+		return temp_point.GetUniValue();
+	}
+	else
+	{
+		return (*uni_point);
+	}
+}
+
+Quad UniQuadToScreenQuad(const Quad* const uni_quad, const CameraNew* const camera)
+{
+	if (camera)
+	{
+		return Quad(
+			UniPointToScreenPoint(&uni_quad->top_right, camera),
+			UniPointToScreenPoint(&uni_quad->bottom_right, camera),
+			UniPointToScreenPoint(&uni_quad->bottom_left, camera),
+			UniPointToScreenPoint(&uni_quad->top_left, camera)
+		);
+	}
+	else
+	{
+		return (*uni_quad);
+	}
+}
+
+
+
+
+
+
 // -----------------   COLLISION FUNCTIONS   -----------------
 
-bool OverlapPoint2DWithRectangleEx(const Point2D* const param_point, const Rectangle* const param_rectangle, const bool include_rectangle_right_edge, const bool include_rectangle_bottom_edge, const bool include_rectangle_left_edge, const bool include_rectangle_top_edge)
+bool OverlapPoint2DWithRectangleEx(const Point2D* const param_point, const RectangleOld* const param_rectangle, const bool include_rectangle_right_edge, const bool include_rectangle_bottom_edge, const bool include_rectangle_left_edge, const bool include_rectangle_top_edge)
 {
 	RectStructOne temp_rect_struct_one = RectangleToRectStructOne(param_rectangle);
 
 	return OverlapPoint2DWithRectStructOneEx(param_point, &temp_rect_struct_one, include_rectangle_right_edge, include_rectangle_bottom_edge, include_rectangle_left_edge, include_rectangle_top_edge);
 }
-bool OverlapPoint2DWithRectangle(const Point2D* const param_point, const Rectangle* const param_rectangle, const bool include_edge)
+bool OverlapPoint2DWithRectangle(const Point2D* const param_point, const RectangleOld* const param_rectangle, const bool include_edge)
 {
 	return OverlapPoint2DWithRectangleEx(param_point, param_rectangle, include_edge, include_edge, include_edge, include_edge);
 }

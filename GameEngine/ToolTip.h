@@ -3,7 +3,7 @@
 
 struct ToolTip
 {
-	Rectangle saved_box; //This variable contains the saved dimentions and positions of the "actual" text_box parent_rect + margin_size.
+	RectangleOld saved_box; //This variable contains the saved dimentions and positions of the "actual" text_box parent_rect + margin_size.
 	TextBox text_box;
 
 	Size2D border_scaled_size = { 4.0, 4.0 };

@@ -6,7 +6,7 @@
 
 struct LineData
 {
-	Rectangle rectangle;
+	RectangleOld rectangle;
 	int first_index = 0;
 	int last_index = 0;
 
@@ -17,7 +17,7 @@ struct TextBoxData
 {
 	// -----------------   PARAMETER DATA   -----------------
 
-	Rectangle parent_rectangle;
+	RectangleOld parent_rectangle;
 	Font* default_text_box_font;
 
 	RigidCentering horizontal_text_centering;
@@ -46,10 +46,10 @@ struct TextBoxData
 
 
 
-	void BasicInitTextBox(Rectangle param_parent_rectangle, Font* param_font, string param_chars);
+	void BasicInitTextBox(RectangleOld param_parent_rectangle, Font* param_font, string param_chars);
 
 	void InitLeast(Font* const param_default_font);
-	void InitMost(Font* const param_default_font, const Rectangle param_parent_rectangle, const char* const param_chars, const RigidCentering param_horizontal_centering, const RigidCentering param_vertical_centering);
+	void InitMost(Font* const param_default_font, const RectangleOld param_parent_rectangle, const char* const param_chars, const RigidCentering param_horizontal_centering, const RigidCentering param_vertical_centering);
 
 	void UpdateCharPos();
 	void GenerateLineSizes();

@@ -28,7 +28,7 @@ void ScrollBar::SetScrollValueWithBarRectPos()
 	}
 }
 
-void ScrollBar::InitBasic(const double param_total_scroll_length, const double param_scroll_length_limiter, Rectangle param_scroll_area_rectangle_data, const double param_bar_thickness, const bool param_horizontal_scroll_bar)
+void ScrollBar::InitBasic(const double param_total_scroll_length, const double param_scroll_length_limiter, RectangleOld param_scroll_area_rectangle_data, const double param_bar_thickness, const bool param_horizontal_scroll_bar)
 {
 	horizontal_scroll_bar = param_horizontal_scroll_bar;
 

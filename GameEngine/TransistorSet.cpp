@@ -213,11 +213,11 @@ Size2D CellSet::GetTrueScale() const
 	return { (8.0 * size_scale.width), (8.0 * size_scale.height) };
 }
 
-Rectangle CellSet::GenerateFullHitbox() const
+RectangleOld CellSet::GenerateFullHitbox() const
 {
 	const Size2D true_scale = GetTrueScale();
 
-	Rectangle temp_rectangle;
+	RectangleOld temp_rectangle;
 
 	temp_rectangle.size.height = T_HEIGHT * true_scale.height;
 	temp_rectangle.size.width = (((float)set.size() * T_ONE_LESS_WIDTH) + 1.0) * true_scale.width;
@@ -226,11 +226,11 @@ Rectangle CellSet::GenerateFullHitbox() const
 
 	return temp_rectangle;
 }
-Rectangle CellSet::GenerateFullInnerHitbox() const
+RectangleOld CellSet::GenerateFullInnerHitbox() const
 {
 	const Size2D true_scale = GetTrueScale();
 
-	Rectangle temp_rectangle;
+	RectangleOld temp_rectangle;
 
 	temp_rectangle.size.height = T_INNER_HEIGHT * true_scale.height;
 	temp_rectangle.size.width = (((float)set.size() * T_ONE_LESS_WIDTH) - 1.0) * true_scale.width;
@@ -239,11 +239,11 @@ Rectangle CellSet::GenerateFullInnerHitbox() const
 
 	return temp_rectangle;
 }
-Rectangle CellSet::GenerateHitbox(const size_t index) const
+RectangleOld CellSet::GenerateHitbox(const size_t index) const
 {
 	const Size2D true_scale = GetTrueScale();
 
-	Rectangle temp_rectangle;
+	RectangleOld temp_rectangle;
 
 	temp_rectangle.size.height = T_HEIGHT * true_scale.height;
 	temp_rectangle.size.width = T_WIDTH * true_scale.width;
@@ -252,11 +252,11 @@ Rectangle CellSet::GenerateHitbox(const size_t index) const
 
 	return temp_rectangle;
 }
-Rectangle CellSet::GenerateInnerHitbox(const size_t index) const
+RectangleOld CellSet::GenerateInnerHitbox(const size_t index) const
 {
 	const Size2D true_scale = GetTrueScale();
 
-	Rectangle temp_rectangle;
+	RectangleOld temp_rectangle;
 
 	temp_rectangle.size.height = T_INNER_HEIGHT * true_scale.height;
 	temp_rectangle.size.width = T_INNER_WIDTH * true_scale.width;
@@ -267,11 +267,11 @@ Rectangle CellSet::GenerateInnerHitbox(const size_t index) const
 }
 
 //Only includes half of each of the two horizontal sides (if applicable)
-Rectangle CellSet::GenerateHitboxCropped(const size_t index) const
+RectangleOld CellSet::GenerateHitboxCropped(const size_t index) const
 {
 	const Size2D true_scale = GetTrueScale();
 
-	Rectangle temp_rectangle;
+	RectangleOld temp_rectangle;
 
 	temp_rectangle.size.height = T_HEIGHT * true_scale.height;
 	temp_rectangle.size.width = T_ONE_LESS_WIDTH * true_scale.width;
@@ -293,14 +293,14 @@ Rectangle CellSet::GenerateHitboxCropped(const size_t index) const
 	return temp_rectangle;
 }
 
-Rectangle CellSet::GenerateHitboxRange(const size_t begin_index, const size_t end_index) const
+RectangleOld CellSet::GenerateHitboxRange(const size_t begin_index, const size_t end_index) const
 {
 	const size_t diff = end_index - begin_index;
 	const double avrg = (double)(begin_index + end_index) / 2.0;
 
 	const Size2D true_scale = GetTrueScale();
 
-	Rectangle temp_rectangle;
+	RectangleOld temp_rectangle;
 
 	temp_rectangle.size.height = T_HEIGHT * true_scale.height;
 	temp_rectangle.size.width = ((T_ONE_LESS_WIDTH * (double)diff) + 1.0) * true_scale.width;
@@ -309,14 +309,14 @@ Rectangle CellSet::GenerateHitboxRange(const size_t begin_index, const size_t en
 
 	return temp_rectangle;
 }
-Rectangle CellSet::GenerateInnerHitboxRange(const size_t begin_index, const size_t end_index) const
+RectangleOld CellSet::GenerateInnerHitboxRange(const size_t begin_index, const size_t end_index) const
 {
 	const size_t diff = end_index - begin_index;
 	const double avrg = (double)(begin_index + end_index) / 2.0;
 
 	const Size2D true_scale = GetTrueScale();
 
-	Rectangle temp_rectangle;
+	RectangleOld temp_rectangle;
 
 	temp_rectangle.size.height = T_INNER_HEIGHT * true_scale.height;
 	temp_rectangle.size.width = ((T_ONE_LESS_WIDTH * (double)diff) - 1.0) * true_scale.width;
@@ -326,14 +326,14 @@ Rectangle CellSet::GenerateInnerHitboxRange(const size_t begin_index, const size
 	return temp_rectangle;
 }
 //Only includes half of each of the two horizontal sides (if applicable)
-Rectangle CellSet::GenerateHitboxRangeCropped(const size_t begin_index, const size_t end_index) const
+RectangleOld CellSet::GenerateHitboxRangeCropped(const size_t begin_index, const size_t end_index) const
 {
 	const size_t diff = end_index - begin_index;
 	const double avrg = (double)(begin_index + end_index) / 2.0;
 
 	const Size2D true_scale = GetTrueScale();
 
-	Rectangle temp_rectangle;
+	RectangleOld temp_rectangle;
 
 	temp_rectangle.size.height = T_HEIGHT * true_scale.height;
 	temp_rectangle.size.width = (T_ONE_LESS_WIDTH * (double)diff) * true_scale.width;

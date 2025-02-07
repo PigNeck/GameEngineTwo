@@ -13,6 +13,7 @@
 #include "ScrollBar.h"
 #include "MouseLayer.h"
 #include "ToolTip.h"
+#include <array>
 
 struct RunDrawAndPostDrawRunMethods
 {
@@ -26,31 +27,107 @@ struct RunDrawAndPostDrawRunMethods
 struct Engine {
 	// -----------------   ESSENTIAL WINDOW OBJECTS   -----------------
 
-	Mix_Chunk* click_press_sound;
-	Mix_Chunk* click_release_sound;
+	Mix_Chunk* click_press_sound = nullptr;
+	Mix_Chunk* click_release_sound = nullptr;
 
-	SDL_Window* window;
-	int window_width, window_height;
-	SDL_Renderer* renderer;
+	//Set in constructor
+	SDL_Window* window = nullptr;
+	int window_width = 0;
+	int window_height = 0;
 
-	SDL_Event sdl_event;
+	SDL_GLContext gl_context;
+	/*
+	const char* const vertex_shader_source = R"(
+#version 330 core
+layout(location = 0) in vec2 aPos;
+layout(location = 1) in vec2 aTexCoord;
+
+out vec2 TexCoord;
+
+void main() {
+    gl_Position = vec4(aPos, 0.0, 1.0);
+	TexCoord = aTexCoord;
+}
+)";
+    */
+	
+	const char* const vertex_shader_source = R"(
+#version 330 core
+layout(location = 0) in vec2 aPos;
+layout(location = 1) in vec2 aTexCoord;
+
+uniform mat4 projection;
+
+out vec2 TexCoord;
+
+void main() {
+    gl_Position = projection * vec4(aPos, 0.0, 1.0);
+	TexCoord = aTexCoord;
+}
+)";
+
+	const char* const fragment_shader_source = R"(
+#version 330 core
+
+in vec2 TexCoord;
+out vec4 FragColor;
+
+uniform sampler2D ourTexture;
+uniform bool useTexture;    // Flag to enable/disable texturing
+uniform vec4 colorMod;    // Color for untextured quads
+
+void main() {
+    if (useTexture) {
+        vec4 texColor = texture(ourTexture, TexCoord); // Sample from texture
+        FragColor = texColor * colorMod; 
+    } else {
+        FragColor = colorMod; // Use solid color
+    }
+}
+)";
+
+	unsigned int rect_indices[6] = {
+		0, 1, 2, // First triangle
+		2, 3, 0  // Second triangle
+	};
+
+	GLuint VAO = 0;
+	GLuint VBO = 0;
+	GLuint EBO = 0;
+
+	GLuint vertex_shader = 0;
+	GLuint fragment_shader = 0;
+	GLuint shader_program = 0;
+
+	array<float, 16> ortho_matrix = {};
+
+
+
+
+	RectangleOld testing_rect;
+	Texture testing_texture;
+
+
+
+	SDL_Event sdl_event = SDL_Event();
 	Input input;
 
-	Uint32 frame_start, frame_duration;
-	double frame_rate;
-	Uint32 frame_delay;
-	double frame_factor; // = frame_rate / 60.0
-	double frame_factor_inverse; // = 60.0 / frame_rate
+	Uint32 frame_start = 0;
+	Uint32 frame_duration = 0;
+	double frame_rate = 144.0;
+	double frame_factor = frame_rate / 60.0; // = frame_rate / 60.0
+	double frame_factor_inverse = 60.0 / frame_rate; // = 60.0 / frame_rate
+	Uint32 frame_delay = (Uint32)(1000.0 / frame_rate);
 
-	bool running;
-	bool running_game;
+	bool running = 1;
+	bool running_game = 1;
 
 	RunDrawAndPostDrawRunMethods* methods_pointer = nullptr;
 
 
 	float additional_color_index = 0.0;
-	SDL_PixelFormat* rgba;
-	SDL_Texture* pixel_access_texture;
+	SDL_PixelFormat* rgba = SDL_AllocFormat(SDL_PIXELFORMAT_RGBA8888);
+	SDL_Texture* pixel_access_texture = nullptr;
 
 
 
@@ -59,7 +136,7 @@ struct Engine {
 
 	// -----------------   SCENES DATA STRUCTURE   -----------------
 	
-	int scene;
+	int scene = 1;
 
 
 
@@ -78,8 +155,8 @@ struct Engine {
 
 	// -----------------   CAMERA DATA STRUCTURE   -----------------
 
-	Camera* blank_camera;
-	Camera* debug_camera;
+	Camera* blank_camera = nullptr;
+	Camera* debug_camera = nullptr;
 	vector<Camera*> cameras;
 
 
@@ -91,25 +168,27 @@ struct Engine {
 
 	vector<Texture*> textures;
 
-	Texture* solid_color_pixel_texture;
-	Texture* solid_color_circle_8_texture;
-	Texture* solid_color_circle_32_texture;
-	Texture* example_texture;
-	Texture* corner_outline_t;
-	Texture* camera_icon_t;
-	Texture* pause_icon_t;
-	Texture* play_icon_t;
-	Texture* example_button_released_t;
-	Texture* example_button_hovering_t;
-	Texture* example_button_pressed_t;
+	Texture* default_texture = nullptr;
 
-	Texture* boundary_view_released_t;
-	Texture* boundary_view_hovering_t;
-	Texture* boundary_view_pressed_t;
+	Texture* solid_color_pixel_texture = nullptr;
+	Texture* solid_color_circle_8_texture = nullptr;
+	Texture* solid_color_circle_32_texture = nullptr;
+	Texture* example_texture = nullptr;
+	Texture* corner_outline_t = nullptr;
+	Texture* camera_icon_t = nullptr;
+	Texture* pause_icon_t = nullptr;
+	Texture* play_icon_t = nullptr;
+	Texture* example_button_released_t = nullptr;
+	Texture* example_button_hovering_t = nullptr;
+	Texture* example_button_pressed_t = nullptr;
 
-	Texture* test_t;
+	Texture* boundary_view_released_t = nullptr;
+	Texture* boundary_view_hovering_t = nullptr;
+	Texture* boundary_view_pressed_t = nullptr;
 
-	Texture* distinguishing_sides_t;
+	Texture* test_t = nullptr;
+
+	Texture* distinguishing_sides_t = nullptr;
 
 
 
@@ -130,7 +209,7 @@ struct Engine {
 	DebugDataContainer engine_debug_data_container;
 
 	bool first_frame_selected_debug_data_container = 0;
-	DebugDataContainer* selected_debug_data_container;
+	DebugDataContainer* selected_debug_data_container = nullptr;
 
 	TextBox debug_data_container_name_text_box;
 	TextBox debug_data_text_box;
@@ -143,7 +222,7 @@ struct Engine {
 	vector<DebugDataContainer*> saved_container_path;
 	vector<size_t> saved_container_name_sizes;
 
-	Rectangle container_path_rectangle; //CURRENTLY CANNOT SCALE WITH RESOLUTION
+	RectangleOld container_path_rectangle; //CURRENTLY CANNOT SCALE WITH RESOLUTION
 	TextBox container_path_text_box; //CURRENTLY CANNOT SCALE WITH RESOLUTION
 
 	RectStructOne saved_highlighted_path_item; //CURRENTLY CANNOT SCALE WITH RESOLUTION
@@ -160,7 +239,7 @@ struct Engine {
 
 	Button boundary_view_button;
 
-	double scroll_bar_thickness;
+	double scroll_bar_thickness = 0.0;
 	ScrollBar debug_data_scroll_bar;
 
 
@@ -202,7 +281,7 @@ struct Engine {
 
 	void UpdateTextBox(TextBox* param_text_box);
 	//IMPORTANT!!!: Even if non-hoverable, if mouse is overlapping with hitbox, mouse_layers will be removed. To avoid this, simply don't call the function and call press_data.Reset(...) as needed.
-	void UpdatePressData(PressData* param_press_data, Rectangle* param_hitbox, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
+	void UpdatePressData(PressData* param_press_data, RectangleOld* param_hitbox, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
 	void UpdateButtonSounds(PressData* const press_data, ButtonSoundData* const sounds) const;
 	//IMPORTANT!!!: Even if non-hoverable, if mouse is overlapping with hitbox, mouse_layers will be removed. To avoid this, simply don't call the function and call press_data.Reset(...) as needed.
 	void UpdateButton(Button* param_button, Camera* camera, MouseLayer* mouse_layer, const bool mouse_layer_removal_white_list, vector<MouseLayer*> mouse_layer_removal_target_layers);
@@ -222,12 +301,12 @@ struct Engine {
 	// -----------------   DRAWING FUNCTIONS   -----------------
 
 	//Draws a solid-color rectangle
-	void DrawRectangle(Rectangle* param_rectangle, SDL_Color color, Camera* camera);
-	void DrawRectangleScaledBorder(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
-	void DrawRectangleScaledBorderScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
-	void DrawRectangleScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
-	void DrawRectangleOutline(Rectangle* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
-	void DrawRectangleEx(Rectangle* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void DrawRectangle(RectangleOld* param_rectangle, SDL_Color color, Camera* camera);
+	void DrawRectangleScaledBorder(RectangleOld* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
+	void DrawRectangleScaledBorderScaledShadow(RectangleOld* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void DrawRectangleScaledShadow(RectangleOld* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void DrawRectangleOutline(RectangleOld* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
+	void DrawRectangleEx(RectangleOld* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
 
 	void DrawRectStructOne(RectStructOne* param_rect_struct_one, SDL_Color color, Camera* camera);
 
@@ -236,7 +315,7 @@ struct Engine {
 	void DrawPoint(Point2D* param_point, Size2D param_size, SDL_Color color, Camera* camera);
 
 	//Draws a texture that has been mapped onto a rectangle
-	void DrawTexture(Texture* texture, Camera* camera, Rectangle* param_rectangle);
+	void DrawTexture(Texture* texture, Camera* camera, RectangleOld* param_rectangle);
 
 	//Basic draws a texture using the data from "sprite"
 	void DrawSprite(Sprite* sprite, Camera* camera);
@@ -280,7 +359,7 @@ struct Engine {
 	// -----------------   MISCELLANEOUS FUNCTIONS   -----------------
 
 	void Run();
-	void LoadEngineTexture(Texture* param_texture, const char path[]);
+	void LoadEngineTexture(Texture** const param_texture, const char* path);
 	void UnloadEngineSoundChunk(Mix_Chunk** const param_chunk);
 	Camera* NewCamera(const char* const name);
 	//Returns the top left of the mouse pos pixel as a Point2D
@@ -302,8 +381,8 @@ private:  // -----------------   P R I V A T E   S E C T I O N   ---------------
 
 	// -----------------   DEBUG TOOL VARIABLES   -----------------
 
-	bool debug_mode;
-	bool boundary_view;
+	bool debug_mode = 0;
+	bool boundary_view = 0;
 
 
 
@@ -341,12 +420,12 @@ private:  // -----------------   P R I V A T E   S E C T I O N   ---------------
 	void DrawQueue();
 
 	//Basic draws a solid-color rectangle
-	void BasicBasicDrawRectangle(Rectangle* param_rectangle, SDL_Color color, Camera* camera);
-	void BasicDrawRectangle(Rectangle* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
-	void BasicDrawRectangleScaledBorder(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
-	void BasicDrawRectangleScaledBorderScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
-	void BasicDrawRectangleScaledShadow(Rectangle* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
-	void BasicDrawRectangleOutline(Rectangle* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
+	void BasicBasicDrawRectangle(RectangleOld* param_rectangle, SDL_Color color, Camera* camera);
+	void BasicDrawRectangle(RectangleOld* param_rectangle, SDL_Color filling_color, double right_border_scaled_size, RigidCentering right_border_centering, double bottom_border_scaled_size, RigidCentering bottom_border_centering, double left_border_scaled_size, RigidCentering left_border_centering, double top_border_scaled_size, RigidCentering top_border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void BasicDrawRectangleScaledBorder(RectangleOld* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
+	void BasicDrawRectangleScaledBorderScaledShadow(RectangleOld* param_rectangle, SDL_Color filling_color, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void BasicDrawRectangleScaledShadow(RectangleOld* param_rectangle, SDL_Color filling_color, Point2D shadow_scaled_offset, SDL_Color shadow_color, Camera* camera);
+	void BasicDrawRectangleOutline(RectangleOld* param_rectangle, double border_scaled_size, RigidCentering border_centering, SDL_Color border_color, Camera* camera);
 
 	void BasicDrawRectStructOne(RectStructOne* param_rect_struct_one, SDL_Color color, Camera* camera);
 
@@ -362,7 +441,7 @@ private:  // -----------------   P R I V A T E   S E C T I O N   ---------------
 	void BasicDrawPoint(Point2D* param_point, Size2D param_size, SDL_Color color, Camera* camera);
 
 	//Basic draws a texture that has been mapped onto a rectangle
-	void BasicDrawTexture(const Texture* const texture, const Camera* const camera, const Rectangle* const param_rectangle);
+	void BasicDrawTexture(const Texture* const texture, const GLColor* const color_and_alpha_mod, const Camera* const camera, const RectangleOld* const param_rectangle);
 
 	//Basic draws a texture using the data from "sprite"
 	void BasicDrawSprite(Sprite* sprite, Camera* camera);
@@ -431,6 +510,27 @@ public: // -----------------   RECTANGLENEW FUNCTIONS   -----------------
 
 	void DrawRefRectangleNewNew(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera);
 	void DrawTextureWithRefRectangleNewNew(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
+
+
+
+
+
+	// ------------ RectangleNewest functions -------------
+
+	void DrawScreenQuad(const Quad* const screen_quad, const GLColor* color, const bool align_90=1) const;
+	void DrawTexturedScreenQuad(const Quad* const screen_quad, const Texture* const texture, const GLColor* color_and_alpha_mod, const bool align_90=1) const;
+
+	void DrawQuad(const Quad* const quad, const GLColor* const color, const CameraNew* const camera);
+	void DrawTexturedQuad(const Quad* const quad, const Texture* const texture, const GLColor* const color_and_alpha_mod, const CameraNew* const camera);
+
+	void DrawTextureWithRefRectangleNewest(const RefRectangleNewest* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera);
+
+	void DrawTexturedRefRectangle90(const RefRectangle90* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera);
+
+
+
+
+
 
 
 

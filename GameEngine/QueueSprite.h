@@ -7,7 +7,7 @@
 struct QueueSprite
 {
 	Texture* texture;
-	Rectangle rect;
+	RectangleOld rect;
 	Camera* camera;
 	SDL_RendererFlip flip;
 	double rotation;

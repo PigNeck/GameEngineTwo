@@ -1,6 +1,6 @@
 #include "DebugLabel.h"
 
-void DebugLabel::InitWithDescribingRectangleData(Font* const default_font, Rectangle* const param_describing_rectangle, const char* const chars, const double param_text_scale, const double param_scaled_margin_size)
+void DebugLabel::InitWithDescribingRectangleData(Font* const default_font, RectangleOld* const param_describing_rectangle, const char* const chars, const double param_text_scale, const double param_scaled_margin_size)
 {
 	describing_rectangle = param_describing_rectangle;
 

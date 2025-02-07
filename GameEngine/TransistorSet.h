@@ -61,17 +61,17 @@ struct CellSet
 
 	Size2D GetTrueScale() const;
 
-	Rectangle GenerateFullHitbox() const;
-	Rectangle GenerateFullInnerHitbox() const;
-	Rectangle GenerateHitbox(const size_t index) const;
-	Rectangle GenerateInnerHitbox(const size_t index) const;
+	RectangleOld GenerateFullHitbox() const;
+	RectangleOld GenerateFullInnerHitbox() const;
+	RectangleOld GenerateHitbox(const size_t index) const;
+	RectangleOld GenerateInnerHitbox(const size_t index) const;
 
 	//Only includes half of each of the two horizontal sides (if applicable)
-	Rectangle GenerateHitboxCropped(const size_t index) const;
+	RectangleOld GenerateHitboxCropped(const size_t index) const;
 
-	Rectangle GenerateHitboxRange(const size_t begin_index, const size_t end_index) const;
-	Rectangle GenerateInnerHitboxRange(const size_t begin_index, const size_t end_index) const;
+	RectangleOld GenerateHitboxRange(const size_t begin_index, const size_t end_index) const;
+	RectangleOld GenerateInnerHitboxRange(const size_t begin_index, const size_t end_index) const;
 	//Only includes half of each of the two horizontal sides (if applicable)
-	Rectangle GenerateHitboxRangeCropped(const size_t begin_index, const size_t end_index) const;
+	RectangleOld GenerateHitboxRangeCropped(const size_t begin_index, const size_t end_index) const;
 };
 
