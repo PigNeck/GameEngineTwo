@@ -989,6 +989,22 @@ void Engine::DrawTextBox(TextBox* param_text_box, Camera* camera)
 
     BasicDrawTextBox(param_text_box, temp_cam_pointer);
 }
+void Engine::DrawBasicTextBox(const BasicTextBox* const text_box, const CameraNew* const camera)
+{
+    for (size_t i = 0; i < text_box->lines.size(); i++)
+    {
+        for (size_t j = text_box->lines[i].first_index; (j <= text_box->lines[i].last_index) && (j < text_box->chars.size()); j++)
+        {
+            const GLColor temp_color(0.f, 0.f, 0.f, 0.1f);
+            const Quad temp_quad = text_box->chars[j].rect.GetUniQuad();
+            //DrawTexturedQuad(&temp_quad, text_box->chars[j].texture, &temp_color, camera);
+
+            //temp_quad.ListProperties(); CLEANUP
+
+            DrawQuad(&temp_quad, &temp_color, camera);
+        }
+    }
+}
 void Engine::DrawButton(Button* param_button, Camera* camera)
 {
     Camera* temp_cam_pointer = nullptr;
@@ -3197,7 +3213,8 @@ void Engine::Run()
         //ModifyPixels(pixel_access_texture); REMOVED CAUSE RENDERER GOT YEETED
         additional_color_index -= 2.0;
 
-        BasicDrawTexture(&testing_texture, nullptr, blank_camera, &testing_rect);
+        //Smiley face thing
+        //BasicDrawTexture(&testing_texture, nullptr, blank_camera, &testing_rect);
 
 
 
@@ -3489,6 +3506,7 @@ void Engine::DrawTextureWithRefRectangleNewest(const RefRectangleNewest* const r
     delete temp_color_and_alpha_mod;
 }
 
+/*
 void Engine::DrawTexturedRefRectangle90(const RefRectangle90* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera)
 {
     const Quad temp_quad = rect->GetUniQuad();
@@ -3497,6 +3515,7 @@ void Engine::DrawTexturedRefRectangle90(const RefRectangle90* const rect, const 
     DrawTexturedQuad(&temp_quad, texture, SDLColorToGLColor(color_and_alpha_mod), camera);
     delete temp_color_and_alpha_mod;
 }
+*/
 
 
 

@@ -810,3 +810,636 @@ size_t TextBox::GetLineIndexWithLinePointer(const Line* const line_ptr) const
 
 	return numeric_limits<size_t>::max();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+BasicLine::BasicLine(const RefRectangleNewest i_rect, const size_t i_first_index, const size_t i_last_index, const double i_last_space_x, const double i_pixel_spacing_top, const double i_pixel_spacing_bottom, const LineParameters* const i_source_parameters)
+	: rect(i_rect),
+	first_index(i_first_index),
+	last_index(i_last_index),
+	last_space_x(i_last_space_x),
+	pixel_spacing_top(i_pixel_spacing_top),
+	pixel_spacing_bottom(i_pixel_spacing_bottom),
+	source_parameters(i_source_parameters) {}
+
+double BasicLine::GetLineWidthWithEndingSpaces() const
+{
+	//This method requires [source_parameters] to be a valid pointer!
+	return 0.0;
+}
+RefRectangleNewest BasicLine::GetLineRectWithEndingSpaces() const
+{
+	//This method requires [source_parameters] to be a valid pointer!
+	return {};
+}
+
+
+
+
+
+
+// ----------------------------------   BASIC TEXT BOX   ----------------------------------
+
+
+// -----------------   CONSTRUCTORS/INIT FUNCTIONS   -----------------
+
+BasicTextBox::BasicTextBox() {}
+BasicTextBox::BasicTextBox(const BasicFont* const i_default_font, const RefRectangleNewest i_rect, const Centering2DNew i_text_centering, const bool i_ignore_line_spacing_on_text_box_ends)
+	: default_font(i_default_font),
+	default_line_parameters(i_default_font->template_line_parameters),
+	rect(i_rect),
+	text_centering(i_text_centering),
+	ignore_line_spacing_on_text_box_ends(i_ignore_line_spacing_on_text_box_ends) {}
+BasicTextBox::BasicTextBox(const LineParameters i_default_line_parameters, const BasicFont* const i_default_font, const RefRectangleNewest i_rect, const Centering2DNew i_text_centering, const bool i_ignore_line_spacing_on_text_box_ends)
+	: default_line_parameters(i_default_line_parameters),
+	default_font(i_default_font),
+	rect(i_rect),
+	text_centering(i_text_centering),
+	ignore_line_spacing_on_text_box_ends(i_ignore_line_spacing_on_text_box_ends) {}
+void BasicTextBox::Init(const BasicFont* const i_default_font, const char* const i_text, const RefRectangleNewest i_rect, const Centering2DNew i_text_centering, const bool i_ignore_line_spacing_on_text_box_ends)
+{
+	default_font = i_default_font;
+	default_line_parameters = default_font->template_line_parameters;
+	rect = i_rect;
+	text_centering = i_text_centering;
+	ignore_line_spacing_on_text_box_ends = i_ignore_line_spacing_on_text_box_ends;
+	AddCharPtr(i_text);
+}
+void BasicTextBox::Init(const LineParameters i_default_line_parameters, const BasicFont* const i_default_font, const char* const i_text, const RefRectangleNewest i_rect, const Centering2DNew i_text_centering, const bool i_ignore_line_spacing_on_text_box_ends)
+{
+	default_font = i_default_font;
+	default_line_parameters = i_default_line_parameters;
+	rect = i_rect;
+	text_centering = i_text_centering;
+	ignore_line_spacing_on_text_box_ends = i_ignore_line_spacing_on_text_box_ends;
+	AddCharPtr(i_text);
+}
+
+
+
+
+// -----------------   FUNCTIONS   -----------------
+
+void BasicTextBox::GenerateFull()
+{
+	GenerateLines();
+	GenerateCharRects();
+}
+
+void BasicTextBox::GenerateLines()
+{
+	GenerateLineSizes();
+	GenerateLinePositions();
+}
+void BasicTextBox::GenerateLineSizes()
+{
+	lines.clear();
+
+
+	const size_t size_of_chars = chars.size();
+	if (size_of_chars != 0)
+	{
+		size_t current_line_index = 0;
+		const LineParameters* current_line_parameters = GetLineParametersConst(size_t(0));
+		double line_length_prog = current_line_parameters->ignore_char_spacing_on_line_ends ?
+			(chars[0].GetScaledPixelWidth()) :
+			(chars[0].GetScaledPixelSpacingLeft() + chars[0].GetScaledPixelWidth() + chars[0].GetScaledPixelSpacingRight());
+
+		size_t current_char_index = 0;
+
+		size_t saved_char_index = 0;
+		double saved_line_length_prog = 0.0;
+
+		while (true)
+		{
+			const double length_limit = (current_line_parameters->pixel_max_width < 0.0) ? rect.unscaled_size.width : current_line_parameters->pixel_max_width;
+
+			//If the accumulated chars exceed the length limit of the line...
+			if (line_length_prog > (length_limit + (numeric_limits<double>::epsilon() * 500.0)))
+			{
+				const size_t temp_begin_index = (current_line_index == size_t(0)) ? size_t(0) : lines.back().last_index + size_t(1);
+
+				//Append a BasicLine with the appropriate properties to [lines].
+				lines.push_back(BasicLine(
+					RefRectangleNewest(
+						&rect,
+						{ 0.0, 0.0 },
+						{ saved_line_length_prog,
+						current_line_parameters->scale_height_with_highest_char_scale ? (GetHighestCharHeightScale(temp_begin_index, saved_char_index) * current_line_parameters->pixel_height) : current_line_parameters->pixel_height },
+						{ 1.0, -1.0 }
+					),
+					temp_begin_index,
+					saved_char_index,
+					saved_line_length_prog + chars[saved_char_index].GetScaledPixelSpacingRight(),
+					current_line_parameters->pixel_spacing_top,
+					current_line_parameters->pixel_spacing_bottom,
+					current_line_parameters
+				));
+
+				//current_char_index needs to be set to saved_char_index++ because if a line exceeds it's length limit with a single character, the character is still asigned to the line to prevent an infinite loop. If this happens, [current_char_index] SHOULD advance, but if it doesn't, [current_char_index] SHOULDN'T advance. This code does that.
+				current_char_index = saved_char_index + size_t(1);
+				saved_char_index = current_char_index;
+
+				//If reached the end of [chars], break from loop
+				if (current_char_index >= size_of_chars)
+				{
+					break;
+				}
+
+				//Set [current_line_index] and [line_length_prog] accordingly
+				current_line_index++;
+				current_line_parameters = GetLineParametersConst(current_line_index);
+				line_length_prog = current_line_parameters->ignore_char_spacing_on_line_ends ?
+					(chars[current_char_index].GetScaledPixelWidth()) :
+					(chars[current_char_index].GetScaledPixelSpacingLeft() + chars[current_char_index].GetScaledPixelWidth() + chars[current_char_index].GetScaledPixelSpacingRight());
+				saved_line_length_prog = line_length_prog;
+			}
+			else
+			{
+				//Set saved values to last iteration values.
+				saved_char_index = current_char_index;
+				saved_line_length_prog = line_length_prog;
+
+				current_char_index++;
+
+				if (current_char_index >= size_of_chars)
+				{
+					const size_t temp_begin_index = (current_line_index == size_t(0)) ? size_t(0) : lines.back().last_index + size_t(1);
+
+					//Append a BasicLine with the appropriate properties to [lines].
+					lines.push_back(BasicLine(
+						RefRectangleNewest(
+							&rect,
+							{ 0.0, 0.0 },
+							{ saved_line_length_prog,
+							current_line_parameters->scale_height_with_highest_char_scale ? (GetHighestCharHeightScale(temp_begin_index, saved_char_index) * current_line_parameters->pixel_height) : current_line_parameters->pixel_height },
+							{ 1.0, -1.0 }
+						),
+						temp_begin_index,
+						saved_char_index,
+						saved_line_length_prog + chars[saved_char_index].GetScaledPixelSpacingRight(),
+						current_line_parameters->pixel_spacing_top,
+						current_line_parameters->pixel_spacing_bottom,
+						current_line_parameters
+					));
+
+					break;
+				}
+
+				line_length_prog += (chars[saved_char_index].GetScaledPixelSpacingRight() + chars[current_char_index].GetScaledPixelSpacingLeft() + chars[current_char_index].GetScaledPixelWidth()); //If [ignore_char_spacing_on_line_ends]
+				line_length_prog += current_line_parameters->ignore_char_spacing_on_line_ends ?
+					(chars[saved_char_index].GetScaledPixelSpacingRight() + chars[current_char_index].GetScaledPixelSpacingLeft() + chars[current_char_index].GetScaledPixelWidth()) :
+					(chars[current_char_index].GetScaledPixelSpacingLeft() + chars[current_char_index].GetScaledPixelWidth() + chars[current_char_index].GetScaledPixelSpacingRight());
+			}
+		}
+	}
+}
+void BasicTextBox::GenerateLinePositions()
+{
+	const size_t size_of_lines = lines.size();
+
+	double line_y_prog = 0.0;
+	size_t i;
+	for (i = 0; i < size_of_lines; i++)
+	{
+		lines[i].rect.pos.x = (text_centering.x_centering == -1.0) ?
+			rect.pos.x :
+			rect.pos.x + ((rect.unscaled_size.width - lines[i].rect.unscaled_size.width) * (1.0 + text_centering.x_centering) / 2.0);
+
+		if (i == 0)
+		{
+			line_y_prog = ignore_line_spacing_on_text_box_ends ? 0.0 : lines[0].pixel_spacing_top;
+		}
+		else
+		{
+			line_y_prog += (lines[i - 1].rect.unscaled_size.height + lines[i - 1].pixel_spacing_bottom + lines[i].pixel_spacing_top);
+		}
+
+		lines[i].rect.pos.y = line_y_prog;
+	}
+
+
+
+	//Adjust each line's position for [text_centering.y_centering]
+
+	if (i != 0)
+	{
+		line_y_prog += ignore_line_spacing_on_text_box_ends ? lines[i - 1].rect.unscaled_size.height : (lines[i - 1].rect.unscaled_size.height + lines[i - 1].pixel_spacing_bottom);
+	}
+
+	const double y_adjustment_value = (rect.unscaled_size.height - line_y_prog) * (1.0 - text_centering.y_centering) / -2.0;
+
+	if (y_adjustment_value != 0.0)
+	{
+		for (i = 0; i < size_of_lines; i++)
+		{
+			lines[i].rect.pos.y += y_adjustment_value;
+		}
+	}
+}
+
+void BasicTextBox::GenerateCharRects()
+{
+	const size_t size_of_chars = chars.size();
+
+	double line_length_prog;
+
+	for (size_t i = 0; i < lines.size(); i++)
+	{
+		line_length_prog = lines[i].source_parameters->ignore_char_spacing_on_line_ends ? -chars[lines[i].first_index].GetScaledPixelSpacingLeft() : 0.0;
+		for (size_t j = lines[i].first_index; (j <= lines[i].last_index) && (j < size_of_chars); j++)
+		{
+			chars[j].rect.unscaled_size.width = chars[j].unscaled_pixel_width;
+			chars[j].rect.unscaled_size.height = lines[i].rect.unscaled_size.height;
+
+			chars[j].rect.transformations.scale = Scale2DNew(chars[j].scale);
+
+			chars[j].rect.SetReference(&lines[i].rect);
+
+			chars[j].rect.pos.y = -lines[i].rect.unscaled_size.height;
+
+			line_length_prog += chars[j].GetScaledPixelSpacingLeft();
+			chars[j].rect.pos.x = line_length_prog;
+			line_length_prog += chars[j].GetScaledPixelWidth() + chars[j].GetScaledPixelSpacingRight();
+		}
+	}
+}
+
+
+void BasicTextBox::AddChar(const char char_value)
+{
+	if (default_font)
+	{
+		chars.push_back(BasicTextBoxChar(default_font->GetFontCharConst(char_value)));
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+void BasicTextBox::AddChar(const char char_value, const GLColor overwriting_color_mod)
+{
+	if (default_font)
+	{
+		const BasicFontChar* const temp_char = default_font->GetFontCharConst(char_value);
+
+		chars.push_back(BasicTextBoxChar(char_value, temp_char->texture, temp_char->template_unscaled_pixel_spacing_left, temp_char->template_unscaled_pixel_spacing_right, temp_char->template_unscaled_pixel_offset, temp_char->template_scale, overwriting_color_mod));
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+void BasicTextBox::AddChar(const char char_value, const Scale90 overwriting_scale)
+{
+	if (default_font)
+	{
+		const BasicFontChar* const temp_char = default_font->GetFontCharConst(char_value);
+
+		chars.push_back(BasicTextBoxChar(char_value, temp_char->texture, temp_char->template_unscaled_pixel_spacing_left, temp_char->template_unscaled_pixel_spacing_right, temp_char->template_unscaled_pixel_offset, overwriting_scale, temp_char->template_color_mod));
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+void BasicTextBox::AddChar(const char char_value, const GLColor overwriting_color_mod, const Scale90 overwriting_scale)
+{
+	if (default_font)
+	{
+		const BasicFontChar* const temp_char = default_font->GetFontCharConst(char_value);
+
+		chars.push_back(BasicTextBoxChar(char_value, temp_char->texture, temp_char->template_unscaled_pixel_spacing_left, temp_char->template_unscaled_pixel_spacing_right, temp_char->template_unscaled_pixel_offset, overwriting_scale, overwriting_color_mod));
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+
+void BasicTextBox::AddCharPtr(const char* chars)
+{
+	if (default_font)
+	{
+		while (*chars != '\0')
+		{
+			AddChar(*chars);
+			chars++;
+		}
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+void BasicTextBox::AddCharPtr(const char* chars, const GLColor overwriting_color_mod)
+{
+	if (default_font)
+	{
+		while (*chars != '\0')
+		{
+			AddChar(*chars, overwriting_color_mod);
+			chars++;
+		}
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+void BasicTextBox::AddCharPtr(const char* chars, const Scale90 overwriting_scale)
+{
+	if (default_font)
+	{
+		while (*chars != '\0')
+		{
+			AddChar(*chars, overwriting_scale);
+			chars++;
+		}
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+void BasicTextBox::AddCharPtr(const char* chars, const GLColor overwriting_color_mod, const Scale90 overwriting_scale)
+{
+	if (default_font)
+	{
+		while (*chars != '\0')
+		{
+			AddChar(*chars, overwriting_color_mod, overwriting_scale);
+			chars++;
+		}
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+
+void BasicTextBox::AddString(const string string_value)
+{
+	if (default_font)
+	{
+		for (size_t i = 0; i < string_value.size(); i++)
+		{
+			AddChar(string_value[i]);
+		}
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+void BasicTextBox::AddString(const string string_value, const GLColor overwriting_color_mod)
+{
+	if (default_font)
+	{
+		for (size_t i = 0; i < string_value.size(); i++)
+		{
+			AddChar(string_value[i], overwriting_color_mod);
+		}
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+void BasicTextBox::AddString(const string string_value, const Scale90 overwriting_scale)
+{
+	if (default_font)
+	{
+		for (size_t i = 0; i < string_value.size(); i++)
+		{
+			AddChar(string_value[i], overwriting_scale);
+		}
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+void BasicTextBox::AddString(const string string_value, const GLColor overwriting_color_mod, const Scale90 overwriting_scale)
+{
+	if (default_font)
+	{
+		for (size_t i = 0; i < string_value.size(); i++)
+		{
+			AddChar(string_value[i], overwriting_color_mod, overwriting_scale);
+		}
+	}
+	else
+	{
+		cout << "[default_font] was nullptr! Calling AddChar(...), AddCharPtr(...), or AddString(...) requires [default_font] to be set beforehand. Sent by void BasicTextBox::AddChar(const char char_value)." << endl;
+		throw;
+	}
+}
+
+
+void BasicTextBox::Clear()
+{
+	lines.clear();
+	chars.clear();
+}
+
+
+double BasicTextBox::GetTextBindingWidth(const bool p_include_ending_spaces) const
+{
+	double highest_width = 0.0;
+	if (p_include_ending_spaces)
+	{
+		for (size_t i = 0; i < lines.size(); i++)
+		{
+			if (lines[i].GetLineWidthWithEndingSpaces() < highest_width)
+			{
+				highest_width = lines[i].GetLineWidthWithEndingSpaces();
+			}
+		}
+	}
+	else
+	{
+		for (size_t i = 0; i < lines.size(); i++)
+		{
+			if (lines[i].rect.unscaled_size.width < highest_width)
+			{
+				highest_width = lines[i].rect.unscaled_size.width;
+			}
+		}
+	}
+
+	return highest_width;
+}
+double BasicTextBox::GetTextBindingHeight() const
+{
+	//This method requires [source_parameters] to be a valid pointer!
+	if (ignore_line_spacing_on_text_box_ends)
+	{
+		switch (lines.size())
+		{
+		case 0:
+			return 0.0;
+		case 1:
+			return lines[0].rect.unscaled_size.height;
+		default:
+			const size_t last_lines_index = lines.size() - size_t(1);
+
+			//Make sure that all the lines have valid [source_parameters] pointers if you got an error here!
+			double return_val = (lines[0].rect.unscaled_size.height + lines[0].source_parameters->pixel_spacing_bottom) + (lines[last_lines_index].rect.unscaled_size.height + lines[last_lines_index].source_parameters->pixel_spacing_top);
+			for (size_t i = 1; i < last_lines_index; i++)
+			{
+				return_val += lines[i].source_parameters->pixel_spacing_bottom + lines[i].rect.unscaled_size.height + lines[i].source_parameters->pixel_spacing_top;
+			}
+			return return_val;
+		}
+	}
+	else
+	{
+		double return_val = 0.0;
+
+		//Make sure that all the lines have valid [source_parameters] pointers if you got an error here!
+		for (size_t i = 0; i < lines.size(); i++)
+		{
+			return_val += lines[i].source_parameters->pixel_spacing_bottom + lines[i].rect.unscaled_size.height + lines[i].source_parameters->pixel_spacing_top;
+		}
+		return return_val;
+	}
+}
+RefRectangleNewest BasicTextBox::GetTextBinding(const bool p_include_ending_spaces) const
+{
+	if (lines.size() == size_t(0))
+	{
+		return RefRectangleNewest(
+			&rect,
+			{
+				(rect.unscaled_size.width * (rect.centering.x_centering + text_centering.x_centering) / 2.0),
+				(rect.unscaled_size.height * (rect.centering.y_centering + text_centering.y_centering) / 2.0)
+			},
+			{ 0.0, 0.0 },
+			{ 1.0, -1.0 }
+		);
+	}
+	else
+	{
+		return RefRectangleNewest(
+			&rect,
+			{ lines[0].rect.pos.x, lines[0].rect.pos.y },
+			{ GetTextBindingWidth(p_include_ending_spaces), GetTextBindingHeight() },
+			{ 1.0, -1.0 }
+		);
+	}
+}
+
+
+string BasicTextBox::GetSegmentText(const size_t begin_index, const size_t end_index) const
+{
+	size_t lower_bound;
+	if ((chars.size() - size_t(1)) > end_index)
+	{
+		lower_bound = end_index;
+	}
+	else
+	{
+		lower_bound = chars.size() - size_t(1);
+	}
+
+	string return_val = "";
+	for (size_t i = begin_index; i < lower_bound; i++)
+	{
+		return_val += chars[i].char_value;
+	}
+
+	return return_val;
+}
+vector<RectStructOne>* BasicTextBox::GetSegmentHitbox(const size_t begin_index, const size_t end_index) const
+{
+	return nullptr;
+}
+
+
+LineParameters* BasicTextBox::GetLineParameters(const size_t line_index)
+{
+	for (size_t i = 0; i < line_parameters.size(); i++)
+	{
+		if (line_parameters[i].index == numeric_limits<size_t>::max())
+		{
+			if (i == line_index)
+			{
+				return &line_parameters[i];
+			}
+		}
+		else
+		{
+			if (line_parameters[i].index == line_index)
+			{
+				return &line_parameters[i];
+			}
+		}
+	}
+	return &default_line_parameters;
+}
+const LineParameters* BasicTextBox::GetLineParametersConst(const size_t line_index) const
+{
+	for (size_t i = 0; i < line_parameters.size(); i++)
+	{
+		if (line_parameters[i].index == numeric_limits<size_t>::max())
+		{
+			if (i == line_index)
+			{
+				return &line_parameters[i];
+			}
+		}
+		else
+		{
+			if (line_parameters[i].index == line_index)
+			{
+				return &line_parameters[i];
+			}
+		}
+	}
+	return &default_line_parameters;
+}
+
+
+
+
+// -----------------  PRIVATE STUFFS  -----------------
+
+double BasicTextBox::GetHighestCharHeightScale(const size_t begin_index, const size_t end_index) const
+{
+	//Potentially unsafe (uh-oh)
+
+	double return_val = 0.0;
+	for (size_t i = begin_index; i <= end_index; i++)
+	{
+		if (chars[i].scale.height_scale > return_val)
+		{
+			return_val = chars[i].scale.height_scale;
+		}
+	}
+
+	return return_val;
+}

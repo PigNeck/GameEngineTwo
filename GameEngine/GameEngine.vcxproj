@@ -105,6 +105,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\Dev\SDL2_image\include;C:\Dev\SDL2_mixer\include;C:\Dev\SDL2\include;C:\Dev\glew-2.1.0\include;C:\Dev\glm-1.0.1-light%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -133,6 +134,7 @@
     <ClCompile Include="Animation.cpp" />
     <ClCompile Include="Button.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="ColorFormats.cpp" />
     <ClCompile Include="DebugDataContainer.cpp" />
     <ClCompile Include="DebugLabel.cpp" />
     <ClCompile Include="Engine.cpp" />
@@ -163,6 +165,7 @@
     <ClInclude Include="Animation.h" />
     <ClInclude Include="Button.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ColorFormats.h" />
     <ClInclude Include="DebugDataContainer.h" />
     <ClInclude Include="DebugLabel.h" />
     <ClInclude Include="Engine.h" />

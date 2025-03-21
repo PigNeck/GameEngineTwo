@@ -7,8 +7,12 @@ struct Texture
 {
 	//SDL_Texture* sdl_texture;
 
-	unsigned int width = 0; //In pixels!
-	unsigned int height = 0; //In pixels!
+	unsigned int width = 0; //PSEUDO PRIVATE;  In pixels!
+	unsigned int height = 0; //PSEUDO PRIVATE;  In pixels!
+
+	Texture();
+
+	Texture(const char* const path);
 
 	~Texture();
 

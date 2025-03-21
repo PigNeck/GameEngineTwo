@@ -13,6 +13,3 @@ struct Camera {
 struct CameraNew {
 	RefRectangleNewest rect;
 };
-struct CameraNew90 {
-	RefRectangle90 rect;
-};

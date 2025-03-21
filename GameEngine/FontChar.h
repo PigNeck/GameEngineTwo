@@ -1,10 +1,13 @@
 #pragma once
 #include "Texture.h"
+#include "ColorFormats.h"
 #include <iostream>
 
 using namespace std;
 
 string GetTextureName(char char_value);
+
+struct BasicFont;
 
 struct FontChar
 {
@@ -27,34 +30,51 @@ struct FontChar
 
 struct BasicFontChar //Serves as a template for BasicTextBoxChars. Font chars primarily hold default data for text box chars.
 {
+	// -------------  Primary data  -------------
+
 	const Texture* texture = nullptr;
 
 	char char_value = 0;
 
-	double template_pixel_width = 0.0; //Should usually be set to texture->width, but technicallyyy doesn't have to (if sub-int precision is wanted or you just want to engage in some funky business).
-	double template_pixel_height = 0.0; //Should usually be set to texture->height, but technicallyyy doesn't have to (if sub-int precision is wanted or you just want to engage in some funky business).
+	double template_unscaled_pixel_width = 0.0; //Should usually be set to [texture->width] unless the texture doesn't cover the whole area it is given. DOES change the generated positions of the other letters.
+	Scale90 template_scale; //Should typically be { 1.0, 1.0 }.
 
-	double template_pixel_x_offset = 0.0; //[pixel_x_offset] moves the char from its default x position, but DOES NOT change the generated positions of any of the other letters. [pixel_x_offset] should almost always equal 0.0.
-	double template_pixel_y_offset = 0.0; //[pixel_y_offset] moves the char from its default y position. When being drawn, chars are snapped to the bottom of their text_box_line, but some chars like asterisk and apostrophe should not be bottom-bound, so their [pixel_y_offset] values should typically be set to be above 0.0.
+	Point2DNew template_unscaled_pixel_offset; //[template_pixel_offset] moves the char from its default position, but DOES NOT change the generated positions of any of the other letters. [template_pixel_offset.x] should almost always equal 0.0, but [template_pixel_offset.y] is typically nonzero for chars some chars like asterisk and apostrophe. If [template_pixel_offset.y] is 0.0, then the char is snapped to the bottom edge of its text_box_line.
 
-	double template_pixel_spacing = 0.0; //Spacing applied to both sides to the char.
+	double template_unscaled_pixel_spacing_left = 0.0; //Scales with [template_scale].
+	double template_unscaled_pixel_spacing_right = 0.0; //Scales with [template_scale].
+
+	GLColor template_color_mod = { 0.f, 0.f, 0.f, 1.f };
+
+
+
+
+	// -------------  Metadata  -------------
+
+	const BasicFont* parent_font = nullptr;
+
+
+
+
+	// -------------  Functions  -------------
 
 	BasicFontChar();
-	//Just sets [char_value] to [i_char_value]! [texture] remains nullptr and [pixel_width], [pixel_height], [pixel_x_offset], and [pixel_y_offset] all remain 0.0.
-	BasicFontChar(const char i_char_value);
-	//IMPORTANT: Sets [pixel_width] and [pixel_height] based on the dimentions of the texture!;  Sets [char_value] and [texture] to their corresponding arguments. [pixel_x_offset] and [pixel_y_offset] stay as 0.0 though.
-	BasicFontChar(const char i_char_value, const Texture* const i_texture);
-	//Sets [char_value], [texture], [pixel_width] and [pixel_height] to their corresponding arguments. [pixel_x_offset] and [pixel_y_offset] stay as 0.0.
-	BasicFontChar(const char i_char_value, const Texture* const i_texture, const double i_template_pixel_width, const double i_template_pixel_height);
-	//IMPORTANT: Sets [pixel_width] and [pixel_height] based on the dimentions of the texture!;  Sets [char_value], [texture], [pixel_x_offset] and [pixel_y_offset] to their corresponding arguments.
-	BasicFontChar(const char i_char_value, const Texture* const i_texture, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset);
-	//Sets all the member variables to initial values!
-	BasicFontChar(const char i_char_value, const Texture* const i_texture, const double i_template_pixel_width, const double i_template_pixel_height, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset);
+	//IMPORTANT: Sets [template_pixel_width] based on the dimentions of the texture. Make sure the texture is loaded before it's pointer is passed to this constructor!
+	BasicFontChar(const BasicFont* const i_parent_font, const char i_char_value, const double i_template_unscaled_pixel_spacing_left = 0.0, const double i_template_unscaled_pixel_spacing_right = 0.0, const Point2DNew i_template_unscaled_pixel_offset = { 0.0, 0.0 }, const Scale90 i_template_scale = { 1.0, 1.0 }, const GLColor i_template_color_mod = { 0.f, 0.f, 0.f, 1.f });
+	//Sets all member variables to initial values.
+	BasicFontChar(const double i_template_unscaled_pixel_width, const BasicFont* const i_parent_font, const char i_char_value, const double i_template_unscaled_pixel_spacing_left = 0.0, const double i_template_pixel_unscaled_spacing_right = 0.0, const Point2DNew i_template_unscaled_pixel_offset = {0.0, 0.0}, const Scale90 i_template_scale = { 1.0, 1.0 }, const GLColor i_template_color_mod = { 0.f, 0.f, 0.f, 1.f });
 
-	void InitLeast(const Texture* const i_texture, const char i_char_value);
-	void InitWithOffset(const Texture* const i_texture, const char i_char_value, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset);
-	void InitMost(const Texture* const i_texture, const char i_char_value, const double i_template_pixel_width, const double i_template_pixel_height, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset);
+	//IMPORTANT: Sets [template_pixel_width] based on the dimentions of the texture. Make sure the texture is loaded before it's pointer is passed to this method!
+	void InitLeast(const BasicFont* const i_parent_font, const char i_char_value, const Texture* const i_texture, const double i_template_unscaled_pixel_spacing_left = 0.0, const double i_template_unscaled_pixel_spacing_right = 0.0, const Point2DNew i_template_unscaled_pixel_offset = { 0.0, 0.0 }, const Scale90 i_template_scale = { 1.0, 1.0 }, const GLColor i_template_color_mod = { 0.f, 0.f, 0.f, 1.f });
+	//Sets all member variables to initial values.
+	void InitMost(const double i_template_unscaled_pixel_width, const BasicFont* const i_parent_font, const char i_char_value, const Texture* const i_texture, const double i_template_unscaled_pixel_spacing_left = 0.0, const double i_template_unscaled_pixel_spacing_right = 0.0, const Point2DNew i_template_unscaled_pixel_offset = { 0.0, 0.0 }, const Scale90 i_template_scale = { 1.0, 1.0 }, const GLColor i_template_color_mod = { 0.f, 0.f, 0.f, 1.f });
 
-	//IMPORTANT: Sets [pixel_width] and [pixel_height] to fit the dimentions of [i_texture]!;  Also obviously sets [texture] to [i_texture].
+	//IMPORTANT: If [template_pixel_width] has not already been set, it is set to fit the dimentions of [i_texture]. Make sure the texture is loaded before it's pointer is passed to this method!
 	void SetTexture(const Texture* const i_texture);
+
+
+	double GetTemplateScaledPixelWidth() const;
+	double GetTemplateScaledPixelSpacingLeft() const;
+	double GetTemplateScaledPixelSpacingRight() const;
+	Point2DNew GetTemplateScaledPixelOffset() const;
 };

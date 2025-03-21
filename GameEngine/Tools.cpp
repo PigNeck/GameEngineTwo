@@ -4,15 +4,6 @@
 
 using namespace std;
 
-GLColor::GLColor() {}
-GLColor::GLColor(const float i_r, const float i_g, const float i_b) : r(i_r), g(i_g), b(i_b), a(1.0) {}
-GLColor::GLColor(const float i_r, const float i_g, const float i_b, const float i_a) : r(i_r), g(i_g), b(i_b), a(i_a) {}
-
-
-
-
-
-
 // -----------------   CONVERSION FUNCTIONS   -----------------
 
 SDL_Rect RectStructTwoToSDLRect(const RectStructTwo* const param_rectangle, const Camera* const camera)

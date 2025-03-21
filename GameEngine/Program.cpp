@@ -2338,14 +2338,14 @@ void Program::RunScene6()
 		test_rect_new.transformations.scale.height_scale /= 0.95;
 	}
 
-	if (e->input.b.first_frame_pressed)
+	if (e->input.b.pressed)
 	{
-		//test_rect_new.transformations.rotation.radians += 0.01;
+		test_rect_new.transformations.rotation.radians += 0.01;
 
-		test_90_rect.transformations.RotateCounterclockwise(1);
+		//test_90_rect.transformations.RotateCounterclockwise(1);
 	}
 
-	val_1_3.v[0] += 0.02;
+	//val_1_3.v[0] += 0.02;
 
 	if (e->input.v.first_frame_pressed)
 	{
@@ -2354,7 +2354,7 @@ void Program::RunScene6()
 
 		//test_rect_new_two.transformations.rotation.radians += 0.01;
 
-		test_90_rect_two.transformations.RotateCounterclockwise(1);
+		//test_90_rect_two.transformations.RotateCounterclockwise(1);
 	}
 
 	if (e->input.g.pressed)
@@ -2372,31 +2372,42 @@ void Program::RunScene6()
 
 	if (e->input.u.first_frame_pressed)
 	{
-		test_rect_new_two.SetUniCorner({ test_point.x, test_point.y }, CornerEnum::TOP_RIGHT);
+		//test_rect_new_two.SetUniCorner({ test_point.x, test_point.y }, CornerEnum::TOP_RIGHT);
 		//test_rect_new_two.pos.SetValueToFitUniValue({ test_point.x, test_point.y });
+	}
+
+	if (e->input.p.first_frame_pressed)
+	{
+		RectangleNewest temp_rect;
+		temp_rect.pos = Point2DNew(test_rect_new.pos.x, test_rect_new.pos.y);
+		temp_rect.unscaled_size = test_rect_new.unscaled_size;
+		temp_rect.centering = test_rect_new.centering;
+		temp_rect.transformations = Transformations(test_rect_new.transformations.rotation, test_rect_new.transformations.scale, test_rect_new.transformations.total_flip);
+
+		ListProperties(temp_rect);
 	}
 }
 void Program::DrawScene6()
 {
-	const vector<double> temp_1 = val_1_1.GetUniValue();
-	const vector<double> temp_2 = val_2.GetUniValue();
+	//const vector<double> temp_1 = val_1_1.GetUniValue();
+	//const vector<double> temp_2 = val_2.GetUniValue();
 
-	Point2D p1 = { temp_1[0], temp_1[1] };
-	Point2D p2 = { temp_2[0], temp_2[1] };
+	//Point2D p1 = { temp_1[0], temp_1[1] };
+	//Point2D p2 = { temp_2[0], temp_2[1] };
 
 	//e->DrawPoint(&p1, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
 	//e->DrawPoint(&p2, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
 
 	e->DrawTextureWithRefRectangleNewest(&test_rect_new, nullptr, nullptr, nullptr, nullptr);
 	e->DrawTextureWithRefRectangleNewest(&test_rect_new_two, nullptr, nullptr, nullptr, nullptr);
-	e->DrawTextureWithRefRectangleNewest(&test_rect_new_three, nullptr, nullptr, nullptr, nullptr);
+	//e->DrawTextureWithRefRectangleNewest(&test_rect_new_three, nullptr, nullptr, nullptr, nullptr);
 
-	e->DrawTexturedRefRectangle90(&test_90_rect, nullptr, nullptr, nullptr, nullptr);
-	e->DrawTexturedRefRectangle90(&test_90_rect_two, nullptr, nullptr, nullptr, nullptr);
+	//e->DrawTexturedRefRectangle90(&test_90_rect, nullptr, nullptr, nullptr, nullptr);
+	//e->DrawTexturedRefRectangle90(&test_90_rect_two, nullptr, nullptr, nullptr, nullptr);
 
-	Point2D p3 = { test_point.x, test_point.y };
+	//Point2D p3 = { test_point.x, test_point.y };
 
-	e->DrawPoint(&p3, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
+	//e->DrawPoint(&p3, { 8.0, 8.0 }, { 0, 0, 0, 255 }, e->blank_camera);
 }
 void Program::PostDrawRunScene6()
 {
@@ -2405,7 +2416,9 @@ void Program::PostDrawRunScene6()
 
 void Program::SetScene7()
 {
+	example1_text_box.GenerateFull();
 
+	cout << example1_text_box.lines.size() << endl;
 }
 void Program::EndScene7()
 {
@@ -2417,7 +2430,15 @@ void Program::RunScene7()
 }
 void Program::DrawScene7()
 {
+	const Quad temp_quad = example1_text_box.rect.GetUniQuad();
+	const GLColor temp_color(0.f, 0.f, 0.f, 0.2f);
 
+	e->DrawQuad(&temp_quad, &temp_color, nullptr);
+
+	const Quad temp_quad2 = example1_text_box.lines[0].rect.GetUniQuad();
+	e->DrawQuad(&temp_quad2, &temp_color, nullptr);
+
+	e->DrawBasicTextBox(&example1_text_box, nullptr);
 }
 void Program::PostDrawRunScene7()
 {
@@ -2466,7 +2487,7 @@ void Program::PostDrawRunScene9()
 
 }
 
-Program::Program() : e(nullptr)
+Program::Program() : e(nullptr), example1_font("default_white_basic", "png", LineParameters(7.0, 1.0, 1.0, numeric_limits<double>::max(), { 0.0, 0.0 }, false, true)), example1_text_box(&example1_font, RefRectangleNewest({ 0.0, 0.0 }, RefTransformations(Rotation2DNew(), Scale2DNew(4.0, 4.0), TotalFlip()), { 100.0, 25.0 }, { 0.0, 0.0 }))
 {
 	e = new Engine();
 
@@ -2850,11 +2871,11 @@ Program::Program() : e(nullptr)
 
 	// ----------- TEST RECTANGLE ROTATION -----------
 
-	val_2.reference_point = &val_1_1;
-	val_2.reference_scale = &val_1_2;
-	val_2.reference_rotation = &val_1_3;
-	val_2.v[0] = 20.0;
-	val_2.v[1] = 40.0;
+	//val_2.reference_point = &val_1_1;
+	//val_2.reference_scale = &val_1_2;
+	//val_2.reference_rotation = &val_1_3;
+	//val_2.v[0] = 20.0;
+	//val_2.v[1] = 40.0;
 
 	test_rect_new.centering = { 1.0, -1.0 };
 
@@ -2863,18 +2884,43 @@ Program::Program() : e(nullptr)
 	test_rect_new_two.transformations.rotation = { 0.5 };
 	test_rect_new_two.SetReference(&test_rect_new);
 
-	test_rect_new_three.pos = { 80.0, 60.0 };
-	test_rect_new_three.unscaled_size = { 25.0, 50.0 };
-	test_rect_new_three.transformations.rotation = { 0.5 };
-	test_rect_new_three.SetReference(&test_rect_new_two);
+	//test_rect_new_three.pos = { 80.0, 60.0 };
+	//test_rect_new_three.unscaled_size = { 25.0, 50.0 };
+	//test_rect_new_three.transformations.rotation = { 0.5 };
+	//test_rect_new_three.SetReference(&test_rect_new_two);
 
 
 
-	test_90_rect.pos = { -200.0, -50.0 };
+	//test_90_rect.pos = { -200.0, -50.0 };
 
-	test_90_rect_two.pos = { 100.0, 50.0 };
-	test_90_rect_two.unscaled_size = { 50.0, 50.0 };
-	test_90_rect_two.SetReference(&test_90_rect);
+	//test_90_rect_two.pos = { 100.0, 50.0 };
+	//test_90_rect_two.unscaled_size = { 50.0, 50.0 };
+	//test_90_rect_two.SetReference(&test_90_rect);
+
+
+
+
+
+
+
+	example1_font.LoadCharTextures();
+	example1_text_box.AddCharPtr("abcdefghijklmnopqrstuvwxyz");
+	//example1_text_box.Init(&example1_font, "chicken nuggies", RefRectangleNewest({ 0.0, 0.0 }, RefTransformations(Rotation2DNew(), Scale2DNew(4.0, 4.0), TotalFlip()), Size2DNew(100.0, 25.0), Centering2DNew()), { 0.0, 0.0 });
+
+	/*
+	cout << "text_box.chars.size(): " << example1_text_box.chars.size() << endl;
+
+	cout << "font char color mod: " << example1_font.c.template_color_mod.r << ", " << example1_font.c.template_color_mod.g << ", " << example1_font.c.template_color_mod.b << ", " << example1_font.c.template_color_mod.a << endl;
+
+	if (example1_text_box.chars.size() != 0)
+	{
+		cout << "first char value: " << example1_text_box.chars[0].char_value << endl;
+		cout << "first char color mod: " << example1_text_box.chars[0].color_mod.r << ", " << example1_text_box.chars[0].color_mod.g << ", " << example1_text_box.chars[0].color_mod.b << ", " << example1_text_box.chars[0].color_mod.a << endl;
+	}
+
+	cout << "example1_text_box.default_font->c.char_value: " << example1_text_box.default_font->c.char_value << endl;
+	cout << "example1_text_box.default_font->GetFontCharConst('c')->char_value: " << example1_text_box.default_font->GetFontCharConst('c')->char_value << endl;
+	*/
 }
 Program::~Program()
 {

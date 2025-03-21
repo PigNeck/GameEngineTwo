@@ -502,10 +502,10 @@ struct Program : RunDrawAndPostDrawRunMethods
 
 	// ----------- TEST RECTANGLE ROTATION -----------
 
-	RefDoubleNew val_1_1 = RefDoubleNew({ 0.0, 0.0 });
-	RefDoubleNew val_1_2 = RefDoubleNew({ 1.0, 1.0 });
-	RefDoubleNew val_1_3 = RefDoubleNew({ 0.0 });
-	RefPoint2DNew val_2;
+	//RefDoubleNew val_1_1 = RefDoubleNew({ 0.0, 0.0 });
+	//RefDoubleNew val_1_2 = RefDoubleNew({ 1.0, 1.0 });
+	//RefDoubleNew val_1_3 = RefDoubleNew({ 0.0 });
+	//RefPoint2DNew val_2;
 
 	//RefRectangleNewNew test_rect_new;
 	//RefRectangleNewNew test_rect_new_two;
@@ -513,10 +513,19 @@ struct Program : RunDrawAndPostDrawRunMethods
 
 	RefRectangleNewest test_rect_new;
 	RefRectangleNewest test_rect_new_two;
-	RefRectangleNewest test_rect_new_three;
+	//RefRectangleNewest test_rect_new_three;
 
-	Point2DNew test_point = { 200.0, 150.0 };
+	//Point2DNew test_point = { 200.0, 150.0 };
 
-	RefRectangle90 test_90_rect;
-	RefRectangle90 test_90_rect_two;
+	//RefRectangle90 test_90_rect;
+	//RefRectangle90 test_90_rect_two;
+
+
+
+
+	// ----------- TEST TEXTBOX -----------
+
+	BasicFont example1_font;
+
+	BasicTextBox example1_text_box;
 };

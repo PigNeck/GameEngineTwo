@@ -166,32 +166,53 @@ FontChar::FontChar(Texture* param_texture, char param_char_value, double param_d
 
 
 BasicFontChar::BasicFontChar() {}
-BasicFontChar::BasicFontChar(const char i_char_value) : char_value(i_char_value) {}
-BasicFontChar::BasicFontChar(const char i_char_value, const Texture* const i_texture) : char_value(i_char_value), texture(i_texture), template_pixel_width(i_texture->width), template_pixel_height(i_texture->height) {}
-BasicFontChar::BasicFontChar(const char i_char_value, const Texture* const i_texture, const double i_template_pixel_width, const double i_template_pixel_height) : char_value(i_char_value), texture(i_texture), template_pixel_width(i_template_pixel_width), template_pixel_height(i_template_pixel_height) {}
-BasicFontChar::BasicFontChar(const char i_char_value, const Texture* const i_texture, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset) : char_value(i_char_value), texture(i_texture), template_pixel_width(i_texture->width), template_pixel_height(i_texture->height), template_pixel_x_offset(i_template_pixel_x_offset), template_pixel_y_offset(i_template_pixel_y_offset) {}
-BasicFontChar::BasicFontChar(const char i_char_value, const Texture* const i_texture, const double i_template_pixel_width, const double i_template_pixel_height, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset) : char_value(i_char_value), texture(i_texture), template_pixel_width(i_template_pixel_width), template_pixel_height(i_template_pixel_height), template_pixel_x_offset(i_template_pixel_x_offset), template_pixel_y_offset(i_template_pixel_y_offset) {}
+BasicFontChar::BasicFontChar(const BasicFont* const i_parent_font, const char i_char_value, const double i_template_unscaled_pixel_spacing_left, const double i_template_unscaled_pixel_spacing_right, const Point2DNew i_template_unscaled_pixel_offset, const Scale90 i_template_scale, const GLColor i_template_color_mod)
+	: parent_font(i_parent_font),
+	char_value(i_char_value),
+	template_unscaled_pixel_spacing_left(i_template_unscaled_pixel_spacing_left),
+	template_unscaled_pixel_spacing_right(i_template_unscaled_pixel_spacing_right),
+	template_unscaled_pixel_offset(i_template_unscaled_pixel_offset),
+	template_scale(i_template_scale),
+    template_color_mod(i_template_color_mod) {}
+BasicFontChar::BasicFontChar(const double i_template_unscaled_pixel_width, const BasicFont* const i_parent_font, const char i_char_value, const double i_template_unscaled_pixel_spacing_left, const double i_template_unscaled_pixel_spacing_right, const Point2DNew i_template_unscaled_pixel_offset, const Scale90 i_template_scale, const GLColor i_template_color_mod)
+	: parent_font(i_parent_font),
+	char_value(i_char_value),
+	template_unscaled_pixel_width(i_template_unscaled_pixel_width),
+	template_unscaled_pixel_spacing_left(i_template_unscaled_pixel_spacing_left),
+	template_unscaled_pixel_spacing_right(i_template_unscaled_pixel_spacing_right),
+	template_unscaled_pixel_offset(i_template_unscaled_pixel_offset),
+	template_scale(i_template_scale),
+	template_color_mod(i_template_color_mod) {}
 
-void BasicFontChar::InitLeast(const Texture* const i_texture, const char i_char_value)
+void BasicFontChar::InitLeast(const BasicFont* const i_parent_font, const char i_char_value, const Texture* const i_texture, const double i_template_unscaled_pixel_spacing_left, const double i_template_unscaled_pixel_spacing_right, const Point2DNew i_template_unscaled_pixel_offset, const Scale90 i_template_scale, const GLColor i_template_color_mod)
 {
-	SetTexture(i_texture);
+	parent_font = i_parent_font;
+
 	char_value = i_char_value;
-}
-void BasicFontChar::InitWithOffset(const Texture* const i_texture, const char i_char_value, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset)
-{
 	SetTexture(i_texture);
-	char_value = i_char_value;
-	template_pixel_x_offset = i_template_pixel_x_offset;
-	template_pixel_y_offset = i_template_pixel_y_offset;
+
+	template_unscaled_pixel_spacing_left = i_template_unscaled_pixel_spacing_left;
+	template_unscaled_pixel_spacing_right = i_template_unscaled_pixel_spacing_right;
+	template_unscaled_pixel_offset = i_template_unscaled_pixel_offset;
+	template_scale = i_template_scale;
+
+	template_color_mod = i_template_color_mod;
 }
-void BasicFontChar::InitMost(const Texture* const i_texture, const char i_char_value, const double i_template_pixel_width, const double i_template_pixel_height, const double i_template_pixel_x_offset, const double i_template_pixel_y_offset)
+void BasicFontChar::InitMost(const double i_template_unscaled_pixel_width, const BasicFont* const i_parent_font, const char i_char_value, const Texture* const i_texture, const double i_template_unscaled_pixel_spacing_left, const double i_template_unscaled_pixel_spacing_right, const Point2DNew i_template_unscaled_pixel_offset, const Scale90 i_template_scale, const GLColor i_template_color_mod)
 {
+	parent_font = i_parent_font;
+
+	char_value = i_char_value;
 	texture = i_texture;
-	char_value = i_char_value;
-	template_pixel_width = i_template_pixel_width;
-	template_pixel_height = i_template_pixel_height;
-	template_pixel_x_offset = i_template_pixel_x_offset;
-	template_pixel_y_offset = i_template_pixel_y_offset;
+
+	template_unscaled_pixel_width = i_template_unscaled_pixel_width;
+
+	template_unscaled_pixel_spacing_left = i_template_unscaled_pixel_spacing_left;
+	template_unscaled_pixel_spacing_right = i_template_unscaled_pixel_spacing_right;
+	template_unscaled_pixel_offset = i_template_unscaled_pixel_offset;
+	template_scale = i_template_scale;
+
+	template_color_mod = i_template_color_mod;
 }
 
 void BasicFontChar::SetTexture(const Texture* const i_texture)
@@ -200,12 +221,32 @@ void BasicFontChar::SetTexture(const Texture* const i_texture)
 	{
 		texture = i_texture;
 
-		template_pixel_width = i_texture->width;
-		template_pixel_height = i_texture->height;
+		if (template_unscaled_pixel_width == 0.0)
+		{
+			template_unscaled_pixel_width = (double)i_texture->width;
+		}
 	}
 	else
 	{
-		cerr << "Bruh, you passed nullptr (cringe). Sent by void BasicFontChar::SetTexture(const Texture* const i_texture)." << endl;
+		cerr << "Bruh, you passed nullptr. Sent by void BasicFontChar::SetTexture(const Texture* const i_texture)." << endl;
 		throw;
 	}
+}
+
+
+double BasicFontChar::GetTemplateScaledPixelWidth() const
+{
+	return (template_unscaled_pixel_width * template_scale.width_scale);
+}
+double BasicFontChar::GetTemplateScaledPixelSpacingLeft() const
+{
+	return (template_unscaled_pixel_spacing_left * template_scale.width_scale);
+}
+double BasicFontChar::GetTemplateScaledPixelSpacingRight() const
+{
+	return (template_unscaled_pixel_spacing_right * template_scale.width_scale);
+}
+Point2DNew BasicFontChar::GetTemplateScaledPixelOffset() const
+{
+	return { template_unscaled_pixel_offset.x * template_scale.width_scale, template_unscaled_pixel_offset.y * template_scale.height_scale };
 }

@@ -322,6 +322,7 @@ void main() {
 
 	//Default basic drawing progression for a text box
 	void DrawTextBox(TextBox* param_text_box, Camera* camera);
+	void DrawBasicTextBox(const BasicTextBox* const text_box, const CameraNew* const camera);
 	//Default basic drawing progression for a button
 	void DrawButton(Button* param_button, Camera* camera);
 	//Default basic drawing progression for a text button
@@ -525,7 +526,7 @@ public: // -----------------   RECTANGLENEW FUNCTIONS   -----------------
 
 	void DrawTextureWithRefRectangleNewest(const RefRectangleNewest* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera);
 
-	void DrawTexturedRefRectangle90(const RefRectangle90* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera);
+	//void DrawTexturedRefRectangle90(const RefRectangle90* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera);
 
 
 

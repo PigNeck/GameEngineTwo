@@ -29,6 +29,12 @@ void Texture::LoadTexture(SDL_Renderer* const renderer, const char* path)
 
 
 
+Texture::Texture() {}
+Texture::Texture(const char* const path)
+{
+    LoadTexture(path);
+}
+
 Texture::~Texture()
 {
     glDeleteTextures(1, &gl_texture_id);
@@ -38,8 +44,8 @@ void Texture::LoadTexture(const char* const path)
 {
     SDL_Surface* surface = IMG_Load(path);
     if (!surface) {
-        std::cerr << "Failed to load texture: " << SDL_GetError() << std::endl;
-        throw;
+        std::cerr << "Failed to load texture: " << SDL_GetError() << ". Sent by void Texture::LoadTexture(const char* const path)." << std::endl;
+        return;
     }
 
     glGenTextures(1, &gl_texture_id);
