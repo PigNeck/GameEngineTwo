@@ -392,10 +392,12 @@ SDL_Color* GLColorToSDLColor(const GLColor* const gl_color)
 
 
 
-Point2DNew UniPointToScreenPoint(const Point2DNew* const uni_point, const CameraNew* const camera)
+Point2DNew UniPointToScreenPoint(const Point2DNew uni_point, const CameraNew* const camera)
 {
 	if (camera)
 	{
+		return uni_point.GetReferenced()
+
 		const RefPoint2DNewest temp_point(*uni_point, &camera->rect.pos, &camera->rect.transformations);
 		//TO-DO: make this "temp_point.SetUniValue(...), return temp_point.x, temp_point.y";
 		return temp_point.GetUniValue();

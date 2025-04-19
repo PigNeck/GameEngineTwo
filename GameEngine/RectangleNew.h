@@ -8,8 +8,10 @@
 #include <iostream>
 #include <limits>
 #include <vector>
+#include <cassert>
 #include "Rectangle.h"
 
+#define ASSERT_MSG(cond, msg) assert((cond) && msg)
 
 using namespace std;
 
@@ -85,8 +87,17 @@ struct Rotation90
     //IMPORTANT: Snaps [rotation_2d_new] to the nearest representable value of RotationEnum.
     Rotation90(const Rotation2DNew& rotation_2d_new);
 
+    Rotation90 GetDereferenced(const Rotation90* const reference) const;
+    Rotation90 GetReferenced(const Rotation90* const reference) const;
+
+    Rotation2DNew GetDereferenced(const Rotation2DNew* const reference) const;
+    Rotation2DNew GetReferenced(const Rotation2DNew* const reference) const;
+
     double GetRadians() const;
     double GetDegrees() const;
+
+    void RotateClockwise(const unsigned int number_of_90_degree_rotations = 1);
+    void RotateCounterclockwise(const unsigned int number_of_90_degree_rotations = 1);
 };
 
 
@@ -118,6 +129,31 @@ struct Scale90
     Scale90(const double i_width_scale, const double i_height_scale);
     //IMPORTANT: [scale_2d_new.width_radian_offset] and [scale_2d_new.height_radian_offset] are ignored (they don't survive the conversion).
     Scale90(const Scale2DNew& scale_2d_new);
+
+    Scale90 GetDereferenced(const Scale90* const reference_scale, const Rotation90* const this_rotation = nullptr) const;
+    Scale90 GetReferenced(const Scale90* const reference_scale, const Rotation90* const reference_rotation = nullptr) const;
+
+    Scale2DNew GetDereferenced(const Scale2DNew* const reference_scale, const Rotation2DNew* const this_rotation = nullptr) const;
+    Scale2DNew GetReferenced(const Scale2DNew* const reference_scale, const Rotation2DNew* const reference_rotation = nullptr) const;
+
+    bool GetHorizontalFlip() const;
+    double GetHorizontalFlipDouble() const;
+    void FlipHorizontally();
+    void SetHorizontalFlip(const bool horizontal_flip);
+
+    bool GetVerticalFlip() const;
+    double GetVerticalFlipDouble() const;
+    void FlipVertically();
+    void SetVerticalFlip(const bool vertical_flip);
+
+    double GetWidthScaleMagnitude() const;
+    void SetWidthScaleMagnitude(const double magnitude);
+
+    double GetHeightScaleMagnitude() const;
+    void SetHeightScaleMagnitude(const double magnitude);
+
+    Scale90 GetScaleMagnitude() const;
+    void SetScaleMagnitude(const Scale90 magnitude);
 };
 
 
@@ -127,16 +163,17 @@ struct Scale90
 struct Transformations;
 struct Transformations90
 {
-    Rotation90 rotation;
     Scale90 scale;
-    Flip90 flip;
+    Rotation90 rotation;
 
-    Transformations90(const Rotation90 i_rotation = Rotation90(), const Scale90 i_scale = Scale90(), const Flip90 i_flip = Flip90());
+    Transformations90(const Scale90 i_scale = Scale90(), const Rotation90 i_rotation = Rotation90());
     Transformations90(const Transformations& transformations);
 
+    Transformations90 GetDereferenced(const Transformations90* const reference) const;
+    Transformations90 GetReferenced(const Transformations90* const reference) const;
 
-    void RotateCounterclockwise(const unsigned char number_of_counterclockwise_90_degree_rotations = 1);
-    void RotateClockwise(const unsigned char number_of_clockwise_90_degree_rotations = 1);
+    Transformations GetDereferenced(const Transformations* const reference) const;
+    Transformations GetReferenced(const Transformations* const reference) const;
 };
 
 
@@ -160,29 +197,34 @@ struct Point2DNew
 
     Point2DNew();
     Point2DNew(const double i_x, const double i_y);
+
+    //[reference_point] cannot be nullptr!
+    Point2DNew GetDereferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations = nullptr) const;
+    //[reference_point] cannot be nullptr!
+    Point2DNew GetReferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations = nullptr) const;
+
+    double GetDistanceFrom(const Point2DNew other_point) const;
 };
 struct RefTransformations;
-struct RefPoint2DNewest
+struct RefRectangleNewest;
+struct RefPoint2DNewest : Point2DNew
 {
-    double x = 0.0;
-    double y = 0.0;
-
-    const RefPoint2DNewest* reference_point = nullptr;
-    const RefTransformations* reference_transformations = nullptr;
-
-
+    const RefPoint2DNewest* reference_point = nullptr; //Note: [reference_transformations] cannot be defined without [reference_point];  Also, they work together to define a single reference plane. If the [reference_point] and [reference_transformations] are part of different planes, directly use Point2DNew::GetDereferenced(...) or Point2DNew::GetReferenced(...) to achieve desired results.
+    const RefTransformations* reference_transformations = nullptr; //Note: [reference_transformations] cannot be defined without [reference_point];  Also, they work together to define a single reference plane. If the [reference_point] and [reference_transformations] are part of different planes, directly use Point2DNew::GetDereferenced(...) or Point2DNew::GetReferenced(...) to achieve desired results.
 
     RefPoint2DNewest();
     RefPoint2DNewest(const double i_x, const double i_y);
-    RefPoint2DNewest(const Point2DNew non_ref_point);
+    RefPoint2DNewest(const double i_x, const double i_y, const RefRectangleNewest* const reference_rectangle);
     RefPoint2DNewest(const double i_x, const double i_y, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations);
-    RefPoint2DNewest(const Point2DNew non_ref_point, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations);
+    RefPoint2DNewest(const Point2DNew& non_ref_point);
+    RefPoint2DNewest(const Point2DNew& non_ref_point, const RefRectangleNewest* const reference_rectangle);
+    RefPoint2DNewest(const Point2DNew& non_ref_point, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations);
+    
+    void SetReference(const RefRectangleNewest* const reference_rectangle);
 
 
     //All commented out lines (except for method descriptions) are TO-DO
     Point2DNew GetDepthValue(const unsigned int depth_index) const;
-    //double GetDepthX(const unsigned int depth_index) const;
-    //double GetDepthY(const unsigned int depth_index) const;
 
     void SetValueToFitDepthValue(const unsigned int depth_index, const Point2DNew depth_value);
     //Moves point HORIZONTALLY (on the plane defined by depth_index) to fit depth_x. If rotation is not 0 or pi, this function WILL ALSO CHANGE Y (very spooky). Also if rotation is pi/2 or 3pi/2, x won't change.
@@ -234,8 +276,8 @@ struct Size2DNew
 // -----------------   CENTERING 2D   -----------------
 struct Centering2DNew
 {
-    double x_centering = 0.0; //-1.0 = right edge of rectangle lines up with x pos; 0.0 = centered on the x axis; 1.0 = left edge of rectangle lines up with x pos
-    double y_centering = 0.0; //-1.0 = top edge of rectangle lines up with y pos; 0.0 = centered on the y axis; 1.0 = bottom edge of rectangle lines up with y pos
+    double x_centering = 0.0; //-1.0 = right edge of rectangle lines up with x pos;  0.0 = centered on the x axis;  1.0 = left edge of rectangle lines up with x pos
+    double y_centering = 0.0; //-1.0 = top edge of rectangle lines up with y pos;  0.0 = centered on the y axis;  1.0 = bottom edge of rectangle lines up with y pos
 
     Centering2DNew();
     Centering2DNew(const double i_x_centering, const double i_y_centering);
@@ -248,15 +290,46 @@ struct Centering2DNew
 struct Scale2DNew
 {
     double width_scale = 1.0;
-    double width_radian_offset = 0.0; //In radians
+    double width_radian_offset = 0.0; //Aka. horizontal skew
 
     double height_scale = 1.0;
-    double height_radian_offset = 0.0; //In radians
+    double height_radian_offset = 0.0; //Aka. vertical skew
 
     Scale2DNew();
     Scale2DNew(const double i_width_scale, const double i_height_scale);
     Scale2DNew(const double i_width_scale, const double i_width_direction_offset, const double i_height_scale, const double i_height_direction_offset);
-    Scale2DNew(const Scale90 scale_90);
+    Scale2DNew(const Scale90& scale_90);
+
+    //IMPORTANT!!!: Dynamically determines optimizations (slightly lower performance). If high performance is needed, use Transformations::GetDereferenced(...) instead, or use the simpler GetDereferenced(...) method if applicable!
+    Scale2DNew GetDereferenced(const Scale2DNew* const reference_scale, const Rotation2DNew* const reference_rotation = nullptr, const Rotation2DNew* const this_rotation = nullptr) const;
+    //IMPORTANT!!!: Dynamically determines optimizations (slightly lower performance). If high performance is needed, use Transformations::GetDereferenced(...) instead, or use the simpler GetDereferenced(...) method if applicable!
+    Scale2DNew GetReferenced(const Scale2DNew* const reference_scale, const Rotation2DNew* const reference_rotation = nullptr, const Rotation2DNew* const this_rotation = nullptr) const;
+
+    //IMPORTANT!!!: This version of GetDereferenced(...) ignores rotation and [scale direction offset] (Essentially treats this scale and the reference scale as Scale90s)!
+    Scale2DNew GetDereferenced(const Scale2DNew* const reference_scale);
+    //IMPORTANT!!!: This version of GetReferenced(...) ignores rotation and [scale direction offset] (Essentially treats this scale and the reference scale as Scale90s)!
+    Scale2DNew GetReferenced(const Scale2DNew* const reference_scale);
+
+    bool GetHorizontalFlip() const;
+    double GetHorizontalFlipDouble() const;
+    void FlipHorizontally();
+    void SetHorizontalFlip(const bool horizontal_flip);
+
+    bool GetVerticalFlip() const;
+    double GetVerticalFlipDouble() const;
+    void FlipVertically();
+    void SetVerticalFlip(const bool vertical_flip);
+
+    double GetWidthScaleMagnitude() const;
+    void SetWidthScaleMagnitude(const double magnitude);
+
+    double GetHeightScaleMagnitude() const;
+    void SetHeightScaleMagnitude(const double magnitude);
+
+    Scale90 GetScaleMagnitude() const;
+    void SetScaleMagnitude(const Scale90 magnitude);
+
+    bool IsRepresentableAsScale90() const;
 };
 
 
@@ -270,9 +343,28 @@ struct Rotation2DNew
     Rotation2DNew();
     Rotation2DNew(const double i_radians);
     Rotation2DNew(const RotationEnum rotation_90);
+    Rotation2DNew(const Rotation90& rotation_90);
 
-    double GetDegrees() const;
-    void SetWithDegrees(const double degrees);
+    Rotation2DNew GetDereferenced(const Rotation2DNew* const reference, const bool treat_this_and_reference_as_snap90) const;
+    Rotation2DNew GetReferenced(const Rotation2DNew* const reference, const bool treat_this_and_reference_as_snap90) const;
+
+    //Sets radians to its equivalent value between 0.0 and (2.0 * M_PI) (excluding (2.0 * M_PI))
+    void SetToBaseAngle();
+    Rotation2DNew GetBaseAngle() const;
+
+    //Safe for OpRules::ROTATION90 and OpRule::ROTATION90_NO_SCALE as long as [treat_this_as_snap90] is set to true!
+    void RotateClockwise90(const bool treat_this_as_snap90, const int number_of_90_degree_rotations = 1);
+    //Safe for OpRules::ROTATION90 and OpRule::ROTATION90_NO_SCALE
+    void RotateCounterclockwise90(const bool treat_this_as_snap90, const int number_of_90_degree_rotations = 1);
+
+    //Safe for OpRules::ROTATION90 and OpRule::ROTATION90_NO_SCALE as long as [treat_this_as_snap90] is set to true!
+    Rotation2DNew GetOppositeAngle(const bool treat_this_as_snap90) const;
+
+    double GetDegrees(const bool treat_this_as_snap90) const;
+    void SetDegrees(const double degrees, const bool treat_degrees_as_snap90);
+
+    //Returns true only if radians equals EXACTLY 0.0, 0.5pi, pi, or 1.5pi.
+    bool IsRepresentableAsRotation90() const;
 };
 
 
@@ -298,32 +390,54 @@ struct TotalFlip
 
 
 // -----------------   TRANSFORMATIONS 2D   -----------------
+enum class OpRules : unsigned char //Short for "OptimizationRules." Note that some cases are omitted because the optimization achieved would be negligable.
+{
+    NO_OPTIMIZATION,
+    NO_SKEW, //Optimize calculations by assuming [scale direction offsets] equal 0.0.
+    NO_SCALE, //Optimize calculations by assuming [scale magnitudes] are set to 1.0, and [scale direction offsets] are set to 0.0.
+    ROTATION90, //Optimize calculations by assuming [rotation.radians] is set exactly to 0, 0.5pi, pi, or 1.5pi. Also optimize calculations by assuming [scale direction offsets] equal 0.0.
+    ROTATION90_NO_SCALE, //Optimize calculations by assuming [scale magnitudes] are set to 1.0, and [scale direction offsets] are set to 0.0. Also assume [rotation.radians] is set exactly to 0, 0.5pi, pi, or 1.5pi.
+    NO_ROTATION, //Optimize calculations by assuming rotation is set exactly to 0. Also optimize calculations by assuming scale_direction_offsets equal 0.0.
+    NO_TRANSFORMATIONS //Removes basically all calculations for transformations
+};
 struct Transformations
 {
-    Rotation2DNew rotation;
     Scale2DNew scale;
-    TotalFlip total_flip;
+    Rotation2DNew rotation;
 
-    Transformations();
-    Transformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const TotalFlip i_total_flip);
-    Transformations(const Transformations90 transformations_90);
+    OpRules op_rules = OpRules::NO_SKEW;
+
+    Transformations(const Scale2DNew i_scale = {}, const Rotation2DNew i_rotation = {}, const OpRules i_op_rules = OpRules::NO_SKEW);
+    Transformations(const Transformations90& transformations_90, const OpRules i_op_rules = OpRules::ROTATION90);
+
+    bool DebugAssertion() const;
+
+    Rotation90 GetRotation90() const;
+
+    //[reference] cannot be nullptr!
+    Transformations GetDereferenced(const Transformations* const reference) const;
+    //IMPORTANT!!!: The returned [op_rules] can only be expanded relative to this->[op_rules] in this method;  Also, [reference] cannot be nullptr!
+    Transformations GetReferenced(const Transformations* const reference) const;
+
+    //Sets op_rules to the most restrictive option given the current values of [scale] and [rotation]
+    void DynamicallyDetermineOpRules();
+
+    //TODO: Snaps [scale] and [rotation] to the closest legal values given the [new_op_rules]
+    void DynamicallySetOpRules(const OpRules new_op_rules);
+
+private:
+    //NOT UPDATED REGULARLY, MAY BE INCORRECT!!!
+    OpRules GetDereferencedOpRules(const OpRules reference_op_rules) const;
+
+    //DOESN'T CALL DebugAssertion()!!!
+    void SetCartesianPlaneStuffIdk(double& x1_x0_component, double& x1_y0_component, double& y1_x0_component, double& y1_y0_component) const;
 };
-struct RefTransformations
+struct RefTransformations : Transformations
 {
-    Rotation2DNew rotation;
-
-    Scale2DNew scale;
-
-    TotalFlip total_flip;
-
-
     const RefTransformations* reference_transformations = nullptr;
 
-
-    RefTransformations();
-    RefTransformations(const Transformations non_ref_transformations, const RefTransformations* const i_reference_transformations = nullptr);
-    RefTransformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const TotalFlip i_total_flip);
-    RefTransformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const TotalFlip i_total_flip, const RefTransformations* const i_reference_transformations);
+    RefTransformations(const Scale2DNew i_scale = Scale2DNew(), const Rotation2DNew i_rotation = Rotation2DNew(), const RefTransformations* const i_reference_transformations = nullptr);
+    RefTransformations(const Transformations& non_ref_transformations, const RefTransformations* const i_reference_transformations = nullptr);
 
     Transformations GetDepthValue(const unsigned int depth_index) const;
 
@@ -352,6 +466,33 @@ struct RefTransformations
 
 
 
+// -----------------   PLANE   -----------------
+struct RefPlane;
+struct Plane
+{
+    Point2DNew pos;
+    Transformations transformations;
+
+    Plane(const Point2DNew i_pos = {}, const Transformations i_transformations = {});
+    //IMPORTANT: This conversion slices!
+    Plane(const RefPlane& ref_plane);
+
+    Plane GetDereferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const;
+    Plane GetReferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const;
+};
+struct RefPlane //In a RefPlane, [pos.reference_transformations] and [transformations.reference_transformations] should ALWAYS be the same.
+{
+    RefPoint2DNewest pos;
+    RefTransformations transformations;
+    
+    RefPlane(const RefPoint2DNewest i_pos = {}, const RefTransformations i_transformations = {});
+    RefPlane(const Point2DNew i_non_ref_pos, const Transformations i_non_ref_transformations, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations);
+    RefPlane(const RefPlane& non_ref_plane, const RefPoint2DNewest* const i_reference_point = nullptr, const RefTransformations* const i_reference_transformations = nullptr);
+};
+
+
+
+
 // -----------------   QUAD   -----------------
 struct Quad
 {
@@ -361,8 +502,9 @@ struct Quad
     Point2DNew top_left;
 
     Quad();
-    Quad(const double right_edge, const double bottom_edge, const double left_edge, const double top_edge);
     Quad(const Point2DNew i_top_right, const Point2DNew i_bottom_right, const Point2DNew i_bottom_left, const Point2DNew i_top_left);
+    //Non-rotation rectangle constructor
+    Quad(const double right_edge, const double bottom_edge, const double left_edge, const double top_edge);
 
     void Align90(const unsigned int WILL_BE_SCALED_accepted_epsilon_difference);
 };
@@ -377,27 +519,30 @@ struct Quad
 
 
 
-
 struct Line2D;
 struct Offset2DNew;
+struct CameraNew;
 // ----------------------------------   R E C T A N G L E   ----------------------------------
 
 // -----------------   NON-REFERENCE   -----------------
-struct RectangleNewest
+struct RectangleNewest : Plane
 {
     //---- Data ----
 
-    Point2DNew pos;
-    Transformations transformations;
+    //Point2DNew pos;
     Size2DNew unscaled_size;
     Centering2DNew centering;
+    //Transformations transformations;
+
+    RectangleNewest(const Point2DNew i_pos = {}, const Size2DNew i_unscaled_size = {}, const Centering2DNew i_centering = {}, const Transformations& i_transformations = {});
+    RectangleNewest(const RefRectangleNewest& i_ref_rect);
+
+    RectangleNewest GetDereferenced();
 
     Quad GetQuad() const;
+    Quad GetScreenQuad(const CameraNew* const camera) const;
 
     Point2DNew GetCorner(const CornerEnum corner) const;
-
-    //TO-DO: add all the methods for this class
-
 
     //---- Edge Functions ----
     
@@ -441,15 +586,13 @@ struct RefRectangleNewest
     RefTransformations transformations;
 
 
-    RefRectangleNewest();
+    RefRectangleNewest(const RefRectangleNewest* const reference_rectangle, const Point2DNew non_ref_pos = {}, const Size2DNew i_unscaled_size = {}, const Centering2DNew i_centering = {}, const Transformations non_ref_transformations = {});
     //Recommended
-    RefRectangleNewest(const RefRectangleNewest* const reference_rectangle, const Point2DNew non_ref_pos = Point2DNew(), const Size2DNew i_unscaled_size = Size2DNew(), const Centering2DNew i_centering = Centering2DNew(), const Transformations non_ref_transformations = Transformations());
-    //Recommended
-    RefRectangleNewest(const RefPoint2DNewest* const reference_point, const RefTransformations* const reference_transformations, const Point2DNew non_ref_pos = Point2DNew(), const Size2DNew i_unscaled_size = Size2DNew(), const Centering2DNew i_centering = Centering2DNew(), const Transformations non_ref_transformations = Transformations());
+    RefRectangleNewest(const RefPoint2DNewest* const reference_point, const RefTransformations* const reference_transformations, const Point2DNew non_ref_pos = {}, const Size2DNew i_unscaled_size = {}, const Centering2DNew i_centering = {}, const Transformations non_ref_transformations = {});
+    //Non-recommended (full-explicit constructor)
+    RefRectangleNewest(const RefPoint2DNewest i_pos = {}, const Size2DNew i_unscaled_size = {}, const Centering2DNew i_centering = {}, const RefTransformations i_transformations = {});
     //Non-recommended
-    RefRectangleNewest(const RefPoint2DNewest i_pos, const RefTransformations i_transformations, const Size2DNew i_unscaled_size, const Centering2DNew i_centering);
-    //Non-recommended
-    RefRectangleNewest(const RectangleNewest non_ref_rectangle);
+    RefRectangleNewest(const RectangleNewest& non_ref_rectangle);
 
 
     RectangleNewest GetUniValue() const;

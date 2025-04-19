@@ -513,6 +513,7 @@ struct Program : RunDrawAndPostDrawRunMethods
 
 	RefRectangleNewest test_rect_new;
 	RefRectangleNewest test_rect_new_two;
+	RectangleNewest test_rect_new_three;
 	//RefRectangleNewest test_rect_new_three;
 
 	//Point2DNew test_point = { 200.0, 150.0 };
@@ -528,4 +529,14 @@ struct Program : RunDrawAndPostDrawRunMethods
 	BasicFont example1_font;
 
 	BasicTextBox example1_text_box;
+
+
+
+
+	// ----------- NEWEST RECTANGLE SYSTEM TESTING -----------
+
+	Point2DNew beans_point_one;
+	Point2DNew beans_point_two;
+
+	Transformations beans_transformations_one;
 };

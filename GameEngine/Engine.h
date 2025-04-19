@@ -488,28 +488,41 @@ private:  // -----------------   P R I V A T E   S E C T I O N   ---------------
 
 public: // -----------------   RECTANGLENEW FUNCTIONS   -----------------
 
+	//Outdated?
 	void DrawSDLRectWithRotation(const SDL_RectWithRotation* const rect, const SDL_Color fill_color);
+	//Outdated?
 	void DrawTextureWithSDLRectWithRotation(const SDL_RectWithRotation* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod);
 
-
+	//Outdated?
 	void DrawRectangleNew(const RectangleNew* const rect, const SDL_Color fill_color, Camera* const camera);
+	//Outdated?
 	void DrawTextureWithRectangleNew(const RectangleNew* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
 
+	//Outdated?
 	void DrawRectangleNew(const Point2DNew* const pos, const Size2DNew* const unscaled_size, const Scale2DNew* const scale, const Centering2DNew* const centering, const Rotation2DNew* const rotation, const TotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera);
+	//Outdated?
 	void DrawTextureWithRectangleNew(const Point2DNew* const pos, const Size2DNew* const unscaled_size, const Scale2DNew* const scale, const Centering2DNew* const centering, const Rotation2DNew* const rotation, const TotalFlip* const total_flip, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
 
 
+	//Outdated?
 	void DrawRefRectangleNew(const RefRectangleNew* const rect, const SDL_Color fill_color, Camera* const camera);
+	//Outdated?
 	void DrawTextureWithRefRectangleNew(const RefRectangleNew* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
 
+	//Outdated?
 	void DrawRefRectangleNew(const RefPoint2DNew* const pos, const Size2DNew* const unscaled_size, const RefScale2DNew* const scale, const Centering2DNew* const centering, const RefRotation2DNew* const rotation, const RefTotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera);
+	//Outdated?
 	void DrawTextureWithRefRectangleNew(const RefPoint2DNew* const pos, const Size2DNew* const unscaled_size, const RefScale2DNew* const scale, const Centering2DNew* const centering, const RefRotation2DNew* const rotation, const RefTotalFlip* const total_flip, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
 
 
+	//Outdated?
 	void DrawRefRectangleNewNew(const RefRectangleNewNew* const rect, const SDL_Color fill_color, Camera* const camera);
+	//Outdated?
 	void DrawTextureWithRefRectangleNewNew(const RefRectangleNewNew* const rect, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
 
+	//Outdated?
 	void DrawRefRectangleNewNew(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, const SDL_Color fill_color, Camera* const camera);
+	//Outdated?
 	void DrawTextureWithRefRectangleNewNew(const RefPoint2DNewNew* const pos, const RefSize2DNewNew* const unscaled_size, const RefScale2DNewNew* const scale, const Centering2DNew* const centering, const RefRotation2DNewNew* const rotation, const RefTotalFlip* const total_flip, const Texture* texture, const SDL_Rect* source_rect, const SDL_Color* color_and_alpha_mod, Camera* const camera);
 
 
@@ -521,15 +534,15 @@ public: // -----------------   RECTANGLENEW FUNCTIONS   -----------------
 	void DrawScreenQuad(const Quad* const screen_quad, const GLColor* color, const bool align_90=1) const;
 	void DrawTexturedScreenQuad(const Quad* const screen_quad, const Texture* const texture, const GLColor* color_and_alpha_mod, const bool align_90=1) const;
 
+	//Outdated?
 	void DrawQuad(const Quad* const quad, const GLColor* const color, const CameraNew* const camera);
+	//Outdated?
 	void DrawTexturedQuad(const Quad* const quad, const Texture* const texture, const GLColor* const color_and_alpha_mod, const CameraNew* const camera);
-
+	
+	//Outdated?
 	void DrawTextureWithRefRectangleNewest(const RefRectangleNewest* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera);
 
 	//void DrawTexturedRefRectangle90(const RefRectangle90* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera);
-
-
-
 
 
 

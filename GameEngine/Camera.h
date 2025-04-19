@@ -11,5 +11,5 @@ struct Camera {
 };
 
 struct CameraNew {
-	RefRectangleNewest rect;
+	RectangleNewest rect;
 };

@@ -222,6 +222,28 @@ Rotation90::Rotation90(const RotationEnum i_val) : val(i_val) {}
 Rotation90::Rotation90(const Rotation2DNew& rotation_2d_new)
     : val(static_cast<RotationEnum>(static_cast<unsigned char>((((int)round((2.0 * rotation_2d_new.radians) / M_PI) % 4) + 4) % 4))) {}
 
+Rotation90 Rotation90::GetDereferenced(const Rotation90* const reference) const
+{
+    return Rotation90(static_cast<RotationEnum>((static_cast<unsigned char>(reference->val) + static_cast<unsigned char>(val)) % static_cast<unsigned char>(4)));
+}
+Rotation90 Rotation90::GetReferenced(const Rotation90* const reference) const
+{
+    return Rotation90(static_cast<RotationEnum>(((static_cast<unsigned char>(val) + static_cast<unsigned char>(4)) - static_cast<unsigned char>(reference->val)) % static_cast<unsigned char>(4)));
+}
+
+Rotation2DNew Rotation90::GetDereferenced(const Rotation2DNew* const reference) const
+{
+    const Rotation2DNew temp_non_90_val = *this;
+
+    return temp_non_90_val.GetDereferenced(reference, false);
+}
+Rotation2DNew Rotation90::GetReferenced(const Rotation2DNew* const reference) const
+{
+    const Rotation2DNew temp_non_90_val = *this;
+
+    return temp_non_90_val.GetReferenced(reference, false);
+}
+
 double Rotation90::GetRadians() const
 {
     return (static_cast<double>(static_cast<unsigned char>(val)) * M_PI);
@@ -229,6 +251,15 @@ double Rotation90::GetRadians() const
 double Rotation90::GetDegrees() const
 {
     return (static_cast<double>(static_cast<unsigned char>(val)) * 90.0);
+}
+
+void Rotation90::RotateClockwise(const unsigned int number_of_90_degree_rotations)
+{
+    val = static_cast<RotationEnum>(((static_cast<unsigned char>(val) + static_cast<unsigned char>(4)) - static_cast<unsigned char>(number_of_90_degree_rotations % 4)) % static_cast<unsigned char>(4));
+}
+void Rotation90::RotateCounterclockwise(const unsigned int number_of_90_degree_rotations)
+{
+    val = static_cast<RotationEnum>((static_cast<unsigned char>(val) + static_cast<unsigned char>(number_of_90_degree_rotations % 4)) % static_cast<unsigned char>(4));
 }
 
 
@@ -247,21 +278,120 @@ Scale90::Scale90() {}
 Scale90::Scale90(const double i_width_scale, const double i_height_scale) : width_scale(i_width_scale), height_scale(i_height_scale) {}
 Scale90::Scale90(const Scale2DNew& scale_2d_new) : width_scale(scale_2d_new.width_scale), height_scale(scale_2d_new.height_scale) {}
 
+Scale90 Scale90::GetDereferenced(const Scale90* const reference_scale, const Rotation90* const this_rotation) const
+{
+    if ((!this_rotation) || (this_rotation->val == RotationEnum::DEGREES_0) || (this_rotation->val == RotationEnum::DEGREES_180))
+    {
+        return Scale90(reference_scale->width_scale * width_scale, reference_scale->height_scale * height_scale);
+    }
+    else
+    {
+        return Scale90(reference_scale->height_scale * width_scale, reference_scale->width_scale * height_scale);
+    }
+}
+Scale90 Scale90::GetReferenced(const Scale90* const reference_scale, const Rotation90* const reference_rotation) const
+{
+    if ((!reference_rotation) || (reference_rotation->val == RotationEnum::DEGREES_0) || (reference_rotation->val == RotationEnum::DEGREES_180))
+    {
+        return Scale90(width_scale / reference_scale->width_scale, height_scale / reference_scale->height_scale);
+    }
+    else
+    {
+        return Scale90(width_scale / reference_scale->height_scale, height_scale / reference_scale->width_scale);
+    }
+}
+
+Scale2DNew Scale90::GetDereferenced(const Scale2DNew* const reference_scale, const Rotation2DNew* const this_rotation) const
+{
+    const Scale2DNew temp_non_90_val = *this;
+
+    return temp_non_90_val.GetDereferenced(reference_scale, this_rotation);
+}
+Scale2DNew Scale90::GetReferenced(const Scale2DNew* const reference_scale, const Rotation2DNew* const reference_rotation) const
+{
+    const Scale2DNew temp_non_90_val = *this;
+
+    return temp_non_90_val.GetReferenced(reference_scale, reference_rotation);
+}
+
+bool Scale90::GetHorizontalFlip() const
+{
+    return signbit(width_scale);
+}
+double Scale90::GetHorizontalFlipDouble() const
+{
+    return ((double)GetHorizontalFlip() * -2.0) + 1.0;
+}
+void Scale90::FlipHorizontally()
+{
+    width_scale *= -1.0;
+}
+void Scale90::SetHorizontalFlip(const bool horizontal_flip)
+{
+    const bool temp_sign = GetHorizontalFlip();
+
+    if (!(horizontal_flip == temp_sign))
+    {
+        FlipHorizontally();
+    }
+}
+
+bool Scale90::GetVerticalFlip() const
+{
+    return signbit(height_scale);
+}
+double Scale90::GetVerticalFlipDouble() const
+{
+    return ((double)GetVerticalFlip() * -2.0) + 1.0;
+}
+void Scale90::FlipVertically()
+{
+    height_scale *= -1.0;
+}
+void Scale90::SetVerticalFlip(const bool vertical_flip)
+{
+    const bool temp_sign = GetVerticalFlip();
+
+    if (!(vertical_flip == temp_sign))
+    {
+        FlipVertically();
+    }
+}
+
+double Scale90::GetWidthScaleMagnitude() const
+{
+    return abs(width_scale);
+}
+void Scale90::SetWidthScaleMagnitude(const double magnitude)
+{
+    width_scale = GetHorizontalFlipDouble() * magnitude;
+}
+
+double Scale90::GetHeightScaleMagnitude() const
+{
+    return abs(height_scale);
+}
+void Scale90::SetHeightScaleMagnitude(const double magnitude)
+{
+    height_scale = GetVerticalFlipDouble() * magnitude;
+}
+
+Scale90 Scale90::GetScaleMagnitude() const
+{
+    return Scale90(abs(width_scale), abs(height_scale));
+}
+void Scale90::SetScaleMagnitude(const Scale90 magnitude)
+{
+    SetWidthScaleMagnitude(magnitude.width_scale);
+    SetHeightScaleMagnitude(magnitude.height_scale);
+}
+
 
 
 
 // -----------------   TRANSFORMATIONS90   -----------------
-Transformations90::Transformations90(const Rotation90 i_rotation, const Scale90 i_scale, const Flip90 i_flip) : rotation(i_rotation), scale(i_scale), flip(i_flip) {}
-Transformations90::Transformations90(const Transformations& transformations) : rotation(transformations.rotation), scale(transformations.scale), flip(transformations.total_flip) {}
-
-void Transformations90::RotateCounterclockwise(const unsigned char number_of_counterclockwise_90_degree_rotations)
-{
-    rotation.val = static_cast<RotationEnum>((static_cast<unsigned char>(rotation.val) + (number_of_counterclockwise_90_degree_rotations % 4)) % 4);
-}
-void Transformations90::RotateClockwise(const unsigned char number_of_clockwise_90_degree_rotations)
-{
-    rotation.val = static_cast<RotationEnum>(((static_cast<unsigned char>(rotation.val) + static_cast<unsigned char>(4)) - (number_of_clockwise_90_degree_rotations % 4)) % 4);
-}
+Transformations90::Transformations90(const Scale90 i_scale, const Rotation90 i_rotation) : scale(i_scale), rotation(i_rotation) {}
+Transformations90::Transformations90(const Transformations& transformations) : scale(transformations.scale), rotation(transformations.rotation) {}
 
 
 
@@ -280,15 +410,247 @@ void Transformations90::RotateClockwise(const unsigned char number_of_clockwise_
 Point2DNew::Point2DNew() {}
 Point2DNew::Point2DNew(const double i_x, const double i_y) : x(i_x), y(i_y) {}
 
+Point2DNew Point2DNew::GetDereferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const
+{
+    if (reference_transformations)
+    {
+        ASSERT_MSG(reference_transformations->DebugAssertion(), "reference_transformations->OpRules were broken! Make sure member vars are set to their EXACT legal values.");
+
+
+        switch (reference_transformations->op_rules)
+        {
+        case OpRules::NO_TRANSFORMATIONS: return Point2DNew(x + reference_point->x, y + reference_point->y);
+
+
+        case OpRules::NO_ROTATION: return Point2DNew((x * reference_transformations->scale.width_scale) + reference_point->x, (y * reference_transformations->scale.height_scale) + reference_point->y);
+
+
+        case OpRules::ROTATION90_NO_SCALE:
+            switch (reference_transformations->GetRotation90().val)
+            {
+            case RotationEnum::DEGREES_0: return Point2DNew(x + reference_point->x, y + reference_point->y);
+            case RotationEnum::DEGREES_90: return Point2DNew(reference_point->x - y, x + reference_point->y);
+            case RotationEnum::DEGREES_180: return Point2DNew(reference_point->x - x, reference_point->y - y);
+            case RotationEnum::DEGREES_270: return Point2DNew(y + reference_point->x, reference_point->y - x);
+            }
+
+
+        case OpRules::ROTATION90:
+            switch (reference_transformations->GetRotation90().val)
+            {
+            case RotationEnum::DEGREES_0: return Point2DNew((x * reference_transformations->scale.width_scale) + reference_point->x, (y * reference_transformations->scale.height_scale) + reference_point->y);
+            case RotationEnum::DEGREES_90: return Point2DNew(reference_point->x - (y * reference_transformations->scale.height_scale), (x * reference_transformations->scale.width_scale) + reference_point->y);
+            case RotationEnum::DEGREES_180: return Point2DNew(reference_point->x - (x * reference_transformations->scale.width_scale), reference_point->y - (y * reference_transformations->scale.height_scale));
+            case RotationEnum::DEGREES_270: return Point2DNew((y * reference_transformations->scale.height_scale) + reference_point->x, reference_point->y - (x * reference_transformations->scale.width_scale));
+            }
+
+
+        case OpRules::NO_SCALE:
+        {
+            const double new_radians = atan2(y, x) + reference_transformations->rotation.radians;
+            const double distance = GetDistanceFrom({ 0.0, 0.0 });
+
+            return Point2DNew(
+                reference_point->x + (cos(new_radians) * distance),
+                reference_point->y + (sin(new_radians) * distance)
+            );
+        }
+
+
+        case OpRules::NO_SKEW:
+        {
+            const double width_cosine = cos(reference_transformations->rotation.radians);
+            const double height_cosine = cos(reference_transformations->rotation.radians + (0.5 * M_PI));
+
+
+            const double x_x_component = width_cosine * reference_transformations->scale.width_scale;
+            const double y_x_component = height_cosine * reference_transformations->scale.height_scale;
+
+            const double x_y_component = (-height_cosine) * reference_transformations->scale.width_scale;
+            const double y_y_component = (width_cosine) * reference_transformations->scale.height_scale;
+
+            return Point2DNew(
+                reference_point->x + (x * x_x_component) + (y * y_x_component),
+                reference_point->y + (x * x_y_component) + (y * y_y_component)
+            );
+        }
+
+
+        case OpRules::NO_OPTIMIZATION:
+        {
+            const double combined_width_direction = reference_transformations->rotation.radians + reference_transformations->scale.width_radian_offset;
+            const double combined_height_direction = reference_transformations->rotation.radians + reference_transformations->scale.height_radian_offset + (0.5 * M_PI);
+
+            const double x_x_component = cos(combined_width_direction) * reference_transformations->scale.width_scale;
+            const double y_x_component = cos(combined_height_direction) * reference_transformations->scale.height_scale;
+
+            const double x_y_component = sin(combined_width_direction) * reference_transformations->scale.width_scale;
+            const double y_y_component = sin(combined_height_direction) * reference_transformations->scale.height_scale;
+
+            return Point2DNew(
+                reference_point->x + (x * x_x_component) + (y * y_x_component),
+                reference_point->y + (x * x_y_component) + (y * y_y_component)
+            );
+        }
+        }
+    }
+    else
+    {
+        return Point2DNew(x + reference_point->x, y + reference_point->y);
+    }
+}
+Point2DNew Point2DNew::GetReferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const
+{
+    if (reference_transformations)
+    {
+        ASSERT_MSG(reference_transformations->DebugAssertion(), "reference_transformations->OpRules were broken! Make sure member vars are set to their EXACT legal values.");
+
+
+        switch (reference_transformations->op_rules)
+        {
+        case OpRules::NO_TRANSFORMATIONS: return Point2DNew(x - reference_point->x, y - reference_point->y);
+
+
+        case OpRules::NO_ROTATION: return Point2DNew((x - reference_point->x) / reference_transformations->scale.width_scale, (y - reference_point->y) / reference_transformations->scale.height_scale);
+
+
+        case OpRules::ROTATION90_NO_SCALE:
+            switch (reference_transformations->GetRotation90().val)
+            {
+            case RotationEnum::DEGREES_0: return Point2DNew(x - reference_point->x, y - reference_point->y);
+            case RotationEnum::DEGREES_90: return Point2DNew(x - reference_point->y, reference_point->x - y);
+            case RotationEnum::DEGREES_180: return Point2DNew(reference_point->x - x, reference_point->y - y);
+            case RotationEnum::DEGREES_270: return Point2DNew(reference_point->y - x, y - reference_point->x);
+            }
+
+
+        case OpRules::ROTATION90:
+            switch (reference_transformations->GetRotation90().val)
+            {
+            case RotationEnum::DEGREES_0: return Point2DNew((x - reference_point->x) / reference_transformations->scale.width_scale, (y - reference_point->y) / reference_transformations->scale.height_scale);
+            case RotationEnum::DEGREES_90: return Point2DNew((x - reference_point->y) / reference_transformations->scale.width_scale, (reference_point->x - y) / reference_transformations->scale.height_scale);
+            case RotationEnum::DEGREES_180: return Point2DNew((reference_point->x - x) / reference_transformations->scale.width_scale, (reference_point->y - y) / reference_transformations->scale.height_scale);
+            case RotationEnum::DEGREES_270: return Point2DNew((reference_point->y - x) / reference_transformations->scale.width_scale, (y - reference_point->x) / reference_transformations->scale.height_scale);
+            }
+
+
+        case OpRules::NO_SCALE:
+        {
+
+            const double new_radians = atan2(y - reference_point->y, x - reference_point->x) - reference_transformations->rotation.radians;
+            const double distance = GetDistanceFrom({ reference_point->x, reference_point->y });
+
+            return Point2DNew(
+                cos(new_radians) * distance,
+                sin(new_radians) * distance
+            );
+        }
+
+
+        case OpRules::NO_SKEW:
+        {
+            const double width_cosine = cos(reference_transformations->rotation.radians);
+            const double height_cosine = cos(reference_transformations->rotation.radians + (0.5 * M_PI));
+
+
+            const double x_x_component = width_cosine / reference_transformations->scale.width_scale;
+            const double y_x_component = height_cosine / reference_transformations->scale.height_scale;
+
+            const double x_y_component = (-height_cosine) / reference_transformations->scale.width_scale;
+            const double y_y_component = (width_cosine) / reference_transformations->scale.height_scale;
+
+            return Point2DNew(
+                ((x - reference_point->x) * x_x_component) + ((y - reference_point->y) * x_y_component),
+                ((x - reference_point->x) * y_x_component) + ((y - reference_point->y) * y_y_component)
+            );
+        }
+
+
+        case OpRules::NO_OPTIMIZATION:
+        {
+            const double combined_width_direction = reference_transformations->rotation.radians + reference_transformations->scale.width_radian_offset;
+            const double combined_height_direction = reference_transformations->rotation.radians + reference_transformations->scale.height_radian_offset + (0.5 * M_PI);
+
+            const double x_x_component = cos(combined_width_direction) / reference_transformations->scale.width_scale;
+            const double y_x_component = cos(combined_height_direction) / reference_transformations->scale.height_scale;
+
+            const double x_y_component = sin(combined_width_direction) / reference_transformations->scale.width_scale;
+            const double y_y_component = sin(combined_height_direction) / reference_transformations->scale.height_scale;
+
+            return Point2DNew(
+                ((x - reference_point->x) * x_x_component) + ((y - reference_point->y) * x_y_component),
+                ((x - reference_point->x) * y_x_component) + ((y - reference_point->y) * y_y_component)
+            );
+        }
+        }
+    }
+    else
+    {
+        return Point2DNew(x - reference_point->x, y - reference_point->y);
+    }
+}
+
+double Point2DNew::GetDistanceFrom(const Point2DNew other_point) const
+{
+    return sqrt(((x - other_point.x) * (x - other_point.x)) + ((y - other_point.y) * (y - other_point.y)));
+}
+
 
 RefPoint2DNewest::RefPoint2DNewest() {}
-RefPoint2DNewest::RefPoint2DNewest(const double i_x, const double i_y) : x(i_x), y(i_y) {}
-RefPoint2DNewest::RefPoint2DNewest(const Point2DNew non_ref_point) : x(non_ref_point.x), y(non_ref_point.y) {}
-RefPoint2DNewest::RefPoint2DNewest(const double i_x, const double i_y, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations) : x(i_x), y(i_y), reference_point(i_reference_point), reference_transformations(i_reference_transformations) {}
-RefPoint2DNewest::RefPoint2DNewest(const Point2DNew non_ref_point, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations) : x(non_ref_point.x), y(non_ref_point.y), reference_point(i_reference_point), reference_transformations(i_reference_transformations) {}
+RefPoint2DNewest::RefPoint2DNewest(const double i_x, const double i_y) : Point2DNew(i_x, i_y) {}
+RefPoint2DNewest::RefPoint2DNewest(const double i_x, const double i_y, const RefRectangleNewest* const reference_rectangle)
+    : Point2DNew(i_x, i_y),
+    reference_point(&reference_rectangle->pos),
+    reference_transformations(&reference_rectangle->transformations) {}
+RefPoint2DNewest::RefPoint2DNewest(const double i_x, const double i_y, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations)
+    : Point2DNew(i_x, i_y),
+    reference_point(i_reference_point),
+    reference_transformations(i_reference_transformations) {}
+RefPoint2DNewest::RefPoint2DNewest(const Point2DNew& non_ref_point) : Point2DNew(non_ref_point) {}
+RefPoint2DNewest::RefPoint2DNewest(const Point2DNew& non_ref_point, const RefRectangleNewest* const reference_rectangle)
+    : Point2DNew(non_ref_point),
+    reference_point(&reference_rectangle->pos),
+    reference_transformations(&reference_rectangle->transformations) {}
+RefPoint2DNewest::RefPoint2DNewest(const Point2DNew& non_ref_point, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations)
+    : Point2DNew(non_ref_point),
+    reference_point(i_reference_point),
+    reference_transformations(i_reference_transformations) {}
+
+void RefPoint2DNewest::SetReference(const RefRectangleNewest* const reference_rectangle)
+{
+    reference_point = &reference_rectangle->pos;
+    reference_transformations = &reference_rectangle->transformations;
+}
+
 
 Point2DNew RefPoint2DNewest::GetDepthValue(const unsigned int depth_index) const
 {
+    if ((!reference_point) || (depth_index == 0))
+    {
+        return *this;
+    }
+    else
+    {
+        const Point2DNew temp_point = reference_point->GetDepthValue(depth_index - 1);
+
+        if (reference_transformations)
+        {
+            const Transformations temp_transformations = reference_transformations->GetDepthValue(depth_index - 1);
+
+            return GetDereferenced(&temp_point, &temp_transformations);
+        }
+        else
+        {
+            return GetDereferenced(&temp_point);
+        }
+    }
+
+
+
+
+
+
+
     Point2DNew ref_point;
     if (reference_point)
     {
@@ -301,10 +663,6 @@ Point2DNew RefPoint2DNewest::GetDepthValue(const unsigned int depth_index) const
     {
         ref_trans = reference_transformations->GetDepthValue(depth_index - 1);
     }
-
-
-    const double flipped_x = x * ((-2.0 * ref_trans.total_flip.flip_horizontally) + 1.0);
-    const double flipped_y = y * ((-2.0 * ref_trans.total_flip.flip_vertically) + 1.0);
 
 
     //Compute modulated total width and height directions.
@@ -320,29 +678,29 @@ Point2DNew RefPoint2DNewest::GetDepthValue(const unsigned int depth_index) const
         if (snapped_width_direction == 0.0)
         {
             return Point2DNew(
-                ref_point.x + (flipped_x * ref_trans.scale.width_scale),
-                ref_point.y + (flipped_y * ref_trans.scale.height_scale)
+                ref_point.x + (x * ref_trans.scale.width_scale),
+                ref_point.y + (y * ref_trans.scale.height_scale)
             );
         }
         if (snapped_width_direction == 90.0)
         {
             return Point2DNew(
-                ref_point.x - (flipped_y * ref_trans.scale.height_scale),
-                ref_point.y + (flipped_x * ref_trans.scale.width_scale)
+                ref_point.x - (y * ref_trans.scale.height_scale),
+                ref_point.y + (x * ref_trans.scale.width_scale)
             );
         }
         if (snapped_width_direction == 180.0)
         {
             return Point2DNew(
-                ref_point.x - (flipped_x * ref_trans.scale.width_scale),
-                ref_point.y - (flipped_y * ref_trans.scale.height_scale)
+                ref_point.x - (x * ref_trans.scale.width_scale),
+                ref_point.y - (y * ref_trans.scale.height_scale)
             );
         }
         if (snapped_width_direction == 270.0)
         {
             return Point2DNew(
-                ref_point.x + (flipped_y * ref_trans.scale.height_scale),
-                ref_point.y - (flipped_x * ref_trans.scale.width_scale)
+                ref_point.x + (y * ref_trans.scale.height_scale),
+                ref_point.y - (x * ref_trans.scale.width_scale)
             );
         }
     }
@@ -356,8 +714,8 @@ Point2DNew RefPoint2DNewest::GetDepthValue(const unsigned int depth_index) const
 
 
     return Point2DNew(
-        ref_point.x + (flipped_x * x_x_component) + (flipped_y * y_x_component),
-        ref_point.y + (flipped_x * x_y_component) + (flipped_y * y_y_component)
+        ref_point.x + (x * x_x_component) + (y * y_x_component),
+        ref_point.y + (x * x_y_component) + (y * y_y_component)
     );
 }
 Point2DNew RefPoint2DNewest::GetUniValue() const
@@ -413,10 +771,6 @@ void RefPoint2DNewest::SetValueToFitDepthValue(const unsigned int depth_index, c
     }
 
 
-    const double flipped_x_old = x * ((-2.0 * ref_trans.total_flip.flip_horizontally) + 1.0);
-    const double flipped_y_old = y * ((-2.0 * ref_trans.total_flip.flip_vertically) + 1.0);
-
-
     //Compute modulated total width and height directions.
     const double combined_width_direction = ref_trans.rotation.radians + ref_trans.scale.width_radian_offset;
     const double combined_height_direction = ref_trans.rotation.radians + ref_trans.scale.height_radian_offset;
@@ -425,38 +779,35 @@ void RefPoint2DNewest::SetValueToFitDepthValue(const unsigned int depth_index, c
     const double snapped_height_direction = SnapRadiansToDegrees(combined_height_direction, 90);
 
 
-    double flipped_x;
-    double flipped_y;
+    double return_x;
+    double return_y;
     bool aligned_90 = 0;
     if (snapped_width_direction == snapped_height_direction)
     {
         if (snapped_width_direction == 0.0)
         {
-            flipped_x = (depth_value.x - ref_point.x) / ref_trans.scale.width_scale;
-            flipped_y = (depth_value.y - ref_point.y) / ref_trans.scale.height_scale;
+            return_x = (depth_value.x - ref_point.x) / ref_trans.scale.width_scale;
+            return_y = (depth_value.y - ref_point.y) / ref_trans.scale.height_scale;
             aligned_90 = 1;
         }
         if (snapped_width_direction == 90.0)
         {
-            flipped_x = (depth_value.y - ref_point.y) / ref_trans.scale.width_scale;
-            flipped_y = (ref_point.x - depth_value.x) / ref_trans.scale.height_scale;
+            return_x = (depth_value.y - ref_point.y) / ref_trans.scale.width_scale;
+            return_y = (ref_point.x - depth_value.x) / ref_trans.scale.height_scale;
             aligned_90 = 1;
         }
         if (snapped_width_direction == 180.0)
         {
-            flipped_x = (ref_point.x - depth_value.x) / ref_trans.scale.width_scale;
-            flipped_y = (ref_point.y - depth_value.y) / ref_trans.scale.height_scale;
+            return_x = (ref_point.x - depth_value.x) / ref_trans.scale.width_scale;
+            return_y = (ref_point.y - depth_value.y) / ref_trans.scale.height_scale;
             aligned_90 = 1;
         }
         if (snapped_width_direction == 270.0)
         {
-            flipped_x = (ref_point.y - depth_value.y) / ref_trans.scale.width_scale;
-            flipped_y = (depth_value.x - ref_point.x) / ref_trans.scale.height_scale;
+            return_x = (ref_point.y - depth_value.y) / ref_trans.scale.width_scale;
+            return_y = (depth_value.x - ref_point.x) / ref_trans.scale.height_scale;
             aligned_90 = 1;
         }
-
-        const double flipped_x_old = x * ((-2.0 * ref_trans.total_flip.flip_horizontally) + 1.0);
-        const double flipped_y_old = y * ((-2.0 * ref_trans.total_flip.flip_vertically) + 1.0);
     }
 
     if (!aligned_90)
@@ -468,12 +819,12 @@ void RefPoint2DNewest::SetValueToFitDepthValue(const unsigned int depth_index, c
         const double y_y_component = sin(combined_height_direction + (M_PI / 2.0)) * ref_trans.scale.height_scale;
 
 
-        flipped_y = (((depth_value.y - ref_point.y) / x_y_component) - ((depth_value.x - ref_point.x) / x_x_component)) / ((y_y_component / x_y_component) - (y_x_component / x_x_component));
-        flipped_x = (depth_value.x - ref_point.x - (flipped_y * y_x_component)) / x_x_component;
+        return_y = (((depth_value.y - ref_point.y) / x_y_component) - ((depth_value.x - ref_point.x) / x_x_component)) / ((y_y_component / x_y_component) - (y_x_component / x_x_component));
+        return_x = (depth_value.x - ref_point.x - (return_y * y_x_component)) / x_x_component;
     }
 
-    x = flipped_x * ((-2.0 * ref_trans.total_flip.flip_horizontally) + 1.0);
-    y = flipped_y * ((-2.0 * ref_trans.total_flip.flip_vertically) + 1.0);
+    x = return_x;
+    y = return_y;
 }
 void RefPoint2DNewest::SetValueToFitUniValue(const Point2DNew uni_value)
 {
@@ -501,7 +852,116 @@ Centering2DNew::Centering2DNew(const double i_x_centering, const double i_y_cent
 Scale2DNew::Scale2DNew() {}
 Scale2DNew::Scale2DNew(const double i_width_scale, const double i_height_scale) : width_scale(i_width_scale), height_scale(i_height_scale) {}
 Scale2DNew::Scale2DNew(const double i_width_scale, const double i_width_direction_offset, const double i_height_scale, const double i_height_direction_offset) : width_scale(i_width_scale), width_radian_offset(i_width_direction_offset), height_scale(i_height_scale), height_radian_offset(i_height_direction_offset) {}
-Scale2DNew::Scale2DNew(const Scale90 scale_90) : width_scale(scale_90.width_scale), height_scale(scale_90.height_scale) {}
+Scale2DNew::Scale2DNew(const Scale90& scale_90) : width_scale(scale_90.width_scale), height_scale(scale_90.height_scale) {}
+
+Scale2DNew Scale2DNew::GetDereferenced(const Scale2DNew* const reference_scale, const Rotation2DNew* const reference_rotation, const Rotation2DNew* const this_rotation) const
+{
+    Transformations temp_this_transformations(*this, *this_rotation);
+    temp_this_transformations.DynamicallyDetermineOpRules();
+
+    Transformations temp_ref_transformations(*reference_scale, *reference_rotation);
+    temp_ref_transformations.DynamicallyDetermineOpRules();
+
+    return temp_this_transformations.GetDereferenced(&temp_ref_transformations).scale;
+}
+Scale2DNew Scale2DNew::GetReferenced(const Scale2DNew* const reference_scale, const Rotation2DNew* const reference_rotation, const Rotation2DNew* const this_rotation) const
+{
+    Transformations temp_this_transformations(*this, *this_rotation);
+    temp_this_transformations.DynamicallyDetermineOpRules();
+
+    Transformations temp_ref_transformations(*reference_scale, *reference_rotation);
+    temp_ref_transformations.DynamicallyDetermineOpRules();
+
+    return temp_this_transformations.GetReferenced(&temp_ref_transformations).scale;
+}
+
+Scale2DNew Scale2DNew::GetDereferenced(const Scale2DNew* const reference_scale)
+{
+    return Scale2DNew(width_scale * reference_scale->width_scale, height_scale * reference_scale->height_scale);
+}
+Scale2DNew Scale2DNew::GetReferenced(const Scale2DNew* const reference_scale)
+{
+    return Scale2DNew(width_scale / reference_scale->width_scale, height_scale / reference_scale->height_scale);
+}
+
+bool Scale2DNew::GetHorizontalFlip() const
+{
+    return signbit(width_scale);
+}
+double Scale2DNew::GetHorizontalFlipDouble() const
+{
+    return ((double)GetHorizontalFlip() * -2.0) + 1.0;
+}
+void Scale2DNew::FlipHorizontally()
+{
+    width_scale *= -1.0;
+    width_radian_offset *= -1.0;
+}
+void Scale2DNew::SetHorizontalFlip(const bool horizontal_flip)
+{
+    const bool temp_sign = GetHorizontalFlip();
+
+    if (!(horizontal_flip == temp_sign))
+    {
+        FlipHorizontally();
+    }
+}
+
+bool Scale2DNew::GetVerticalFlip() const
+{
+    return signbit(height_scale);
+}
+double Scale2DNew::GetVerticalFlipDouble() const
+{
+    return ((double)GetVerticalFlip() * -2.0) + 1.0;
+}
+void Scale2DNew::FlipVertically()
+{
+    height_scale *= -1.0;
+    height_radian_offset *= -1.0;
+}
+void Scale2DNew::SetVerticalFlip(const bool vertical_flip)
+{
+    const bool temp_sign = GetVerticalFlip();
+
+    if (!(vertical_flip == temp_sign))
+    {
+        FlipVertically();
+    }
+}
+
+double Scale2DNew::GetWidthScaleMagnitude() const
+{
+    return abs(width_scale);
+}
+void Scale2DNew::SetWidthScaleMagnitude(const double magnitude)
+{
+    width_scale = GetHorizontalFlipDouble() * magnitude;
+}
+
+double Scale2DNew::GetHeightScaleMagnitude() const
+{
+    return abs(height_scale);
+}
+void Scale2DNew::SetHeightScaleMagnitude(const double magnitude)
+{
+    height_scale = GetVerticalFlipDouble() * magnitude;
+}
+
+Scale90 Scale2DNew::GetScaleMagnitude() const
+{
+    return Scale90(abs(width_scale), abs(height_scale));
+}
+void Scale2DNew::SetScaleMagnitude(const Scale90 magnitude)
+{
+    SetWidthScaleMagnitude(magnitude.width_scale);
+    SetHeightScaleMagnitude(magnitude.height_scale);
+}
+
+bool Scale2DNew::IsRepresentableAsScale90() const
+{
+    return ((width_radian_offset == 0.0) && (height_radian_offset == 0.0));
+}
 
 
 
@@ -509,15 +969,299 @@ Scale2DNew::Scale2DNew(const Scale90 scale_90) : width_scale(scale_90.width_scal
 // -----------------   ROTATION 2D   -----------------
 Rotation2DNew::Rotation2DNew() {}
 Rotation2DNew::Rotation2DNew(const double i_radians) : radians(i_radians) {}
-Rotation2DNew::Rotation2DNew(const RotationEnum rotation_90) : radians(static_cast<double>(static_cast<unsigned char>(rotation_90))* M_PI) {}
+Rotation2DNew::Rotation2DNew(const RotationEnum rotation_90) : radians((static_cast<double>(static_cast<unsigned char>(rotation_90)) * 0.5) * M_PI) {}
+Rotation2DNew::Rotation2DNew(const Rotation90& rotation_90) : Rotation2DNew(rotation_90.val) {}
 
-double Rotation2DNew::GetDegrees() const
+Rotation2DNew Rotation2DNew::GetDereferenced(const Rotation2DNew* const reference, const bool treat_this_and_reference_as_snap90) const
 {
-    return (radians * 180.0 / M_PI);
+    if (treat_this_and_reference_as_snap90)
+    {
+        ASSERT_MSG((radians == 0.0) || (radians == (0.5 * M_PI)) || (radians == M_PI) || (radians == (1.5 * M_PI)), "[radians] is not a valid snap90 value!");
+        ASSERT_MSG((reference->radians == 0.0) || (reference->radians == (0.5 * M_PI)) || (reference->radians == M_PI) || (reference->radians == (1.5 * M_PI)), "[reference->radians] is not a valid snap90 value!");
+
+        switch (static_cast<unsigned int>(round((radians + reference->radians) / (0.5 * M_PI))))
+        {
+        case 0: return Rotation2DNew(0.0);
+        case 1: return Rotation2DNew(0.5 * M_PI);
+        case 2: return Rotation2DNew(M_PI);
+        case 3: return Rotation2DNew(1.5 * M_PI);
+        case 4: return Rotation2DNew(0.0);
+        case 5: return Rotation2DNew(0.5 * M_PI);
+        case 6: return Rotation2DNew(M_PI);
+        }
+    }
+    else
+    {
+        return Rotation2DNew(radians + reference->radians);
+    }
 }
-void Rotation2DNew::SetWithDegrees(const double degrees)
+Rotation2DNew Rotation2DNew::GetReferenced(const Rotation2DNew* const reference, const bool treat_this_and_reference_as_snap90) const
 {
-    radians = degrees * M_PI / 180.0;
+    if (treat_this_and_reference_as_snap90)
+    {
+        ASSERT_MSG((radians == 0.0) || (radians == (0.5 * M_PI)) || (radians == M_PI) || (radians == (1.5 * M_PI)), "[radians] is not a valid snap90 value!");
+        ASSERT_MSG((reference->radians == 0.0) || (reference->radians == (0.5 * M_PI)) || (reference->radians == M_PI) || (reference->radians == (1.5 * M_PI)), "[reference->radians] is not a valid snap90 value!");
+
+        switch (static_cast<int>(round((radians - reference->radians) / (0.5 * M_PI))))
+        {
+        case -3: return Rotation2DNew(0.5 * M_PI);
+        case -2: return Rotation2DNew(M_PI);
+        case -1: return Rotation2DNew(1.5 * M_PI);
+        case 0: return Rotation2DNew(0.0);
+        case 1: return Rotation2DNew(0.5 * M_PI);
+        case 2: return Rotation2DNew(M_PI);
+        case 3: return Rotation2DNew(1.5 * M_PI);
+        }
+    }
+    else
+    {
+        return Rotation2DNew(radians - reference->radians);
+    }
+}
+
+void Rotation2DNew::SetToBaseAngle()
+{
+    double result = std::fmod(radians, (2.0 * M_PI));
+    if (result < 0.0)
+    {
+        result += (2.0 * M_PI);
+    }
+    radians = result;
+}
+Rotation2DNew Rotation2DNew::GetBaseAngle() const
+{
+    double result_radians = std::fmod(radians, (2.0 * M_PI));
+    if (result_radians < 0.0)
+    {
+        result_radians += (2.0 * M_PI);
+    }
+    return Rotation2DNew(result_radians);
+}
+
+void Rotation2DNew::RotateClockwise90(const bool treat_this_as_snap90, const int number_of_90_degree_rotations)
+{
+    if (treat_this_as_snap90)
+    {
+        ASSERT_MSG(IsRepresentableAsRotation90(), "This was not representable as Rotation90, but [treat_this_as_snap90] was set to true! Make sure member vars are set to their EXACT legal values.");
+
+        int mod_num_rotation = (number_of_90_degree_rotations % 4);
+        if (mod_num_rotation < 0)
+        {
+            mod_num_rotation += 4;
+        }
+
+        switch (mod_num_rotation)
+        {
+        case 0: return;
+            
+        case 1:
+            if (radians == 0.0)
+            {
+                radians = (1.5 * M_PI);
+                return;
+            }
+            else
+            {
+                if (radians == (0.5 * M_PI))
+                {
+                    radians = 0.0;
+                    return;
+                }
+                else
+                {
+                    if (radians == M_PI)
+                    {
+                        radians = (0.5 * M_PI);
+                        return;
+                    }
+                    else
+                    {
+                        radians = M_PI;
+                        return;
+                    }
+                }
+            }
+
+        case 2:
+            if (radians == 0.0)
+            {
+                radians = M_PI;
+                return;
+            }
+            else
+            {
+                if (radians == (0.5 * M_PI))
+                {
+                    radians = (1.5 * M_PI);
+                    return;
+                }
+                else
+                {
+                    if (radians == M_PI)
+                    {
+                        radians = 0.0;
+                        return;
+                    }
+                    else
+                    {
+                        radians = (0.5 * M_PI);
+                        return;
+                    }
+                }
+            }
+
+        case 3:
+            if (radians == 0.0)
+            {
+                radians = (0.5 * M_PI);
+                return;
+            }
+            else
+            {
+                if (radians == (0.5 * M_PI))
+                {
+                    radians = M_PI;
+                    return;
+                }
+                else
+                {
+                    if (radians == M_PI)
+                    {
+                        radians = (1.5 * M_PI);
+                        return;
+                    }
+                    else
+                    {
+                        radians = 0.0;
+                        return;
+                    }
+                }
+            }
+
+        default: return;
+        }
+    }
+    else
+    {
+        radians -= (static_cast<double>(number_of_90_degree_rotations) * 0.5 * M_PI);
+    }
+}
+void Rotation2DNew::RotateCounterclockwise90(const bool treat_this_as_snap90, const int number_of_90_degree_rotations)
+{
+    RotateClockwise90(treat_this_as_snap90, -number_of_90_degree_rotations);
+}
+
+Rotation2DNew Rotation2DNew::GetOppositeAngle(const bool treat_this_as_snap90) const
+{
+    if (treat_this_as_snap90)
+    {
+        ASSERT_MSG(IsRepresentableAsRotation90(), "This was not representable as Rotation90, but [treat_this_as_snap90] was set to true! Make sure member vars are set to their EXACT legal values.");
+
+        if (radians == 0.0)
+        {
+            return Rotation2DNew(0.0);
+        }
+        else
+        {
+            if (radians == (0.5 * M_PI))
+            {
+                return Rotation2DNew(1.5 * M_PI);
+            }
+            else
+            {
+                if (radians == M_PI)
+                {
+                    return Rotation2DNew(M_PI);
+                }
+                else
+                {
+                    return Rotation2DNew(0.5 * M_PI);
+                }
+            }
+        }
+    }
+    else
+    {
+        return Rotation2DNew(-radians);
+    }
+}
+
+double Rotation2DNew::GetDegrees(const bool treat_this_as_snap90) const
+{
+    if (treat_this_as_snap90)
+    {
+        ASSERT_MSG(IsRepresentableAsRotation90(), "This was not representable as Rotation90, but [treat_this_as_snap90] was set to true! Make sure member vars are set to their EXACT legal values.");
+
+        if (radians == 0.0)
+        {
+            return 0.0;
+        }
+        else
+        {
+            if (radians == (0.5 * M_PI))
+            {
+                return 90.0;
+            }
+            else
+            {
+                if (radians == M_PI)
+                {
+                    return 180.0;
+                }
+                else
+                {
+                    return 270.0;
+                }
+            }
+        }
+    }
+    else
+    {
+        return (radians * (180.0 / M_PI));
+    }
+}
+void Rotation2DNew::SetDegrees(const double degrees, const bool treat_degrees_as_snap90)
+{
+    if (treat_degrees_as_snap90)
+    {
+        ASSERT_MSG((degrees == 0.0) || (degrees == 90.0) || (degrees == 180.0) || (degrees == 270.0), "[degrees] was not representable as Rotation90, but [treat_degrees_as_snap90] was set to true! Make sure [degrees] was set to an EXACT legal value.");
+
+        if (degrees == 0.0)
+        {
+            radians = 0.0;
+            return;
+        }
+        else
+        {
+            if (degrees == 90.0)
+            {
+                radians = (0.5 * M_PI);
+                return;
+            }
+            else
+            {
+                if (degrees == 180.0)
+                {
+                    radians = M_PI;
+                    return;
+                }
+                else
+                {
+                    radians = (1.5 * M_PI);
+                    return;
+                }
+            }
+        }
+    }
+    else
+    {
+        radians = (degrees / 180.0) * M_PI;
+    }
+}
+
+bool Rotation2DNew::IsRepresentableAsRotation90() const
+{
+    return ((radians == 0.0) || (radians == (0.5 * M_PI)) || (radians == M_PI) || (radians == (1.5 * M_PI)));
 }
 
 
@@ -541,20 +1285,731 @@ SDL_RendererFlip TotalFlip::GetSDLFlip() const
 
 
 
+/*
+namespace {
+    Transformations TrigTransformationShortcut(const OpRules op_rules, const double x1_x0_component, const double x1_y0_component, const double y1_x0_component, const double y1_y0_component, const double x2_x1_component, const double x2_y1_component, const double y2_x1_component, const double y2_y1_component, const double temp_rotation_radians)
+    {
+        const double x2_x0_component = (x2_x1_component * x1_x0_component) + (x2_y1_component * y1_x0_component);
+        const double x2_y0_component = (x2_x1_component * x1_y0_component) + (x2_y1_component * y1_y0_component);
+
+        const double y2_x0_component = (y2_x1_component * x1_x0_component) + (y2_y1_component * y1_x0_component);
+        const double y2_y0_component = (y2_x1_component * x1_y0_component) + (y2_y1_component * y1_y0_component);
+
+        return Transformations(
+            Scale2DNew(
+                sqrt(pow(x2_x0_component, 2.0) + pow(x2_y0_component, 2.0)),
+                atan2(x2_y0_component, x2_x0_component) - temp_rotation_radians,
+                sqrt(pow(y2_x0_component, 2.0) + pow(y2_y0_component, 2.0)),
+                atan2(y2_y0_component, y2_x0_component) - temp_rotation_radians - (0.5 * M_PI)
+            ),
+            Rotation2DNew(temp_rotation_radians),
+            op_rules
+        );
+    }
+    Transformations TrigTransformationShortcut(const OpRules op_rules, const double x2_x0_component, const double x2_y0_component, const double y2_x0_component, const double y2_y0_component, const double temp_rotation_radians)
+    {
+        return Transformations(
+            Scale2DNew(
+                sqrt(pow(x2_x0_component, 2.0) + pow(x2_y0_component, 2.0)),
+                atan2(x2_y0_component, x2_x0_component) - temp_rotation_radians,
+                sqrt(pow(y2_x0_component, 2.0) + pow(y2_y0_component, 2.0)),
+                atan2(y2_y0_component, y2_x0_component) - temp_rotation_radians - (0.5 * M_PI)
+            ),
+            Rotation2DNew(temp_rotation_radians),
+            op_rules
+        );
+    }
+}
+*/
 
 // -----------------   TRANSFORMATIONS 2D   -----------------
-Transformations::Transformations() {}
-Transformations::Transformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const TotalFlip i_total_flip) : rotation(i_rotation), scale(i_scale), total_flip(i_total_flip) {}
-Transformations::Transformations(const Transformations90 transformations_90) : rotation(transformations_90.rotation.val), scale(transformations_90.scale), total_flip(transformations_90.flip) {}
+Transformations::Transformations(const Scale2DNew i_scale, const Rotation2DNew i_rotation, const OpRules i_op_rules) : rotation(i_rotation), scale(i_scale), op_rules(i_op_rules) {}
+Transformations::Transformations(const Transformations90& transformations_90, const OpRules i_op_rules) : rotation(transformations_90.rotation), scale(transformations_90.scale), op_rules(i_op_rules) {}
+
+bool Transformations::DebugAssertion() const
+{
+    switch (op_rules)
+    {
+    case OpRules::NO_SKEW:
+        return ((scale.width_radian_offset == 0.0) && (scale.height_radian_offset == 0.0));
+    case OpRules::ROTATION90:
+        return ((scale.width_radian_offset == 0.0) && (scale.height_radian_offset == 0.0) && ((rotation.radians == 0.0) || (rotation.radians == (0.5 * M_PI)) || (rotation.radians == M_PI) || (rotation.radians == (1.5 * M_PI))));
+    case OpRules::NO_ROTATION:
+        return ((scale.width_radian_offset == 0.0) && (scale.height_radian_offset == 0.0) && (rotation.radians == 0.0));
+    case OpRules::NO_TRANSFORMATIONS:
+        return ((scale.width_scale == 1.0) && (scale.height_scale == 1.0) && (scale.width_radian_offset == 0.0) && (scale.height_radian_offset == 0.0) && (rotation.radians == 0.0));
+    default: return true;
+    }
+}
+
+Rotation90 Transformations::GetRotation90() const
+{
+    if ((op_rules == OpRules::ROTATION90) || (op_rules == OpRules::NO_ROTATION) || (op_rules == OpRules::NO_TRANSFORMATIONS))
+    {
+        ASSERT_MSG(DebugAssertion(), "OpRules were broken! Make sure member vars are set to their EXACT legal values.");
+
+        if (rotation.radians == 0.0)
+        {
+            return Rotation90(RotationEnum::DEGREES_0);
+        }
+        else
+        {
+            if (rotation.radians == 0.5 * M_PI)
+            {
+                return Rotation90(RotationEnum::DEGREES_90);
+            }
+            else
+            {
+                if (rotation.radians == M_PI)
+                {
+                    return Rotation90(RotationEnum::DEGREES_180);
+                }
+                else
+                {
+
+                    return Rotation90(RotationEnum::DEGREES_270);
+                }
+            }
+        }
+    }
+    else
+    {
+        cerr << "This method is only avaliable for certain OpRules! If you instead want to round to the nearest Rotation90 value, use the Rotation90(const Rotation2DNew& ...) constructor.";
+        throw;
+    }
+}
+
+Transformations Transformations::GetDereferenced(const Transformations* const reference) const
+{
+    if (reference)
+    {
+        ASSERT_MSG(DebugAssertion(), "OpRules were broken! Make sure member vars are set to their EXACT legal values.");
+        ASSERT_MSG(reference->DebugAssertion(), "reference->OpRules were broken! Make sure member vars are set to their EXACT legal values.");
+
+        switch (reference->op_rules)
+        {
+        case OpRules::NO_TRANSFORMATIONS: return *this;
 
 
-RefTransformations::RefTransformations() {}
-RefTransformations::RefTransformations(const Transformations non_ref_transformations, const RefTransformations* const i_reference_transformations) : rotation(non_ref_transformations.rotation), scale(non_ref_transformations.scale), total_flip(non_ref_transformations.total_flip), reference_transformations(i_reference_transformations) {}
-RefTransformations::RefTransformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const TotalFlip i_total_flip) : rotation(i_rotation), scale(i_scale), total_flip(i_total_flip) {}
-RefTransformations::RefTransformations(const Rotation2DNew i_rotation, const Scale2DNew i_scale, const TotalFlip i_total_flip, const RefTransformations* const i_reference_transformations) : rotation(i_rotation), scale(i_scale), total_flip(i_total_flip), reference_transformations(i_reference_transformations) {}
+        case OpRules::NO_ROTATION:
+            switch (op_rules)
+            {
+            case OpRules::NO_TRANSFORMATIONS: return *reference;
+
+
+            case OpRules::NO_ROTATION: return Transformations(Scale2DNew(scale.width_scale * reference->scale.width_scale, scale.height_scale * reference->scale.height_scale), {}, OpRules::NO_ROTATION);
+
+
+            case OpRules::ROTATION90_NO_SCALE:
+                if ((rotation.radians == 0.0) || (rotation.radians == M_PI))
+                {
+                    return Transformations(Scale2DNew(reference->scale.width_scale, reference->scale.height_scale), rotation, OpRules::ROTATION90);
+                }
+                else
+                {
+                    return Transformations(Scale2DNew(reference->scale.height_scale, reference->scale.width_scale), rotation, OpRules::ROTATION90);
+                }
+
+
+            case OpRules::ROTATION90:
+                if ((rotation.radians == 0.0) || (rotation.radians == M_PI))
+                {
+                    return Transformations(Scale2DNew(scale.width_scale * reference->scale.width_scale, scale.height_scale * reference->scale.height_scale), rotation, OpRules::ROTATION90);
+                }
+                else
+                {
+                    return Transformations(Scale2DNew(scale.width_scale * reference->scale.height_scale, scale.height_scale * reference->scale.width_scale), rotation, OpRules::ROTATION90);
+                }
+            }
+
+
+        case OpRules::ROTATION90_NO_SCALE:
+            switch (op_rules)
+            {
+            case OpRules::NO_TRANSFORMATIONS: return *reference;
+
+
+            case OpRules::NO_ROTATION: return Transformations(scale, reference->rotation, OpRules::ROTATION90);
+
+
+            case OpRules::ROTATION90_NO_SCALE: return Transformations(Scale2DNew(), rotation.GetDereferenced(&reference->rotation, true), OpRules::ROTATION90_NO_SCALE);
+
+
+            case OpRules::ROTATION90: return Transformations(scale, rotation.GetDereferenced(&reference->rotation, true), OpRules::ROTATION90);
+
+
+            case OpRules::NO_SCALE: return Transformations(Scale2DNew(), Rotation2DNew(rotation.radians + reference->rotation.radians), OpRules::NO_SCALE);
+
+
+            case OpRules::NO_SKEW: return Transformations(scale, Rotation2DNew(rotation.radians + reference->rotation.radians), OpRules::NO_SKEW);
+
+                
+            case OpRules::NO_OPTIMIZATION: return Transformations(scale, Rotation2DNew(rotation.radians + reference->rotation.radians), OpRules::NO_OPTIMIZATION);
+            }
+
+
+        case OpRules::ROTATION90:
+            switch (op_rules)
+            {
+            case OpRules::NO_TRANSFORMATIONS: return *reference;
+                
+
+            case OpRules::NO_ROTATION: return Transformations(Scale2DNew(reference->scale.width_scale * scale.width_scale, reference->scale.height_scale * scale.height_scale), reference->rotation, OpRules::ROTATION90);
+
+
+            case OpRules::ROTATION90_NO_SCALE:
+                if ((rotation.radians == 0.0) || (rotation.radians == M_PI))
+                {
+                    return Transformations(Scale2DNew(reference->scale.width_scale, reference->scale.height_scale), rotation.GetDereferenced(&reference->rotation, true), OpRules::ROTATION90);
+                }
+                else
+                {
+                    return Transformations(Scale2DNew(reference->scale.height_scale, reference->scale.width_scale), rotation.GetDereferenced(&reference->rotation, true), OpRules::ROTATION90);
+                }
+
+
+            case OpRules::ROTATION90:
+                if ((rotation.radians == 0.0) || (rotation.radians == M_PI))
+                {
+                    return Transformations(Scale2DNew(reference->scale.width_scale * scale.width_scale, reference->scale.height_scale * scale.height_scale), rotation.GetDereferenced(&reference->rotation, true), OpRules::ROTATION90);
+                }
+                else
+                {
+                    return Transformations(Scale2DNew(reference->scale.height_scale * scale.width_scale, reference->scale.width_scale * scale.height_scale), rotation.GetDereferenced(&reference->rotation, true), OpRules::ROTATION90);
+                }
+            }
+
+
+        case OpRules::NO_SCALE:
+            switch (op_rules)
+            {
+            case OpRules::NO_TRANSFORMATIONS: return *reference;
+
+
+            case OpRules::NO_ROTATION: return Transformations(scale, reference->rotation, OpRules::NO_SKEW);
+
+
+            case OpRules::ROTATION90_NO_SCALE: return Transformations(Scale2DNew(), Rotation2DNew(reference->rotation.radians + rotation.radians), OpRules::NO_SCALE);
+
+
+            case OpRules::ROTATION90: return Transformations(scale, Rotation2DNew(reference->rotation.radians + rotation.radians), OpRules::NO_SKEW);
+
+
+            case OpRules::NO_SCALE: return Transformations(Scale2DNew(), Rotation2DNew(reference->rotation.radians + rotation.radians), OpRules::NO_SCALE);
+
+
+            case OpRules::NO_SKEW: return Transformations(scale, Rotation2DNew(reference->rotation.radians + rotation.radians), OpRules::NO_SKEW);
+
+
+            case OpRules::NO_OPTIMIZATION: return Transformations(scale, Rotation2DNew(reference->rotation.radians + rotation.radians), OpRules::NO_OPTIMIZATION);
+            }
+
+
+        case OpRules::NO_SKEW:
+            switch (op_rules)
+            {
+            case OpRules::NO_TRANSFORMATIONS: return *reference;
+
+
+            case OpRules::NO_ROTATION: return Transformations(Scale2DNew(reference->scale.width_scale * scale.width_scale, reference->scale.height_scale * scale.height_scale), reference->rotation, OpRules::NO_SKEW);
+
+
+            case OpRules::ROTATION90_NO_SCALE:
+                if ((rotation.radians == 0.0) || (rotation.radians == M_PI))
+                {
+                    return Transformations(Scale2DNew(reference->scale.width_scale, reference->scale.height_scale), Rotation2DNew(reference->rotation.radians + rotation.radians), OpRules::NO_SKEW);
+                }
+                else
+                {
+                    return Transformations(Scale2DNew(reference->scale.height_scale, reference->scale.width_scale), Rotation2DNew(reference->rotation.radians + rotation.radians), OpRules::NO_SKEW);
+                }
+
+
+            case OpRules::ROTATION90:
+                if ((rotation.radians == 0.0) || (rotation.radians == M_PI))
+                {
+                    return Transformations(Scale2DNew(reference->scale.width_scale * scale.width_scale, reference->scale.height_scale * scale.height_scale), Rotation2DNew(reference->rotation.radians + rotation.radians), OpRules::NO_SKEW);
+                }
+                else
+                {
+                    return Transformations(Scale2DNew(reference->scale.height_scale * scale.width_scale, reference->scale.width_scale * scale.height_scale), Rotation2DNew(reference->rotation.radians + rotation.radians), OpRules::NO_SKEW);
+                }
+            }
+        }
+
+
+
+
+        double x1_x0_component;
+        double x1_y0_component;
+
+        double y1_x0_component;
+        double y1_y0_component;
+
+        reference->SetCartesianPlaneStuffIdk(x1_x0_component, x1_y0_component, y1_x0_component, y1_y0_component);
+
+        double x2_x1_component;
+        double x2_y1_component;
+
+        double y2_x1_component;
+        double y2_y1_component;
+
+        SetCartesianPlaneStuffIdk(x2_x1_component, x2_y1_component, y2_x1_component, y2_y1_component);
+        
+
+        const double x2_x0_component = (x2_x1_component * x1_x0_component) + (x2_y1_component * y1_x0_component);
+        const double x2_y0_component = (x2_x1_component * x1_y0_component) + (x2_y1_component * y1_y0_component);
+
+        const double y2_x0_component = (y2_x1_component * x1_x0_component) + (y2_y1_component * y1_x0_component);
+        const double y2_y0_component = (y2_x1_component * x1_y0_component) + (y2_y1_component * y1_y0_component);
+
+
+        const double temp_rotation_radians = reference->rotation.radians + rotation.radians;
+
+        return Transformations(
+            Scale2DNew(
+                sqrt(pow(x2_x0_component, 2.0) + pow(x2_y0_component, 2.0)),
+                atan2(x2_y0_component, x2_x0_component) - temp_rotation_radians,
+                sqrt(pow(y2_x0_component, 2.0) + pow(y2_y0_component, 2.0)),
+                atan2(y2_y0_component, y2_x0_component) - temp_rotation_radians - (0.5 * M_PI)
+            ),
+            Rotation2DNew(temp_rotation_radians),
+            OpRules::NO_OPTIMIZATION
+        );
+    }
+    else
+    {
+        return *this;
+    }
+}
+Transformations Transformations::GetReferenced(const Transformations* const reference) const
+{
+    if (reference)
+    {
+        ASSERT_MSG(DebugAssertion(), "OpRules were broken! Make sure member vars are set to their EXACT legal values.");
+        ASSERT_MSG(reference->DebugAssertion(), "reference->OpRules were broken! Make sure member vars are set to their EXACT legal values.");
+
+        switch (reference->op_rules)
+        {
+        case OpRules::NO_TRANSFORMATIONS: return *this;
+
+
+        case OpRules::NO_ROTATION:
+            switch (op_rules)
+            {
+            case OpRules::NO_TRANSFORMATIONS: return Transformations(Scale2DNew(1.0 / reference->scale.width_scale, 1.0 / reference->scale.height_scale), {}, OpRules::NO_ROTATION);
+
+
+            case OpRules::NO_ROTATION: return Transformations(Scale2DNew(scale.width_scale / reference->scale.width_scale, scale.height_scale / reference->scale.height_scale), {}, OpRules::NO_ROTATION);
+
+
+            case OpRules::ROTATION90_NO_SCALE:
+                if ((rotation.radians == 0.0) || (rotation.radians == M_PI))
+                {
+                    return Transformations(Scale2DNew(1.0 / reference->scale.width_scale, 1.0 / reference->scale.height_scale), rotation, OpRules::ROTATION90);
+                }
+                else
+                {
+                    return Transformations(Scale2DNew(1.0 / reference->scale.height_scale, 1.0 / reference->scale.width_scale), rotation, OpRules::ROTATION90);
+                }
+
+
+            case OpRules::ROTATION90:
+                if ((rotation.radians == 0.0) || (rotation.radians == M_PI))
+                {
+                    return Transformations(Scale2DNew(scale.width_scale / reference->scale.width_scale, scale.height_scale / reference->scale.height_scale), rotation, OpRules::ROTATION90);
+                }
+                else
+                {
+                    return Transformations(Scale2DNew(scale.width_scale / reference->scale.height_scale, scale.height_scale / reference->scale.width_scale), rotation, OpRules::ROTATION90);
+                }
+            }
+
+
+        case OpRules::ROTATION90_NO_SCALE:
+            switch (op_rules)
+            {
+            case OpRules::NO_TRANSFORMATIONS: return Transformations({}, reference->rotation.GetOppositeAngle(true), OpRules::ROTATION90_NO_SCALE);
+
+
+            case OpRules::NO_ROTATION: return Transformations(scale, reference->rotation.GetOppositeAngle(true), OpRules::ROTATION90);
+
+
+            case OpRules::ROTATION90_NO_SCALE: return Transformations({}, rotation.GetReferenced(&reference->rotation, true), OpRules::ROTATION90_NO_SCALE);
+
+
+            case OpRules::ROTATION90: return Transformations(scale, rotation.GetReferenced(&reference->rotation, true), OpRules::ROTATION90);
+
+
+            case OpRules::NO_SCALE: return Transformations({}, Rotation2DNew(rotation.radians - reference->rotation.radians), OpRules::NO_SCALE);
+
+
+            case OpRules::NO_SKEW: return Transformations(scale, Rotation2DNew(rotation.radians - reference->rotation.radians), OpRules::NO_SKEW);
+
+
+            case OpRules::NO_OPTIMIZATION: return Transformations(scale, Rotation2DNew(rotation.radians - reference->rotation.radians), OpRules::NO_OPTIMIZATION);
+            }
+
+
+        case OpRules::ROTATION90:
+            switch (op_rules)
+            {
+            case OpRules::NO_TRANSFORMATIONS: return Transformations(Scale2DNew(1.0 / reference->scale.width_scale, 1.0 / reference->scale.height_scale), reference->rotation.GetOppositeAngle(true), OpRules::ROTATION90);
+
+
+            case OpRules::NO_ROTATION: return Transformations(Scale2DNew(scale.width_scale / reference->scale.width_scale, scale.height_scale / reference->scale.height_scale), reference->rotation.GetOppositeAngle(true), OpRules::ROTATION90);
+
+
+            case OpRules::ROTATION90_NO_SCALE:
+                if ((rotation.radians == 0.0) || (rotation.radians == M_PI))
+                {
+                    return Transformations(Scale2DNew(1.0 / reference->scale.width_scale, 1.0 / reference->scale.height_scale), rotation.GetReferenced(&reference->rotation, true), OpRules::ROTATION90);
+                }
+                else
+                {
+                    return Transformations(Scale2DNew(1.0 / reference->scale.height_scale, 1.0 / reference->scale.width_scale), rotation.GetReferenced(&reference->rotation, true), OpRules::ROTATION90);
+                }
+
+
+            case OpRules::ROTATION90:
+                if ((rotation.radians == 0.0) || (rotation.radians == M_PI))
+                {
+                    return Transformations(Scale2DNew(scale.width_scale / reference->scale.width_scale, scale.height_scale / reference->scale.height_scale), rotation.GetReferenced(&reference->rotation, true), OpRules::ROTATION90);
+                }
+                else
+                {
+                    return Transformations(Scale2DNew(scale.width_scale / reference->scale.height_scale, scale.height_scale / reference->scale.width_scale), rotation.GetReferenced(&reference->rotation, true), OpRules::ROTATION90);
+                }
+            }
+        }
+
+
+
+
+
+
+
+        const double x0_x1_component = 1.0 / (cos(rotation.radians + scale.width_radian_offset) * scale.width_scale);
+        const double x0_y1_component = 1.0 / (sin(rotation.radians + scale.width_radian_offset) * scale.width_scale);
+
+        const double y0_x1_component = 1.0 / (cos(rotation.radians + scale.height_radian_offset + (0.5 * M_PI)) * scale.height_scale);
+        const double y0_y1_component = 1.0 / (sin(rotation.radians + scale.height_radian_offset + (0.5 * M_PI)) * scale.height_scale);
+
+
+        double x1_x2_component = 1.0 / (cos(reference->rotation.radians + reference->scale.width_radian_offset) * reference->scale.width_scale);
+        double x1_y2_component = 1.0 / (sin(reference->rotation.radians + reference->scale.width_radian_offset) * reference->scale.width_scale);
+
+        double y1_x2_component = 1.0 / (cos(reference->rotation.radians + reference->scale.height_radian_offset + (0.5 * M_PI)) * reference->scale.height_scale);
+        double y1_y2_component = 1.0 / (sin(reference->rotation.radians + reference->scale.height_radian_offset + (0.5 * M_PI)) * reference->scale.height_scale);
+
+
+        const double x0_x2_component = (x0_x1_component * x1_x2_component) + (x0_y1_component * y1_x2_component);
+        const double x0_y2_component = (x0_x1_component * x1_y2_component) + (x0_y1_component * y1_y2_component);
+
+        const double y0_x2_component = (y0_x1_component * x1_x2_component) + (y0_y1_component * y1_x2_component);
+        const double y0_y2_component = (y0_x1_component * x1_y2_component) + (y0_y1_component * y1_y2_component);
+
+
+        const double temp_rotation_radians = rotation.radians - reference->rotation.radians;
+
+        return Transformations(
+            Scale2DNew(
+                sqrt(pow(x0_x2_component, 2.0) + pow(x0_y2_component, 2.0)),
+                atan2(x0_y2_component, x0_x2_component) - temp_rotation_radians,
+                sqrt(pow(y0_x2_component, 2.0) + pow(y0_y2_component, 2.0)),
+                atan2(y0_y2_component, y0_x2_component) - temp_rotation_radians - (0.5 * M_PI)
+            ),
+            Rotation2DNew(temp_rotation_radians),
+            OpRules::NO_OPTIMIZATION
+        );
+    }
+    else
+    {
+        return *this;
+    }
+}
+
+void Transformations::DynamicallyDetermineOpRules()
+{
+    if ((scale.width_radian_offset == 0.0) && (scale.height_radian_offset == 0.0))
+    {
+        if ((scale.width_scale == 1.0) && (scale.height_scale == 1.0))
+        {
+            if (rotation.radians == 0.0)
+            {
+                op_rules = OpRules::NO_TRANSFORMATIONS;
+            }
+            else
+            {
+                if ((rotation.radians == (0.5 * M_PI)) || (rotation.radians == M_PI) || (rotation.radians == (1.5 * M_PI)))
+                {
+                    op_rules = OpRules::ROTATION90_NO_SCALE;
+                }
+                else
+                {
+                    op_rules = OpRules::NO_SCALE;
+                }
+            }
+        }
+        else
+        {
+            if (rotation.radians == 0.0)
+            {
+                op_rules = OpRules::NO_ROTATION;
+            }
+            else
+            {
+                if ((rotation.radians == (0.5 * M_PI)) || (rotation.radians == M_PI) || (rotation.radians == (1.5 * M_PI)))
+                {
+                    op_rules = OpRules::ROTATION90;
+                }
+                else
+                {
+                    op_rules = OpRules::NO_SKEW;
+                }
+            }
+        }
+    }
+    else
+    {
+        op_rules = OpRules::NO_OPTIMIZATION;
+    }
+}
+
+OpRules Transformations::GetDereferencedOpRules(const OpRules reference_op_rules) const //NOT UPDATED REGULARLY, MAY BE INCORRECT!!!
+{
+    switch (reference_op_rules)
+    {
+    case OpRules::NO_TRANSFORMATIONS: return op_rules;
+
+
+    case OpRules::NO_ROTATION:
+        switch (op_rules)
+        {
+        case OpRules::NO_TRANSFORMATIONS: return reference_op_rules;
+        case OpRules::NO_ROTATION: return OpRules::NO_ROTATION;
+        case OpRules::ROTATION90_NO_SCALE: return OpRules::ROTATION90;
+        case OpRules::ROTATION90: return OpRules::ROTATION90;
+        }
+
+
+    case OpRules::ROTATION90_NO_SCALE:
+        switch (op_rules)
+        {
+        case OpRules::NO_TRANSFORMATIONS: return reference_op_rules;
+        case OpRules::NO_ROTATION: return OpRules::ROTATION90;
+        case OpRules::ROTATION90_NO_SCALE: return OpRules::ROTATION90_NO_SCALE;
+        case OpRules::ROTATION90: return OpRules::ROTATION90;
+        case OpRules::NO_SCALE: return OpRules::NO_SCALE;
+        case OpRules::NO_SKEW: return OpRules::NO_SKEW;
+        }
+
+
+    case OpRules::ROTATION90:
+        switch (op_rules)
+        {
+        case OpRules::NO_TRANSFORMATIONS: return reference_op_rules;
+        case OpRules::NO_ROTATION: return OpRules::ROTATION90;
+        case OpRules::ROTATION90_NO_SCALE: return OpRules::ROTATION90;
+        case OpRules::ROTATION90: return OpRules::ROTATION90;
+        }
+
+
+    case OpRules::NO_SCALE:
+        switch (op_rules)
+        {
+        case OpRules::NO_TRANSFORMATIONS: return reference_op_rules;
+        case OpRules::NO_ROTATION: return OpRules::NO_SKEW;
+        case OpRules::ROTATION90_NO_SCALE: return OpRules::NO_SCALE;
+        case OpRules::ROTATION90: return OpRules::NO_SKEW;
+        case OpRules::NO_SCALE: return OpRules::NO_SCALE;
+        case OpRules::NO_SKEW: return OpRules::NO_SKEW;
+        }
+
+
+    case OpRules::NO_SKEW:
+        switch (op_rules)
+        {
+        case OpRules::NO_TRANSFORMATIONS: return reference_op_rules;
+        case OpRules::NO_ROTATION: return OpRules::NO_SKEW;
+        case OpRules::ROTATION90_NO_SCALE: return OpRules::NO_SKEW;
+        case OpRules::ROTATION90: return OpRules::NO_SKEW;
+        }
+    }
+
+
+    return OpRules::NO_OPTIMIZATION;
+}
+
+void Transformations::SetCartesianPlaneStuffIdk(double& x_x0_component, double& x_y0_component, double& y_x0_component, double& y_y0_component) const
+{
+    switch (op_rules)
+    {
+    case OpRules::NO_TRANSFORMATIONS:
+        x_x0_component = 1.0;
+        x_y0_component = 0.0;
+
+        y_x0_component = 0.0;
+        y_y0_component = 1.0;
+        break;
+
+
+    case OpRules::NO_ROTATION:
+        x_x0_component = scale.width_scale;
+        x_y0_component = 0.0;
+
+        y_x0_component = 0.0;
+        y_y0_component = scale.height_scale;
+        break;
+
+
+    case OpRules::ROTATION90_NO_SCALE:
+        if (rotation.radians == 0.0)
+        {
+            x_x0_component = 1.0;
+            x_y0_component = 0.0;
+
+            y_x0_component = 0.0;
+            y_y0_component = 1.0;
+            break;
+        }
+        else
+        {
+            if (rotation.radians == (0.5 * M_PI))
+            {
+                x_x0_component = 0.0;
+                x_y0_component = 1.0;
+
+                y_x0_component = -1.0;
+                y_y0_component = 0.0;
+                break;
+            }
+            else
+            {
+                if (rotation.radians == M_PI)
+                {
+                    x_x0_component = -1.0;
+                    x_y0_component = 0.0;
+
+                    y_x0_component = 0.0;
+                    y_y0_component = -1.0;
+                    break;
+                }
+                else
+                {
+                    x_x0_component = 0.0;
+                    x_y0_component = -1.0;
+
+                    y_x0_component = 1.0;
+                    y_y0_component = 0.0;
+                    break;
+                }
+            }
+        }
+
+
+    case OpRules::ROTATION90:
+        if (rotation.radians == 0.0)
+        {
+            x_x0_component = scale.width_scale;
+            x_y0_component = 0.0;
+
+            y_x0_component = 0.0;
+            y_y0_component = scale.height_scale;
+            break;
+        }
+        else
+        {
+            if (rotation.radians == (0.5 * M_PI))
+            {
+                x_x0_component = 0.0;
+                x_y0_component = scale.width_scale;
+
+                y_x0_component = -scale.height_scale;
+                y_y0_component = 0.0;
+                break;
+            }
+            else
+            {
+                if (rotation.radians == M_PI)
+                {
+                    x_x0_component = -scale.width_scale;
+                    x_y0_component = 0.0;
+
+                    y_x0_component = 0.0;
+                    y_y0_component = -scale.height_scale;
+                    break;
+                }
+                else
+                {
+                    x_x0_component = 0.0;
+                    x_y0_component = -scale.width_scale;
+
+                    y_x0_component = scale.height_scale;
+                    y_y0_component = 0.0;
+                    break;
+                }
+            }
+        }
+
+
+    case OpRules::NO_SCALE:
+        x_x0_component = cos(rotation.radians);
+        x_y0_component = sin(rotation.radians);
+
+        y_x0_component = -x_y0_component;
+        y_y0_component = x_x0_component;
+
+
+    case OpRules::NO_SKEW:
+    {
+        const double sine = sin(rotation.radians);
+        const double cosine = cos(rotation.radians);
+
+        x_x0_component = cosine * scale.width_scale;
+        x_y0_component = sine * scale.width_scale;
+
+        y_x0_component = -sine * scale.height_scale;
+        y_y0_component = cosine * scale.height_scale;
+    }
+
+
+    case OpRules::NO_OPTIMIZATION:
+        x_x0_component = cos(rotation.radians + scale.width_radian_offset) * scale.width_scale;
+        x_y0_component = sin(rotation.radians + scale.width_radian_offset) * scale.width_scale;
+
+        y_x0_component = cos(rotation.radians + scale.height_radian_offset + (0.5 * M_PI)) * scale.height_scale;
+        y_y0_component = sin(rotation.radians + scale.height_radian_offset + (0.5 * M_PI)) * scale.height_scale;
+    }
+}
+
+
+
+
+RefTransformations::RefTransformations(const Scale2DNew i_scale, const Rotation2DNew i_rotation, const RefTransformations* const i_reference_transformations)
+    : Transformations(i_scale, i_rotation),
+    reference_transformations(i_reference_transformations) {}
+RefTransformations::RefTransformations(const Transformations& non_ref_transformations, const RefTransformations* const i_reference_transformations)
+    : Transformations(non_ref_transformations),
+    reference_transformations(i_reference_transformations) {}
 
 Transformations RefTransformations::GetDepthValue(const unsigned int depth_index) const
 {
+    if ((!reference_transformations) || (depth_index == 0))
+    {
+        return static_cast<Transformations>(*this);
+    }
+    else
+    {
+        const Transformations temp_transformations = reference_transformations->GetDepthValue(depth_index - 1);
+
+        return GetDereferenced(&temp_transformations);
+    }
+
+
+
+
+
     if (reference_transformations && (depth_index != 0))
     {
         const Transformations ref = reference_transformations->GetDepthValue(depth_index - 1);
@@ -585,14 +2040,18 @@ Transformations RefTransformations::GetDepthValue(const unsigned int depth_index
         const double temp_rotation_radians = ref.rotation.radians + rotation.radians;
 
         return Transformations(
-            Rotation2DNew(temp_rotation_radians),
-            Scale2DNew(sqrt(pow(x2_x0_component, 2.0) + pow(x2_y0_component, 2.0)), atan2(x2_y0_component, x2_x0_component) - temp_rotation_radians, sqrt(pow(y2_x0_component, 2.0) + pow(y2_y0_component, 2.0)), atan2(y2_y0_component, y2_x0_component) - temp_rotation_radians - half_pi),
-            TotalFlip(total_flip.flip_horizontally != ref.total_flip.flip_horizontally, total_flip.flip_vertically != ref.total_flip.flip_vertically)
+            Scale2DNew(
+                sqrt(pow(x2_x0_component, 2.0) + pow(x2_y0_component, 2.0)),
+                atan2(x2_y0_component, x2_x0_component) - temp_rotation_radians,
+                sqrt(pow(y2_x0_component, 2.0) + pow(y2_y0_component, 2.0)),
+                atan2(y2_y0_component, y2_x0_component) - temp_rotation_radians - half_pi
+            ),
+            Rotation2DNew(temp_rotation_radians)
         );
     }
     else
     {
-        return Transformations(rotation, scale, total_flip);
+        return Transformations(scale, rotation);
     }
 }
 Transformations RefTransformations::GetUniValue() const
@@ -613,10 +2072,33 @@ Transformations RefTransformations::GetDepthValue(const RefTransformations* cons
 
 
 
+// -----------------   PLANE   -----------------
+
+Plane::Plane(const Point2DNew i_pos, const Transformations i_transformations)
+    : pos(i_pos),
+    transformations(i_transformations) {}
+Plane::Plane(const RefPlane& ref_plane)
+    : pos(static_cast<Point2DNew>(ref_plane.pos)),
+    transformations(static_cast<Transformations>(ref_plane.transformations)) {}
+
+
+RefPlane::RefPlane(const RefPoint2DNewest i_pos = {}, const RefTransformations i_transformations = {})
+    : pos(i_pos),
+    transformations(i_transformations) {}
+RefPlane::RefPlane(const Point2DNew i_non_ref_pos, const Transformations i_non_ref_transformations, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations)
+    : pos(i_non_ref_pos.x, i_non_ref_pos.y, i_reference_point, i_reference_transformations),
+    transformations(i_non_ref_transformations.scale, i_non_ref_transformations.rotation, i_reference_transformations) {}
+RefPlane::RefPlane(const RefPlane& non_ref_plane, const RefPoint2DNewest* const i_reference_point = nullptr, const RefTransformations* const i_reference_transformations = nullptr)
+    : pos(non_ref_plane.pos.x, non_ref_plane.pos.y, i_reference_point, i_reference_transformations),
+    transformations(non_ref_plane.transformations.scale, non_ref_plane.transformations.rotation, i_reference_transformations) {}
+
+
+
+
 // -----------------   QUAD   -----------------
 Quad::Quad() {}
-Quad::Quad(const double right_edge, const double bottom_edge, const double left_edge, const double top_edge) : top_right(right_edge, top_edge), bottom_right(right_edge, bottom_edge), bottom_left(left_edge, bottom_edge), top_left(left_edge, top_edge) {}
 Quad::Quad(const Point2DNew i_top_right, const Point2DNew i_bottom_right, const Point2DNew i_bottom_left, const Point2DNew i_top_left) : top_right(i_top_right), bottom_right(i_bottom_right), bottom_left(i_bottom_left), top_left(i_top_left) {}
+Quad::Quad(const double right_edge, const double bottom_edge, const double left_edge, const double top_edge) : top_right(right_edge, top_edge), bottom_right(right_edge, bottom_edge), bottom_left(left_edge, bottom_edge), top_left(left_edge, top_edge) {}
 
 void Quad::Align90(const unsigned int WILL_BE_SCALED_accepted_epsilon_difference)
 {
@@ -654,70 +2136,32 @@ void Quad::Align90(const unsigned int WILL_BE_SCALED_accepted_epsilon_difference
 
 
 
-
 // ----------------------------------   R E C T A N G L E   ----------------------------------
 
 // -----------------   NON-REFERENCE   -----------------
+RectangleNewest::RectangleNewest(const Point2DNew i_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering, const Transformations& i_transformations)
+    : pos(i_pos),
+    unscaled_size(i_unscaled_size),
+    centering(i_centering),
+    transformations(i_transformations) {}
+RectangleNewest::RectangleNewest(const RefRectangleNewest& i_ref_rect)
+    : pos(static_cast<Point2DNew>(i_ref_rect.pos)), unscaled_size(i_ref_rect.unscaled_size),
+    centering(i_ref_rect.centering),
+    transformations(static_cast<Transformations>(i_ref_rect.transformations)) {}
+
+
 Quad RectangleNewest::GetQuad() const
 {
-    if ((transformations.scale.width_radian_offset == 0.0) && (transformations.scale.height_radian_offset == 0.0) && (transformations.total_flip.horizontal_direction_offset == 0.0) && (transformations.total_flip.vertical_direction_offset == 0.0))
-    {
-        const double degrees = SnapRadiansToDegrees(transformations.rotation.radians, 90);
-
-        if (degrees == 0.0)
-        {
-            const double flip_horizontally = (((double)transformations.total_flip.flip_horizontally * -2.0) + 1.0);
-            const double flip_vertically = (((double)transformations.total_flip.flip_vertically * -2.0) + 1.0);
-
-            return Quad(
-                pos.x + (unscaled_size.width * transformations.scale.width_scale * flip_horizontally * (centering.x_centering + 1.0) / 2.0),
-                pos.y + (unscaled_size.height * transformations.scale.height_scale * flip_vertically * (centering.y_centering - 1.0) / 2.0),
-                pos.x + (unscaled_size.width * transformations.scale.width_scale * flip_horizontally * (centering.x_centering - 1.0) / 2.0),
-                pos.y + (unscaled_size.height * transformations.scale.height_scale * flip_vertically * (centering.y_centering + 1.0) / 2.0)
-            );
-        }
-
-        if (degrees == 90.0)
-        {
-            const double flip_horizontally = (((double)transformations.total_flip.flip_horizontally * -2.0) + 1.0);
-            const double flip_vertically = (((double)transformations.total_flip.flip_vertically * -2.0) + 1.0);
-
-            return Quad(
-                pos.y + (unscaled_size.height * transformations.scale.height_scale * flip_vertically * (centering.y_centering - 1.0) / 2.0),
-                pos.x + (unscaled_size.width * transformations.scale.width_scale * flip_horizontally * (centering.x_centering - 1.0) / 2.0),
-                pos.y + (unscaled_size.height * transformations.scale.height_scale * flip_vertically * (centering.y_centering + 1.0) / 2.0),
-                pos.x + (unscaled_size.width * transformations.scale.width_scale * flip_horizontally * (centering.x_centering + 1.0) / 2.0)
-            );
-        }
-
-        if (degrees == 180.0)
-        {
-            const double flip_horizontally = (((double)transformations.total_flip.flip_horizontally * -2.0) + 1.0);
-            const double flip_vertically = (((double)transformations.total_flip.flip_vertically * -2.0) + 1.0);
-
-            return Quad(
-                pos.x + (unscaled_size.width * transformations.scale.width_scale * flip_horizontally * (centering.x_centering - 1.0) / 2.0),
-                pos.y + (unscaled_size.height * transformations.scale.height_scale * flip_vertically * (centering.y_centering + 1.0) / 2.0),
-                pos.x + (unscaled_size.width * transformations.scale.width_scale * flip_horizontally * (centering.x_centering + 1.0) / 2.0),
-                pos.y + (unscaled_size.height * transformations.scale.height_scale * flip_vertically * (centering.y_centering - 1.0) / 2.0)
-            );
-        }
-
-        if (degrees == 270.0)
-        {
-            const double flip_horizontally = (((double)transformations.total_flip.flip_horizontally * -2.0) + 1.0);
-            const double flip_vertically = (((double)transformations.total_flip.flip_vertically * -2.0) + 1.0);
-
-            return Quad(
-                pos.y + (unscaled_size.height * transformations.scale.height_scale * flip_vertically * (centering.y_centering + 1.0) / 2.0),
-                pos.x + (unscaled_size.width * transformations.scale.width_scale * flip_horizontally * (centering.x_centering + 1.0) / 2.0),
-                pos.y + (unscaled_size.height * transformations.scale.height_scale * flip_vertically * (centering.y_centering - 1.0) / 2.0),
-                pos.x + (unscaled_size.width * transformations.scale.width_scale * flip_horizontally * (centering.x_centering - 1.0) / 2.0)
-            );
-        }
-    }
-
-    return Quad(GetCorner(CornerEnum::TOP_RIGHT), GetCorner(CornerEnum::BOTTOM_RIGHT), GetCorner(CornerEnum::BOTTOM_LEFT), GetCorner(CornerEnum::TOP_LEFT));
+    return Quad(
+        GetCorner(CornerEnum::TOP_RIGHT),
+        GetCorner(CornerEnum::BOTTOM_RIGHT),
+        GetCorner(CornerEnum::BOTTOM_LEFT),
+        GetCorner(CornerEnum::TOP_LEFT)
+    );
+}
+Quad RectangleNewest::GetScreenQuad(const CameraNew* const camera) const
+{
+    
 }
 
 Point2DNew RectangleNewest::GetCorner(const CornerEnum corner) const
@@ -744,9 +2188,7 @@ Point2DNew RectangleNewest::GetCorner(const CornerEnum corner) const
     }
 
     const RefRectangleNewest temp_rect(*this);
-
     const RefPoint2DNewest temp_ref_point(temp_point.x, temp_point.y, &temp_rect.pos, &temp_rect.transformations);
-
     return temp_ref_point.GetUniValue();
 }
 
@@ -823,7 +2265,6 @@ double RectangleNewest::GetScaledOffsetY() const
 
 // -------------  RefRectangleNewest  -------------
 
-RefRectangleNewest::RefRectangleNewest() {}
 RefRectangleNewest::RefRectangleNewest(const RefRectangleNewest* const reference_rectangle, const Point2DNew non_ref_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering, const Transformations non_ref_transformations)
     : pos(non_ref_pos, reference_rectangle ? &reference_rectangle->pos : nullptr, reference_rectangle ? &reference_rectangle->transformations : nullptr),
     unscaled_size(i_unscaled_size),
@@ -834,38 +2275,40 @@ RefRectangleNewest::RefRectangleNewest(const RefPoint2DNewest* const reference_p
     unscaled_size(i_unscaled_size),
     centering(i_centering),
     transformations(non_ref_transformations, reference_transformations) {}
-RefRectangleNewest::RefRectangleNewest(const RefPoint2DNewest i_pos, const RefTransformations i_transformations, const Size2DNew i_unscaled_size, const Centering2DNew i_centering) : pos(i_pos), transformations(i_transformations), unscaled_size(i_unscaled_size), centering(i_centering) {}
-
-RefRectangleNewest::RefRectangleNewest(const RectangleNewest non_ref_rectangle) : pos(non_ref_rectangle.pos), transformations(non_ref_rectangle.transformations), unscaled_size(non_ref_rectangle.unscaled_size), centering(non_ref_rectangle.centering) {}
+RefRectangleNewest::RefRectangleNewest(const RefPoint2DNewest i_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering, const RefTransformations i_transformations)
+    : pos(i_pos),
+    transformations(i_transformations),
+    unscaled_size(i_unscaled_size),
+    centering(i_centering) {}
+RefRectangleNewest::RefRectangleNewest(const RectangleNewest& non_ref_rectangle)
+    : pos(non_ref_rectangle.pos),
+    transformations(non_ref_rectangle.transformations),
+    unscaled_size(non_ref_rectangle.unscaled_size),
+    centering(non_ref_rectangle.centering) {}
 
 
 RectangleNewest RefRectangleNewest::GetUniValue() const
 {
-    return {
-    pos.GetUniValue(),
-    transformations.GetUniValue(),
-    unscaled_size,
-    centering
-    };
+    return GetDepthValue(numeric_limits<unsigned int>::max());
 }
 RectangleNewest RefRectangleNewest::GetDepthValue(const unsigned int depth_index) const
 {
     if (depth_index == 0)
     {
         return {
-        { pos.x, pos.y },
-        { transformations.rotation, transformations.scale, transformations.total_flip },
-        unscaled_size,
-        centering
+            { pos.x, pos.y },
+            unscaled_size,
+            centering,
+            { transformations.scale, transformations.rotation }
         };
     }
     else
     {
         return {
-        pos.GetDepthValue(depth_index),
-        transformations.GetDepthValue(depth_index),
-        unscaled_size,
-        centering
+            pos.GetDepthValue(depth_index),
+            unscaled_size,
+            centering,
+            transformations.GetDepthValue(depth_index)
         };
     }
 }
@@ -4365,10 +5808,6 @@ void ListProperties(const Transformations90& obj, const bool rotations_in_degree
         cout << "scale: ";
         ListProperties(obj.scale, true, false); //Not long-notation, so indentation doesn't matter.
 
-        Indent(indentation);
-        cout << "flip: ";
-        ListProperties(obj.flip, false, false); //Not long-notation, so indentation doesn't matter.
-
         LongNotationEnd(indentation, end_on_new_line);
     }
     else
@@ -4378,8 +5817,6 @@ void ListProperties(const Transformations90& obj, const bool rotations_in_degree
         cout << ",    scale: ";
         ListProperties(obj.scale, false, false);
         cout << ",    flip: ";
-        ListProperties(obj.flip, false, false);
-        cout << "}" << (end_on_new_line ? "\n" : "");
     }
 }
 void ListProperties(const TotalFlip& obj, const bool end_on_new_line, const bool long_notation, const unsigned int indentation)
@@ -4521,10 +5958,6 @@ void ListProperties(const Transformations& obj, const bool rotations_in_degrees,
         cout << "scale: ";
         ListProperties(obj.scale, rotations_in_degrees, true, false); //Not long-notation, so indentation doesn't matter.
 
-        Indent(indentation);
-        cout << "total_flip: ";
-        ListProperties(obj.total_flip, false, false); //Not long-notation, so indentation doesn't matter.
-
         LongNotationEnd(indentation, end_on_new_line);
     }
     else
@@ -4534,8 +5967,6 @@ void ListProperties(const Transformations& obj, const bool rotations_in_degrees,
         cout << ", scale: ";
         ListProperties(obj.scale, rotations_in_degrees, false, false);
         cout << ", total_flip: ";
-        ListProperties(obj.total_flip, false, false);
-        cout << "}" << (end_on_new_line ? "\n" : "");
     }
 }
 void ListProperties(const Quad& obj, const bool end_on_new_line, const bool long_notation, const unsigned int indentation)

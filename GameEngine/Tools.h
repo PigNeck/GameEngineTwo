@@ -106,7 +106,7 @@ SDL_Color GLColorToSDLColor(const GLColor gl_color);
 SDL_Color* GLColorToSDLColor(const GLColor* const gl_color);
 
 //Returns the uni_point after being transformed to screen coords relative to a given camera. Pass nullptr for no camera
-Point2DNew UniPointToScreenPoint(const Point2DNew* const uni_point, const CameraNew* const camera);
+Point2DNew UniPointToScreenPoint(const Point2DNew const uni_point, const CameraNew* const camera);
 
 Quad UniQuadToScreenQuad(const Quad* const uni_quad, const CameraNew* const camera);
 

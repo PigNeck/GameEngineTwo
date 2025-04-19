@@ -2338,53 +2338,37 @@ void Program::RunScene6()
 		test_rect_new.transformations.scale.height_scale /= 0.95;
 	}
 
-	if (e->input.b.pressed)
+	if (e->input.b.first_frame_pressed)
 	{
-		test_rect_new.transformations.rotation.radians += 0.01;
-
-		//test_90_rect.transformations.RotateCounterclockwise(1);
+		test_rect_new.transformations.rotation.RotateCounterclockwise90(true);
 	}
-
-	//val_1_3.v[0] += 0.02;
-
 	if (e->input.v.first_frame_pressed)
 	{
-		//test_rect_new_two.pos.SetValueToFitUniValue({ test_point.x, test_point.y });
-		//test_rect_new_two.pos.v[0] += 5.0;
+		test_rect_new_two.transformations.rotation.RotateCounterclockwise90(true);
+	}
 
-		//test_rect_new_two.transformations.rotation.radians += 0.01;
-
-		//test_90_rect_two.transformations.RotateCounterclockwise(1);
+	if (e->input.f.first_frame_pressed)
+	{
+		test_rect_new.transformations.scale.width_scale *= -1.0;
 	}
 
 	if (e->input.g.pressed)
 	{
 		test_rect_new.transformations.scale.width_scale -= 0.02;
-
-		//test_rect_new_two.transformations.total_flip.flip_horizontally = !test_rect_new_two.rotate_scale_flip.total_flip.flip_horizontally;
 	}
 	if (e->input.h.pressed)
 	{
 		test_rect_new.transformations.scale.width_scale += 0.02;
-
-		//test_rect_new_two.transformations.total_flip.flip_vertically = !test_rect_new_two.rotate_scale_flip.total_flip.flip_vertically;
 	}
 
-	if (e->input.u.first_frame_pressed)
+	if (e->input.d.first_frame_pressed)
 	{
-		//test_rect_new_two.SetUniCorner({ test_point.x, test_point.y }, CornerEnum::TOP_RIGHT);
-		//test_rect_new_two.pos.SetValueToFitUniValue({ test_point.x, test_point.y });
+		test_rect_new_two.transformations.scale.width_scale *= -1.0;
 	}
 
 	if (e->input.p.first_frame_pressed)
 	{
-		RectangleNewest temp_rect;
-		temp_rect.pos = Point2DNew(test_rect_new.pos.x, test_rect_new.pos.y);
-		temp_rect.unscaled_size = test_rect_new.unscaled_size;
-		temp_rect.centering = test_rect_new.centering;
-		temp_rect.transformations = Transformations(test_rect_new.transformations.rotation, test_rect_new.transformations.scale, test_rect_new.transformations.total_flip);
-
-		ListProperties(temp_rect);
+		ListProperties(static_cast<RectangleNewest>(test_rect_new));
 	}
 }
 void Program::DrawScene6()
@@ -2400,6 +2384,14 @@ void Program::DrawScene6()
 
 	e->DrawTextureWithRefRectangleNewest(&test_rect_new, nullptr, nullptr, nullptr, nullptr);
 	e->DrawTextureWithRefRectangleNewest(&test_rect_new_two, nullptr, nullptr, nullptr, nullptr);
+
+	const Point2DNew temp_referenced_point = test_rect_new_three.pos.GetReferenced(&test_rect_new.pos, &test_rect_new.transformations);
+	const Transformations temp_referenced_transformations = test_rect_new_three.transformations.GetReferenced(&test_rect_new.transformations);
+	const RectangleNewest temp_referenced_rectangle = RectangleNewest(temp_referenced_point, {}, {}, temp_referenced_transformations);
+	const Quad temp_referenced_quad = temp_referenced_rectangle.GetQuad();
+
+	e->DrawTexturedQuad(&temp_referenced_quad, nullptr, nullptr, nullptr);
+
 	//e->DrawTextureWithRefRectangleNewest(&test_rect_new_three, nullptr, nullptr, nullptr, nullptr);
 
 	//e->DrawTexturedRefRectangle90(&test_90_rect, nullptr, nullptr, nullptr, nullptr);
@@ -2455,11 +2447,25 @@ void Program::EndScene8()
 }
 void Program::RunScene8()
 {
-
+	if (e->input.r.pressed)
+	{
+		beans_transformations_one.rotation.radians += 0.02;
+	}
 }
 void Program::DrawScene8()
 {
+	Point2D temp_p = Point2D(beans_point_one.x, beans_point_one.y);
+	e->DrawPoint(&temp_p, {8.0, 8.0}, {255, 0, 0, 255}, nullptr);
 
+	//Point2D temp_p2 = Point2D(beans_point_two.x, beans_point_two.y);
+	//e->DrawPoint(&temp_p2, { 8.0, 8.0 }, { 0, 255, 0, 255 }, nullptr);
+
+	const Point2DNew deref_beans_point = beans_point_two.GetDereferenced(&beans_point_one, &beans_transformations_one);
+
+	cout << atan2(50.0, 0.0) << endl;
+
+	Point2D temp_p3 = Point2D(deref_beans_point.x, deref_beans_point.y);
+	e->DrawPoint(&temp_p3, { 8.0, 8.0 }, { 0, 0, 255, 255 }, nullptr);
 }
 void Program::PostDrawRunScene8()
 {
@@ -2487,7 +2493,7 @@ void Program::PostDrawRunScene9()
 
 }
 
-Program::Program() : e(nullptr), example1_font("default_white_basic", "png", LineParameters(7.0, 1.0, 1.0, numeric_limits<double>::max(), { 0.0, 0.0 }, false, true)), example1_text_box(&example1_font, RefRectangleNewest({ 0.0, 0.0 }, RefTransformations(Rotation2DNew(), Scale2DNew(4.0, 4.0), TotalFlip()), { 100.0, 25.0 }, { 0.0, 0.0 }))
+Program::Program() : e(nullptr), example1_font("default_white_basic", "png", LineParameters(7.0, 1.0, 1.0, numeric_limits<double>::max(), { 0.0, 0.0 }, false, true)), example1_text_box(&example1_font, RefRectangleNewest({ 0.0, 0.0 }, { 100.0, 25.0 }, { 0.0, 0.0 }, RefTransformations(Scale2DNew(4.0, 4.0), Rotation2DNew())))
 {
 	e = new Engine();
 
@@ -2878,11 +2884,14 @@ Program::Program() : e(nullptr), example1_font("default_white_basic", "png", Lin
 	//val_2.v[1] = 40.0;
 
 	test_rect_new.centering = { 1.0, -1.0 };
+	test_rect_new.transformations.op_rules = OpRules::ROTATION90;
 
 	test_rect_new_two.pos = { -100.0, 50.0 };
 	test_rect_new_two.unscaled_size = { 50.0, 25.0 };
-	test_rect_new_two.transformations.rotation = { 0.5 };
+	test_rect_new_two.transformations.op_rules = OpRules::ROTATION90;
 	test_rect_new_two.SetReference(&test_rect_new);
+
+	test_rect_new_three.transformations.op_rules = OpRules::ROTATION90;
 
 	//test_rect_new_three.pos = { 80.0, 60.0 };
 	//test_rect_new_three.unscaled_size = { 25.0, 50.0 };
@@ -2921,6 +2930,21 @@ Program::Program() : e(nullptr), example1_font("default_white_basic", "png", Lin
 	cout << "example1_text_box.default_font->c.char_value: " << example1_text_box.default_font->c.char_value << endl;
 	cout << "example1_text_box.default_font->GetFontCharConst('c')->char_value: " << example1_text_box.default_font->GetFontCharConst('c')->char_value << endl;
 	*/
+
+
+
+
+
+
+	beans_point_one.x = 50.0;
+	beans_point_one.y = 100.0;
+
+	beans_point_two.x = 0.0;
+	beans_point_two.y = -50.0;
+
+	beans_transformations_one.op_rules = OpRules::NO_OPTIMIZATION;
+	beans_transformations_one.scale.width_scale = 2.0;
+	beans_transformations_one.scale.height_scale = 2.0;
 }
 Program::~Program()
 {
