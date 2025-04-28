@@ -1,7 +1,7 @@
 # GameEngine
 
-## Instaling SDL2 (Required)
-Make sure to download these here files:
+## Installing SDL2 (Required)
+Make sure to download these here files (I'm not actually sure if this works by itself anymore):
 - SDL2-devel-2.30.1-VC
 - SDL2-devel-2.30.1-mingw
 - SDL2_image-devel-2.8.2-VC
