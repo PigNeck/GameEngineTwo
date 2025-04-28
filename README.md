@@ -7,5 +7,5 @@ Make sure to download these here files:
 - SDL2_image-devel-2.8.2-VC
 
 They are automatically linked to the project if in this here directory:
-C:\Users\eric\SDL2
+C:\Users\%USERNAME%\SDL2
 Otherwise, you have to figure it out :(
