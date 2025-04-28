@@ -28,7 +28,13 @@ struct Engine {
 	// -----------------   ESSENTIAL WINDOW OBJECTS   -----------------
 
 	Mix_Chunk* click_press_sound = nullptr;
+	Mix_Chunk* click_press_p_up_sound = nullptr;
+	Mix_Chunk* click_press_p_down_sound = nullptr;
+
 	Mix_Chunk* click_release_sound = nullptr;
+	Mix_Chunk* click_release_p_up_sound = nullptr;
+	Mix_Chunk* click_release_p_down_sound = nullptr;
+
 
 	//Set in constructor
 	SDL_Window* window = nullptr;

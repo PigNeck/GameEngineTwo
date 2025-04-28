@@ -320,6 +320,11 @@ DisplayClick::DisplayClick(const Point2DNew i_pos) : pos(i_pos) {}
 
 DisplayRectangle::DisplayRectangle(const unsigned int color_id) : color(static_cast<float>(color_id) * (5.f / 3.f), 0.85f, 0.85f) {}
 
+SmallDisplayKey::SmallDisplayKey(unsigned int i_x, unsigned int i_y, const Texture* const i_up_texture, const Texture* const i_down_texture, const Key* const i_target_input)
+	: x(i_x), y(i_y),
+	up_texture(i_up_texture), down_texture(i_down_texture),
+	target_input(i_target_input) {}
+
 
 
 
@@ -2482,6 +2487,40 @@ void Program::PostDrawRunScene8()
 
 }
 
+namespace {
+	void PlayRandomClickPressSound(Engine* const e)
+	{
+		switch (e->GetRandInt(0, 2))
+		{
+		case 0:
+			Mix_PlayChannel(-1, e->click_press_p_down_sound, 0);
+			return;
+		case 1:
+			Mix_PlayChannel(-1, e->click_press_sound, 0);
+			return;
+		case 2:
+			Mix_PlayChannel(-1, e->click_press_p_up_sound, 0);
+			return;
+		}
+	}
+
+	void PlayRandomClickReleaseSound(Engine* const e)
+	{
+		switch (e->GetRandInt(0, 2))
+		{
+		case 0:
+			Mix_PlayChannel(-1, e->click_release_p_down_sound, 0);
+			return;
+		case 1:
+			Mix_PlayChannel(-1, e->click_release_sound, 0);
+			return;
+		case 2:
+			Mix_PlayChannel(-1, e->click_release_p_up_sound, 0);
+			return;
+		}
+	}
+}
+
 void Program::SetScene9()
 {
 
@@ -2492,6 +2531,7 @@ void Program::EndScene9()
 }
 void Program::RunScene9()
 {
+	//Determine and respond to potential mouse_click-to-rectangle overlap detection (this ones pretty messy):
 	if (e->input.mouse_left.first_frame_pressed)
 	{
 		const Point2DNew uni_mouse_pos = Point2DNew(static_cast<double>(e->input.mouse_x) - (DEFAULT_WINDOW_WIDTH / 2.0), (DEFAULT_WINDOW_HEIGHT / 2.0) - static_cast<double>(e->input.mouse_y));
@@ -2524,14 +2564,24 @@ void Program::RunScene9()
 
 			if (i == 0)
 			{
-				selected_rectangle = nullptr;
+				if (e->input.left_control.pressed)
+				{
+					selected_rectangle->reference_rect = nullptr;
+					selected_rectangle->rect.pos.reference_point = nullptr;
+					selected_rectangle->rect.pos.reference_transformations = nullptr;
+					selected_rectangle->rect.transformations.reference_transformations = nullptr;
+				}
+				else
+				{
+					selected_rectangle = nullptr;
+				}
 			}
 		}
 	}
 
 
-
-	if (e->input.zero.first_frame_released)
+	//Add a rectangle if applicable:
+	if (e->input.equals_sign.first_frame_released)
 	{
 		if (e->input.left_control.pressed)
 		{
@@ -2546,7 +2596,8 @@ void Program::RunScene9()
 
 		display_rectangles.push_back(selected_rectangle);
 	}
-	if (selected_rectangle && e->input.nine.first_frame_released)
+	//Delete the [selected_rectangle] if applicable:
+	if (selected_rectangle && e->input.minus_sign.first_frame_released)
 	{
 		for (size_t i = 0; i < display_rectangles.size(); i++)
 		{
@@ -2579,51 +2630,70 @@ void Program::RunScene9()
 
 	if (selected_rectangle)
 	{
-		if (e->input.f.first_frame_pressed && e->input.left_control.pressed)
+		OpRules& c_op = selected_rectangle->rect.transformations.op_rules;
+
+		//Change op_rules or texture_id (with "f"):
+		if (e->input.f.first_frame_pressed)
 		{
-			switch (selected_rectangle->rect.transformations.op_rules)
+			if (e->input.left_control.pressed)
 			{
-			case OpRules::NO_OPTIMIZATION:
-				selected_rectangle->rect.transformations.scale.width_radian_offset = 0.0;
-				selected_rectangle->rect.transformations.scale.height_radian_offset = 0.0;
-				selected_rectangle->rect.transformations.op_rules = OpRules::NO_SKEW;
-				break;
-			case OpRules::NO_SKEW:
-				selected_rectangle->rect.transformations.scale = Scale2DNew();
-				selected_rectangle->rect.transformations.op_rules = OpRules::NO_SCALE;
-				break;
-			case OpRules::NO_SCALE:
-				selected_rectangle->rect.transformations.scale.width_radian_offset = 0.0;
-				selected_rectangle->rect.transformations.scale.height_radian_offset = 0.0;
+				selected_rectangle->texture_id += 1;
+				if (selected_rectangle->texture_id > 4)
+				{
+					selected_rectangle->texture_id = 0;
+				}
+			}
+			else
+			{
+				switch (c_op)
+				{
+				case OpRules::NO_OPTIMIZATION:
+					selected_rectangle->rect.transformations.scale.width_radian_offset = 0.0;
+					selected_rectangle->rect.transformations.scale.height_radian_offset = 0.0;
+					c_op = OpRules::NO_SKEW;
+					break;
+				case OpRules::NO_SKEW:
+					selected_rectangle->rect.transformations.scale = Scale2DNew();
+					c_op = OpRules::NO_SCALE;
+					break;
+				case OpRules::NO_SCALE:
+					selected_rectangle->rect.transformations.scale.width_radian_offset = 0.0;
+					selected_rectangle->rect.transformations.scale.height_radian_offset = 0.0;
 
-				selected_rectangle->rect.transformations.rotation = Rotation2DNew(Rotation90(selected_rectangle->rect.transformations.rotation).val);
-				selected_rectangle->rect.transformations.op_rules = OpRules::ROTATION90;
-				break;
-			case OpRules::ROTATION90:
-				selected_rectangle->rect.transformations.scale = Scale2DNew();
+					selected_rectangle->rect.transformations.rotation = Rotation2DNew(Rotation90(selected_rectangle->rect.transformations.rotation).val);
+					c_op = OpRules::ROTATION90;
+					break;
+				case OpRules::ROTATION90:
+					selected_rectangle->rect.transformations.scale = Scale2DNew();
 
-				selected_rectangle->rect.transformations.rotation = Rotation2DNew(Rotation90(selected_rectangle->rect.transformations.rotation).val);
-				selected_rectangle->rect.transformations.op_rules = OpRules::ROTATION90_NO_SCALE;
-				break;
-			case OpRules::ROTATION90_NO_SCALE:
-				selected_rectangle->rect.transformations.scale = Scale2DNew();
-				selected_rectangle->rect.transformations.rotation.radians = 0.0;
-				selected_rectangle->rect.transformations.op_rules = OpRules::NO_TRANSFORMATIONS;
-				break;
-			case OpRules::NO_TRANSFORMATIONS:
-				selected_rectangle->rect.transformations.op_rules = OpRules::NO_OPTIMIZATION;
-				break;
+					selected_rectangle->rect.transformations.rotation = Rotation2DNew(Rotation90(selected_rectangle->rect.transformations.rotation).val);
+					c_op = OpRules::ROTATION90_NO_SCALE;
+					break;
+				case OpRules::ROTATION90_NO_SCALE:
+					selected_rectangle->rect.transformations.scale = Scale2DNew();
+					selected_rectangle->rect.transformations.rotation.radians = 0.0;
+					c_op = OpRules::NO_TRANSFORMATIONS;
+					break;
+				case OpRules::NO_TRANSFORMATIONS:
+					c_op = OpRules::NO_OPTIMIZATION;
+					break;
+				}
 			}
 		}
-		if (e->input.f.pressed && (!e->input.left_control.pressed))
+
+		//Change color or reference display (with "r"):
+		if (e->input.r.pressed && (!e->input.left_control.pressed))
 		{
 			selected_rectangle->color.h += 0.01;
 			selected_rectangle->color.SetHToBaseH();
 		}
-		const OpRules c_op = selected_rectangle->rect.transformations.op_rules;
+		if (e->input.r.first_frame_pressed && e->input.left_control.pressed)
+		{
+			show_references = !show_references;
+		}
 
 
-
+		//Change position (with "wasd"):
 		if (e->input.w.pressed)
 		{
 			selected_rectangle->rect.pos.y += move_speed;
@@ -2642,13 +2712,14 @@ void Program::RunScene9()
 		}
 
 
+		//Rotate (with "q" or "e"):
 		if (e->input.q.pressed)
 		{
 			if ((c_op == OpRules::NO_OPTIMIZATION) || (c_op == OpRules::NO_SKEW) || (c_op == OpRules::NO_SCALE))
 			{
 				selected_rectangle->rect.transformations.rotation.radians += rotation_speed;
 			}
-			if ((c_op == OpRules::ROTATION90) || (c_op == OpRules::ROTATION90_NO_SCALE))
+			if (e->input.q.first_frame_pressed && ((c_op == OpRules::ROTATION90) || (c_op == OpRules::ROTATION90_NO_SCALE)))
 			{
 				selected_rectangle->rect.transformations.rotation.RotateCounterclockwise90(true);
 			}
@@ -2659,13 +2730,14 @@ void Program::RunScene9()
 			{
 				selected_rectangle->rect.transformations.rotation.radians -= rotation_speed;
 			}
-			if ((c_op == OpRules::ROTATION90) || (c_op == OpRules::ROTATION90_NO_SCALE))
+			if (e->input.e.first_frame_pressed && ((c_op == OpRules::ROTATION90) || (c_op == OpRules::ROTATION90_NO_SCALE)))
 			{
 				selected_rectangle->rect.transformations.rotation.RotateClockwise90(true);
 			}
 		}
 
 
+		//Change scale (with "uijkm,"):
 		if (e->input.j.pressed && (c_op != OpRules::NO_TRANSFORMATIONS) && (c_op != OpRules::NO_SCALE) && (c_op != OpRules::ROTATION90_NO_SCALE))
 		{
 			//Doesn't work when flipping (fix later?)
@@ -2716,6 +2788,7 @@ void Program::RunScene9()
 		}
 
 
+		//Change size (with "opl;./"):
 		if (e->input.l.pressed)
 		{
 			//Doesn't work when flipping (fix later?)
@@ -2768,58 +2841,108 @@ void Program::RunScene9()
 }
 void Program::DrawScene9()
 {
+	//Draw all the display_rectangles (also messy, sorry!):
 	for (size_t i = 0; i < display_rectangles.size(); i++)
 	{
-		const Quad temp_screen_quad = display_rectangles[i]->rect.GetUniQuad();
+		const Quad temp_screen_quad_0 = display_rectangles[i]->rect.GetUniQuad();
 
 		if (selected_rectangle == display_rectangles[i])
 		{
-			HSVA temp_color_0 = display_rectangles[i]->color;
-
 			const double multiplication_factor = ((cos(static_cast<double>(selection_anim_counter) * (M_PI / 50.0)) * -0.5) + 0.5);
-			temp_color_0.s = 1.0 - ((1.0 - temp_color_0.GetBaseS()) * multiplication_factor);
-			temp_color_0.v = 1.0 - ((1.0 - temp_color_0.GetBaseV()) * multiplication_factor);
 
-			const GLColor temp_color_1 = GLColor(temp_color_0);
+			//Calculate rectangle gl_color (no hue or saturation if textured):
+			const HSVA temp_color_0 = (selected_rectangle->texture_id == 0) ?
+				HSVA(selected_rectangle->color.h,
+					1.0 - ((1.0 - selected_rectangle->color.GetBaseS()) * multiplication_factor),
+					1.0 - ((1.0 - selected_rectangle->color.GetBaseV()) * multiplication_factor)) :
+				HSVA(0.0, 0.0, 1.0 - ((1.0 - selected_rectangle->color.GetBaseV()) * multiplication_factor));
+			const GLColor temp_gl_color_0 = GLColor(temp_color_0);
 
-			e->DrawScreenQuad(&temp_screen_quad, &temp_color_1, false);
-		}
-		else
-		{
-			const GLColor temp_color_1 = GLColor(display_rectangles[i]->color);
-
-			e->DrawScreenQuad(&temp_screen_quad, &temp_color_1, false);
-		}
-
-		if (display_rectangles[i]->reference_rect)
-		{
-			RefRectangleNewest reference_color_rect = display_rectangles[i]->rect;
-			reference_color_rect.unscaled_size.width = reference_color_rect.unscaled_size.width * 0.25;
-			reference_color_rect.unscaled_size.height = reference_color_rect.unscaled_size.height * 0.25;
-
-			const Quad temp_screen_quad = reference_color_rect.GetUniQuad();
-
-			if (selected_rectangle == display_rectangles[i])
+			//Draw appropriate texture if applicable:
+			switch (selected_rectangle->texture_id)
 			{
-				HSVA temp_color_0 = display_rectangles[i]->reference_rect->color;
-
-				const double multiplication_factor = ((cos(static_cast<double>(selection_anim_counter) * (M_PI / 50.0)) * -0.5) + 0.5);
-				temp_color_0.s = 1.0 - ((1.0 - temp_color_0.GetBaseS()) * multiplication_factor);
-				temp_color_0.v = 1.0 - ((1.0 - temp_color_0.GetBaseV()) * multiplication_factor);
-
-				const GLColor temp_color_1 = GLColor(temp_color_0);
-
-				e->DrawScreenQuad(&temp_screen_quad, &temp_color_1, false);
+			case 0: e->DrawScreenQuad(&temp_screen_quad_0, &temp_gl_color_0, false); break;
+			case 1: e->DrawTexturedScreenQuad(&temp_screen_quad_0, minceraft_sample_t, &temp_gl_color_0, false); break;
+			case 2: e->DrawTexturedScreenQuad(&temp_screen_quad_0, strawb_sample_t, &temp_gl_color_0, false); break;
+			case 3: e->DrawTexturedScreenQuad(&temp_screen_quad_0, burden_sample_t, &temp_gl_color_0, false); break;
+			case 4: e->DrawTexturedScreenQuad(&temp_screen_quad_0, null_sample_t, &temp_gl_color_0, false); break;
 			}
-			else
-			{
-				const GLColor temp_color_1 = GLColor(display_rectangles[i]->reference_rect->color);
+			
 
-				e->DrawScreenQuad(&temp_screen_quad, &temp_color_1, false);
+			//Draw little reference rectangle indicator if applicable:
+			if (show_references && selected_rectangle->reference_rect)
+			{
+				//Calculate reference rectangle indicator rectangle:
+				const RefRectangleNewest reference_color_rect = RefRectangleNewest(static_cast<RefPlane>(selected_rectangle->rect),
+					Size2DNew(selected_rectangle->rect.unscaled_size.width * 0.25, selected_rectangle->rect.unscaled_size.height * 0.25),
+					selected_rectangle->rect.centering);
+				const Quad temp_screen_quad_1 = reference_color_rect.GetUniQuad();
+
+				//Calculate reference rectangle indicator gl_color (no hue or saturation if textured):
+				const HSVA temp_color_1 = (selected_rectangle->reference_rect->texture_id == 0) ?
+					HSVA(selected_rectangle->reference_rect->color.h,
+						1.0 - ((1.0 - selected_rectangle->reference_rect->color.GetBaseS()) * multiplication_factor),
+						1.0 - ((1.0 - selected_rectangle->reference_rect->color.GetBaseV()) * multiplication_factor)) :
+					HSVA(0.0, 0.0, 1.0 - ((1.0 - selected_rectangle->reference_rect->color.GetBaseV()) * multiplication_factor));
+				const GLColor temp_gl_color_1 = GLColor(temp_color_1);
+
+				//Draw appropriate texture if applicable:
+				switch (selected_rectangle->reference_rect->texture_id)
+				{
+				case 0: e->DrawScreenQuad(&temp_screen_quad_1, &temp_gl_color_1, false); break;
+				case 1: e->DrawTexturedScreenQuad(&temp_screen_quad_1, minceraft_sample_t, &temp_gl_color_1, false); break;
+				case 2: e->DrawTexturedScreenQuad(&temp_screen_quad_1, strawb_sample_t, &temp_gl_color_1, false); break;
+				case 3: e->DrawTexturedScreenQuad(&temp_screen_quad_1, burden_sample_t, &temp_gl_color_1, false); break;
+				case 4: e->DrawTexturedScreenQuad(&temp_screen_quad_1, null_sample_t, &temp_gl_color_1, false); break;
+				}
+			}
+		}
+		else //If display_rectangles[i] is not currently selected
+		{
+			//Calculate rectangle color (no hue or saturation if textured):
+			const GLColor temp_gl_color_0 = (display_rectangles[i]->texture_id == 0) ?
+				GLColor(display_rectangles[i]->color) :
+				GLColor(HSVA(0.0, 0.0, display_rectangles[i]->color.GetBaseV()));
+
+			//Draw appropriate texture if applicable:
+			switch (display_rectangles[i]->texture_id)
+			{
+			case 0: e->DrawScreenQuad(&temp_screen_quad_0, &temp_gl_color_0, false); break;
+			case 1: e->DrawTexturedScreenQuad(&temp_screen_quad_0, minceraft_sample_t, &temp_gl_color_0, false); break;
+			case 2: e->DrawTexturedScreenQuad(&temp_screen_quad_0, strawb_sample_t, &temp_gl_color_0, false); break;
+			case 3: e->DrawTexturedScreenQuad(&temp_screen_quad_0, burden_sample_t, &temp_gl_color_0, false); break;
+			case 4: e->DrawTexturedScreenQuad(&temp_screen_quad_0, null_sample_t, &temp_gl_color_0, false); break;
+			}
+
+
+			//Draw little reference rectangle indicator if applicable:
+			if (show_references && display_rectangles[i]->reference_rect)
+			{
+				//Calculate reference rectangle indicator rectangle:
+				const RefRectangleNewest reference_color_rect = RefRectangleNewest(static_cast<RefPlane>(display_rectangles[i]->rect),
+					Size2DNew(display_rectangles[i]->rect.unscaled_size.width * 0.25, display_rectangles[i]->rect.unscaled_size.height * 0.25),
+					display_rectangles[i]->rect.centering);
+				const Quad temp_screen_quad_1 = reference_color_rect.GetUniQuad();
+
+				//Calculate reference rectangle indicator gl_color (no hue or saturation if textured):
+				const GLColor temp_gl_color_1 = (display_rectangles[i]->reference_rect->texture_id == 0) ?
+					GLColor(display_rectangles[i]->reference_rect->color) :
+					GLColor(HSVA(0.0, 0.0, display_rectangles[i]->reference_rect->color.GetBaseV()));
+
+				//Draw appropriate texture if applicable:
+				switch (display_rectangles[i]->reference_rect->texture_id)
+				{
+				case 0: e->DrawScreenQuad(&temp_screen_quad_1, &temp_gl_color_1, false); break;
+				case 1: e->DrawTexturedScreenQuad(&temp_screen_quad_1, minceraft_sample_t, &temp_gl_color_1, false); break;
+				case 2: e->DrawTexturedScreenQuad(&temp_screen_quad_1, strawb_sample_t, &temp_gl_color_1, false); break;
+				case 3: e->DrawTexturedScreenQuad(&temp_screen_quad_1, burden_sample_t, &temp_gl_color_1, false); break;
+				case 4: e->DrawTexturedScreenQuad(&temp_screen_quad_1, null_sample_t, &temp_gl_color_1, false); break;
+				}
 			}
 		}
 	}
 
+	//Increment the little highlight animation on the selected rectangle:
 	selection_anim_counter++;
 	if (selection_anim_counter > 100)
 	{
@@ -2828,11 +2951,11 @@ void Program::DrawScene9()
 
 	
 
-	//click
+	//Add to [display_clicks] if applicable
 	{
 		if (e->input.mouse_left.first_frame_pressed)
 		{
-			Mix_PlayChannel(-1, e->click_press_sound, 0);
+			PlayRandomClickPressSound(e);
 
 			display_clicks.push_back(DisplayClick({ static_cast<double>(e->input.mouse_x) - (DEFAULT_WINDOW_WIDTH / 2.0), (DEFAULT_WINDOW_HEIGHT / 2.0) - static_cast<double>(e->input.mouse_y) }));
 		}
@@ -2840,29 +2963,26 @@ void Program::DrawScene9()
 
 
 
+	RectangleNewest temp_rect = RectangleNewest(Plane(Point2DNew(), Transformations(Scale2DNew(4.0, 4.0), Rotation2DNew(), OpRules::NO_ROTATION)), Size2DNew(32.0, 34.0));
 
-
-
-	RectangleNewest temp_rect = RectangleNewest(Plane(Point2DNew(), Transformations(Scale2DNew(4.0, 4.0))), Size2DNew(32.0, 34.0));
-
-	//add key
+	//add key:
 	{
-		if (e->input.zero.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.zero.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+		if (e->input.equals_sign.first_frame_pressed) { PlayRandomClickPressSound(e); }
+		if (e->input.equals_sign.first_frame_released) { PlayRandomClickReleaseSound(e); }
 
 		temp_rect.pos = Point2DNew((DEFAULT_WINDOW_WIDTH / 2.0) - 72.0, (DEFAULT_WINDOW_HEIGHT / 2.0) - 76.0);
 		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.zero.pressed ? add_down_t : add_up_t, nullptr, false);
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.equals_sign.pressed ? add_down_t : add_up_t, nullptr, false);
 	}
 
-	//subtract key
+	//subtract key:
 	{
-		if (e->input.nine.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.nine.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+		if (e->input.minus_sign.first_frame_pressed) { PlayRandomClickPressSound(e); }
+		if (e->input.minus_sign.first_frame_released) { PlayRandomClickReleaseSound(e); }
 
 		temp_rect.pos = Point2DNew((DEFAULT_WINDOW_WIDTH / 2.0) - 208.0, (DEFAULT_WINDOW_HEIGHT / 2.0) - 76.0);
 		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.nine.pressed ? subtract_down_t : subtract_up_t, nullptr, false);
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.minus_sign.pressed ? subtract_down_t : subtract_up_t, nullptr, false);
 	}
 
 
@@ -2875,209 +2995,21 @@ void Program::DrawScene9()
 	constexpr double x_interval = 48.0;
 	constexpr double y_interval = 52.0;
 
-	//q key
+	//Draw and start sound effects for all the small display keys:
+	for (unsigned int i = 0; i < 21; i++)
 	{
-		if (e->input.q.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.q.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+		if (small_display_keys[i].target_input->first_frame_pressed) { PlayRandomClickPressSound(e); }
+		if (small_display_keys[i].target_input->first_frame_released) { PlayRandomClickReleaseSound(e); }
 
-		temp_rect.pos = Point2DNew(ctrl_x + x_interval, ctrl_y + (2.0 * y_interval));
+		//Position temp_rect according to the display key x and y values:
+		temp_rect.pos = Point2DNew(ctrl_x + (small_display_keys[i].x * x_interval), ctrl_y + (small_display_keys[i].y * y_interval));
 		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.q.pressed ? q_down_t : q_up_t, nullptr, false);
-	}
-
-	//w key
-	{
-		if (e->input.w.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.w.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (2.0 * x_interval), ctrl_y + (2.0 * y_interval));
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.w.pressed ? w_down_t : w_up_t, nullptr, false);
-	}
-
-	//e key
-	{
-		if (e->input.e.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.e.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (3.0 * x_interval), ctrl_y + (2.0 * y_interval));
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.e.pressed ? e_down_t : e_up_t, nullptr, false);
-	}
-
-	//u key
-	{
-		if (e->input.u.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.u.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (6.0 * x_interval), ctrl_y + (2.0 * y_interval));
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.u.pressed ? u_down_t : u_up_t, nullptr, false);
-	}
-
-	//i key
-	{
-		if (e->input.i.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.i.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (7.0 * x_interval), ctrl_y + (2.0 * y_interval));
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.i.pressed ? i_down_t : i_up_t, nullptr, false);
-	}
-
-	//o key
-	{
-		if (e->input.o.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.o.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (8.0 * x_interval), ctrl_y + (2.0 * y_interval));
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.o.pressed ? o_down_t : o_up_t, nullptr, false);
-	}
-
-	//p key
-	{
-		if (e->input.p.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.p.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (9.0 * x_interval), ctrl_y + (2.0 * y_interval));
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.p.pressed ? p_down_t : p_up_t, nullptr, false);
-	}
-
-	//a key
-	{
-		if (e->input.a.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.a.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + x_interval, ctrl_y + y_interval);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.a.pressed ? a_down_t : a_up_t, nullptr, false);
-	}
-
-	//s key
-	{
-		if (e->input.s.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.s.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (2.0 * x_interval), ctrl_y + y_interval);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.s.pressed ? s_down_t : s_up_t, nullptr, false);
-	}
-
-	//d key
-	{
-		if (e->input.d.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.d.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (3.0 * x_interval), ctrl_y + y_interval);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.d.pressed ? d_down_t : d_up_t, nullptr, false);
-	}
-
-	//f key
-	{
-		if (e->input.f.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.f.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (4.0 * x_interval), ctrl_y + y_interval);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.f.pressed ? f_down_t : f_up_t, nullptr, false);
-	}
-
-	//j key
-	{
-		if (e->input.j.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.j.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (6.0 * x_interval), ctrl_y + y_interval);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.j.pressed ? j_down_t : j_up_t, nullptr, false);
-	}
-
-	//k key
-	{
-		if (e->input.k.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.k.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (7.0 * x_interval), ctrl_y + y_interval);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.k.pressed ? k_down_t : k_up_t, nullptr, false);
-	}
-
-	//l key
-	{
-		if (e->input.l.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.l.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (8.0 * x_interval), ctrl_y + y_interval);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.l.pressed ? l_down_t : l_up_t, nullptr, false);
-	}
-
-	//semicolon key
-	{
-		if (e->input.semicolon .first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.semicolon.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (9.0 * x_interval), ctrl_y + y_interval);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.semicolon.pressed ? semicolon_down_t : semicolon_up_t, nullptr, false);
-	}
-
-	//ctrl key
-	{
-		if (e->input.left_control.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.left_control.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x, ctrl_y);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.left_control.pressed ? ctrl_down_t : ctrl_up_t, nullptr, false);
-	}
-
-	//m key
-	{
-		if (e->input.m.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.m.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (6.0 * x_interval), ctrl_y);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.m.pressed ? m_down_t : m_up_t, nullptr, false);
-	}
-
-	//comma key
-	{
-		if (e->input.comma.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.comma.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (7.0 * x_interval), ctrl_y);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.comma.pressed ? comma_down_t : comma_up_t, nullptr, false);
-	}
-
-	//period key
-	{
-		if (e->input.period.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.period.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (8.0 * x_interval), ctrl_y);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.period.pressed ? period_down_t : period_up_t, nullptr, false);
-	}
-
-	//slash key
-	{
-		if (e->input.slash.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
-		if (e->input.slash.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
-
-		temp_rect.pos = Point2DNew(ctrl_x + (9.0 * x_interval), ctrl_y);
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.slash.pressed ? slash_down_t : slash_up_t, nullptr, false);
+		e->DrawTexturedScreenQuad(&temp_screen_quad, small_display_keys[i].target_input->pressed ? small_display_keys[i].down_texture : small_display_keys[i].up_texture, nullptr, false);
 	}
 
 
 
-	//op_rules display
+	//op_rules display:
 	{
 		if (selected_rectangle)
 		{
@@ -3109,12 +3041,13 @@ void Program::DrawScene9()
 	}
 
 
-
+	//Handle old [display_clicks]:
 	if ((display_clicks.size() != 0) && (display_clicks[0].timer >= 125))
 	{
 		display_clicks.erase(display_clicks.begin());
 	}
 
+	//Draw [display_clicks]:
 	for (size_t i = 0; i < display_clicks.size(); i++)
 	{
 		const double temp_half_size = 24.0 * pow(50.0 / static_cast<double>(display_clicks[i].timer + 50), 2.5);
@@ -3125,7 +3058,6 @@ void Program::DrawScene9()
 
 		display_clicks[i].timer += 1;
 	}
-	
 }
 void Program::PostDrawRunScene9()
 {
@@ -3595,8 +3527,13 @@ Program::Program() : e(nullptr), example1_font("default_white_basic", "png", Lin
 
 	// ----------- RECTANGLE DISPLAY STUFF -----------
 
-	//Load all the rectangle display key textures:
+	//Load all the rectangle display textures:
 	{
+		minceraft_sample_t->LoadTexture("images/program/rectangle_display_keys/sample_textures/minceraft.png");
+		strawb_sample_t->LoadTexture("images/program/rectangle_display_keys/sample_textures/strawb.png");
+		burden_sample_t->LoadTexture("images/program/rectangle_display_keys/sample_textures/burden.png");
+		null_sample_t->LoadTexture("images/program/rectangle_display_keys/sample_textures/null.png");
+
 		click_circle_t->LoadTexture("images/program/rectangle_display_keys/click_circle.png");
 
 		op_rules_display_quad = Quad(DEFAULT_WINDOW_WIDTH * 0.5, DEFAULT_WINDOW_HEIGHT * -0.5, (DEFAULT_WINDOW_WIDTH * 0.5) - 56.0, (DEFAULT_WINDOW_HEIGHT * -0.5) + 56.0);
@@ -3630,6 +3567,9 @@ Program::Program() : e(nullptr), example1_font("default_white_basic", "png", Lin
 		e_up_t->LoadTexture("images/program/rectangle_display_keys/e_up.png");
 		e_down_t->LoadTexture("images/program/rectangle_display_keys/e_down.png");
 
+		r_up_t->LoadTexture("images/program/rectangle_display_keys/r_up.png");
+		r_down_t->LoadTexture("images/program/rectangle_display_keys/r_down.png");
+
 		f_up_t->LoadTexture("images/program/rectangle_display_keys/f_up.png");
 		f_down_t->LoadTexture("images/program/rectangle_display_keys/f_down.png");
 
@@ -3658,6 +3598,37 @@ Program::Program() : e(nullptr), example1_font("default_white_basic", "png", Lin
 		period_down_t->LoadTexture("images/program/rectangle_display_keys/period_down.png");
 		slash_up_t->LoadTexture("images/program/rectangle_display_keys/slash_up.png");
 		slash_down_t->LoadTexture("images/program/rectangle_display_keys/slash_down.png");
+	}
+
+	//Assign display key positions, textures, and inputs:
+	{
+		small_display_keys[0] = SmallDisplayKey(0, 0, ctrl_up_t, ctrl_down_t, &e->input.left_control);
+
+		small_display_keys[1] = SmallDisplayKey(2, 2, w_up_t, w_down_t, &e->input.w);
+		small_display_keys[2] = SmallDisplayKey(1, 1, a_up_t, a_down_t, &e->input.a);
+		small_display_keys[3] = SmallDisplayKey(2, 1, s_up_t, s_down_t, &e->input.s);
+		small_display_keys[4] = SmallDisplayKey(3, 1, d_up_t, d_down_t, &e->input.d);
+
+		small_display_keys[5] = SmallDisplayKey(1, 2, q_up_t, q_down_t, &e->input.q);
+		small_display_keys[6] = SmallDisplayKey(3, 2, e_up_t, e_down_t, &e->input.e);
+
+		small_display_keys[7] = SmallDisplayKey(4, 2, r_up_t, r_down_t, &e->input.r);
+
+		small_display_keys[8] = SmallDisplayKey(4, 1, f_up_t, f_down_t, &e->input.f);
+
+		small_display_keys[9] = SmallDisplayKey(6, 2, u_up_t, u_down_t, &e->input.u);
+		small_display_keys[10] = SmallDisplayKey(7, 2, i_up_t, i_down_t, &e->input.i);
+		small_display_keys[11] = SmallDisplayKey(6, 1, j_up_t, j_down_t, &e->input.j);
+		small_display_keys[12] = SmallDisplayKey(7, 1, k_up_t, k_down_t, &e->input.k);
+		small_display_keys[13] = SmallDisplayKey(6, 0, m_up_t, m_down_t, &e->input.m);
+		small_display_keys[14] = SmallDisplayKey(7, 0, comma_up_t, comma_down_t, &e->input.comma);
+
+		small_display_keys[15] = SmallDisplayKey(8, 2, o_up_t, o_down_t, &e->input.o);
+		small_display_keys[16] = SmallDisplayKey(9, 2, p_up_t, p_down_t, &e->input.p);
+		small_display_keys[17] = SmallDisplayKey(8, 1, l_up_t, l_down_t, &e->input.l);
+		small_display_keys[18] = SmallDisplayKey(9, 1, semicolon_up_t, semicolon_down_t, &e->input.semicolon);
+		small_display_keys[19] = SmallDisplayKey(8, 0, period_up_t, period_down_t, &e->input.period);
+		small_display_keys[20] = SmallDisplayKey(9, 0, slash_up_t, slash_down_t, &e->input.slash);
 	}
 }
 Program::~Program()

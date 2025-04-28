@@ -337,6 +337,8 @@ void Input::FormatKeys()
 	all_keys.push_back(&comma);
 	all_keys.push_back(&period);
 	all_keys.push_back(&slash);
+	all_keys.push_back(&minus_sign);
+	all_keys.push_back(&equals_sign);
 
 	all_keys.push_back(&a);
 	all_keys.push_back(&b);

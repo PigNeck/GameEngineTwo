@@ -12,6 +12,8 @@ struct Input
 	Key comma = Key(',', '<');
 	Key period = Key('.', '>');
 	Key slash = Key('/', '?');
+	Key minus_sign = Key('-', '_');
+	Key equals_sign = Key('=', '+');
 	//}
 
 	Key a = Key('a', 'A');

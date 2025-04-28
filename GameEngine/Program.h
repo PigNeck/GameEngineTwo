@@ -204,10 +204,24 @@ struct DisplayRectangle
 {
 	RefRectangleNewest rect = RefRectangleNewest(RefPlane(RefPoint2DNewest(), RefTransformations(Scale2DNew(), Rotation2DNew(), OpRules::NO_OPTIMIZATION)), Size2DNew(), Centering2DNew());
 	HSVA color;
+	unsigned int texture_id = 0; //0 for no texture
 
 	DisplayRectangle* reference_rect = nullptr;
 
 	DisplayRectangle(const unsigned int color_id = 0);
+};
+
+struct SmallDisplayKey
+{
+	unsigned int x = 0;
+	unsigned int y = 0;
+
+	const Texture* up_texture = nullptr;
+	const Texture* down_texture = nullptr;
+
+	const Key* target_input;
+
+	SmallDisplayKey(unsigned int i_x = 0, unsigned int i_y = 0, const Texture* const i_up_texture = nullptr, const Texture* const i_down_texture = nullptr, const Key* const i_target_input = nullptr);
 };
 
 struct Program : RunDrawAndPostDrawRunMethods
@@ -563,6 +577,8 @@ struct Program : RunDrawAndPostDrawRunMethods
 
 	// ----------- RECTANGLE DISPLAY STUFF -----------
 
+	bool show_references = true;
+
 	vector<DisplayClick> display_clicks;
 
 	unsigned int color_id_count = 0;
@@ -570,6 +586,11 @@ struct Program : RunDrawAndPostDrawRunMethods
 
 	DisplayRectangle* selected_rectangle = nullptr;
 	vector<DisplayRectangle*> display_rectangles;
+
+	Texture* minceraft_sample_t = new Texture();
+	Texture* strawb_sample_t = new Texture();
+	Texture* burden_sample_t = new Texture();
+	Texture* null_sample_t = new Texture();
 
 	Texture* click_circle_t = new Texture();
 
@@ -604,6 +625,8 @@ struct Program : RunDrawAndPostDrawRunMethods
 	Texture* e_up_t = new Texture();
 	Texture* e_down_t = new Texture();
 
+	Texture* r_up_t = new Texture();
+	Texture* r_down_t = new Texture();
 	Texture* f_up_t = new Texture();
 	Texture* f_down_t = new Texture();
 
@@ -632,4 +655,6 @@ struct Program : RunDrawAndPostDrawRunMethods
 	Texture* period_down_t = new Texture();
 	Texture* slash_up_t = new Texture();
 	Texture* slash_down_t = new Texture();
+
+	SmallDisplayKey small_display_keys[21];
 };

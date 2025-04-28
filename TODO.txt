@@ -12,6 +12,7 @@ TODO:
 - Optimize the order in which Point2DNews and Transformations are defererenced/referenced
 - Add "GetScreenValue(const Camera* const)" to various classes in 'RectangleNew.h'
 - Figure out how to optionally bind pos to reference centering?
+- Handle inputs properly when clicked out of window (set all inputs to 0?)
 
 - Make camera.rect private (because changing camera pos or size should also update camera.mouse_pos) (I don't think I'm doing this anymore)
 - Make text_box text centering in relation to parent_rect offset more intuitive

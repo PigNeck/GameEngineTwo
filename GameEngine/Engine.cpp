@@ -1200,8 +1200,13 @@ void Engine::UnloadEngineSoundChunk(Mix_Chunk** const param_chunk)
 }
 void Engine::LoadEngineSounds()
 {
-    click_press_sound = Mix_LoadWAV("sounds/click_press.wav");
-    click_release_sound = Mix_LoadWAV("sounds/click_release.wav");
+    click_press_sound = Mix_LoadWAV("sounds/click_sounds/press.wav");
+    click_press_p_up_sound = Mix_LoadWAV("sounds/click_sounds/press_p_up.wav");
+    click_press_p_down_sound = Mix_LoadWAV("sounds/click_sounds/press_p_down.wav");
+
+    click_release_sound = Mix_LoadWAV("sounds/click_sounds/release.wav");
+    click_release_p_up_sound = Mix_LoadWAV("sounds/click_sounds/release_p_up.wav");
+    click_release_p_down_sound = Mix_LoadWAV("sounds/click_sounds/release_p_down.wav");
 }
 void Engine::DeleteEngineSounds()
 {
@@ -2795,6 +2800,12 @@ void Engine::UpdateInput()
             case SDLK_SLASH:
                 input.slash.pressed = 1;
                 break;
+            case SDLK_MINUS:
+                input.minus_sign.pressed = 1;
+                break;
+            case SDLK_EQUALS:
+                input.equals_sign.pressed = 1;
+                break;
 
             case SDLK_a:
                 input.a.pressed = 1;
@@ -2938,6 +2949,12 @@ void Engine::UpdateInput()
                 break;
             case SDLK_SLASH:
                 input.slash.pressed = 0;
+                break;
+            case SDLK_MINUS:
+                input.minus_sign.pressed = 0;
+                break;
+            case SDLK_EQUALS:
+                input.equals_sign.pressed = 0;
                 break;
 
             case SDLK_a:
