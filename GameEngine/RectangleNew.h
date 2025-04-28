@@ -198,10 +198,8 @@ struct Point2DNew
     Point2DNew();
     Point2DNew(const double i_x, const double i_y);
 
-    //[reference_point] cannot be nullptr!
-    Point2DNew GetDereferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations = nullptr) const;
-    //[reference_point] cannot be nullptr!
-    Point2DNew GetReferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations = nullptr) const;
+    Point2DNew GetDereferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const;
+    Point2DNew GetReferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const;
 
     double GetDistanceFrom(const Point2DNew other_point) const;
 };
@@ -209,8 +207,8 @@ struct RefTransformations;
 struct RefRectangleNewest;
 struct RefPoint2DNewest : Point2DNew
 {
-    const RefPoint2DNewest* reference_point = nullptr; //Note: [reference_transformations] cannot be defined without [reference_point];  Also, they work together to define a single reference plane. If the [reference_point] and [reference_transformations] are part of different planes, directly use Point2DNew::GetDereferenced(...) or Point2DNew::GetReferenced(...) to achieve desired results.
-    const RefTransformations* reference_transformations = nullptr; //Note: [reference_transformations] cannot be defined without [reference_point];  Also, they work together to define a single reference plane. If the [reference_point] and [reference_transformations] are part of different planes, directly use Point2DNew::GetDereferenced(...) or Point2DNew::GetReferenced(...) to achieve desired results.
+    const RefPoint2DNewest* reference_point = nullptr; //Note: [reference_transformations] and [reference_point] work together to define a single reference plane. If the [reference_point] and [reference_transformations] are part of different planes, directly use Point2DNew::GetDereferenced(...) or Point2DNew::GetReferenced(...) to achieve desired results.
+    const RefTransformations* reference_transformations = nullptr; //Note: [reference_transformations] and [reference_point] work together to define a single reference plane. If the [reference_point] and [reference_transformations] are part of different planes, directly use Point2DNew::GetDereferenced(...) or Point2DNew::GetReferenced(...) to achieve desired results.
 
     RefPoint2DNewest();
     RefPoint2DNewest(const double i_x, const double i_y);
@@ -220,6 +218,8 @@ struct RefPoint2DNewest : Point2DNew
     RefPoint2DNewest(const Point2DNew& non_ref_point, const RefRectangleNewest* const reference_rectangle);
     RefPoint2DNewest(const Point2DNew& non_ref_point, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations);
     
+    RefPoint2DNewest GetUnscaled() const;
+
     void SetReference(const RefRectangleNewest* const reference_rectangle);
 
 
@@ -436,8 +436,10 @@ struct RefTransformations : Transformations
 {
     const RefTransformations* reference_transformations = nullptr;
 
-    RefTransformations(const Scale2DNew i_scale = Scale2DNew(), const Rotation2DNew i_rotation = Rotation2DNew(), const RefTransformations* const i_reference_transformations = nullptr);
+    RefTransformations(const Scale2DNew i_scale = Scale2DNew(), const Rotation2DNew i_rotation = Rotation2DNew(), const OpRules i_op_rules = OpRules::NO_SKEW, const RefTransformations* const i_reference_transformations = nullptr);
     RefTransformations(const Transformations& non_ref_transformations, const RefTransformations* const i_reference_transformations = nullptr);
+
+    RefTransformations GetUnscaled() const;
 
     Transformations GetDepthValue(const unsigned int depth_index) const;
 
@@ -487,7 +489,15 @@ struct RefPlane //In a RefPlane, [pos.reference_transformations] and [transforma
     
     RefPlane(const RefPoint2DNewest i_pos = {}, const RefTransformations i_transformations = {});
     RefPlane(const Point2DNew i_non_ref_pos, const Transformations i_non_ref_transformations, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations);
-    RefPlane(const RefPlane& non_ref_plane, const RefPoint2DNewest* const i_reference_point = nullptr, const RefTransformations* const i_reference_transformations = nullptr);
+    RefPlane(const Plane& non_ref_plane, const RefPoint2DNewest* const i_reference_point = nullptr, const RefTransformations* const i_reference_transformations = nullptr);
+
+    RefPlane GetUnscaled() const;
+
+    void SetReferences(const RefPlane& reference);
+    void SetReferences(const RefPoint2DNewest* const reference_point, const RefTransformations* const reference_transformations);
+
+    Plane GetDepthValue(const unsigned int depth) const;
+    Plane GetUniValue() const;
 };
 
 
@@ -529,39 +539,60 @@ struct RectangleNewest : Plane
 {
     //---- Data ----
 
-    //Point2DNew pos;
     Size2DNew unscaled_size;
     Centering2DNew centering;
-    //Transformations transformations;
 
-    RectangleNewest(const Point2DNew i_pos = {}, const Size2DNew i_unscaled_size = {}, const Centering2DNew i_centering = {}, const Transformations& i_transformations = {});
+
+    RectangleNewest(const Plane i_plane = {}, const Size2DNew i_unscaled_size = {}, const Centering2DNew i_centering = {});
     RectangleNewest(const RefRectangleNewest& i_ref_rect);
 
-    RectangleNewest GetDereferenced();
 
+    //Returns this rectangle without its plane transformations or position
+    RectangleNewest GetUnscaled() const;
+
+
+    //
+    RectangleNewest GetDereferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const;
+    //
+    RectangleNewest GetReferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const;
+    //Unscaled values are independent from [pos] and [transformations]
+    RectangleNewest GetDereferencedUnscaled(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const;
+    //Unscaled values are independent from [pos] and [transformations]
+    RectangleNewest GetReferencedUnscaled(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const;
+
+
+    //
+    Point2DNew GetCorner(const CornerEnum corner) const;
+    //Unscaled values are independent from [pos] and [transformations]
+    Point2DNew GetUnscaledCorner(const CornerEnum corner) const;
+
+
+    //
     Quad GetQuad() const;
+    //Unscaled values are independent from [pos] and [transformations]
+    Quad GetUnscaledQuad() const;
+    //
     Quad GetScreenQuad(const CameraNew* const camera) const;
 
-    Point2DNew GetCorner(const CornerEnum corner) const;
 
     //---- Edge Functions ----
     
     //Returns a line that contains the two corners of a given edge. The returned [v_2] will be the corner further along clockwise than [v_1], although this rarely matters.
-    Line2D GetEdge(const DirectionEnum edge) const;
+    //Line2D GetEdge(const DirectionEnum edge) const;
 
 
     //---- Scale Functions ----
     
-    //IMPORTANT!!!: Does not account for [width_radian_offset] or [height_radian_offset] in calculation (may produce potentially unexpected results in some cases). For more information, look at function body.
-    Size2DNew GetScaledSize() const;
-    //IMPORTANT!!!: Does not account for [width_radian_offset] in calculation (may produce potentially unexpected results in some cases). For more information, look at function body.
-    double GetScaledWidth() const;
-    //IMPORTANT!!!: Does not account for [height_radian_offset] in calculation (may produce potentially unexpected results in some cases). For more information, look at function body.
-    double GetScaledHeight() const;
+    //IMPORTANT: Does not return data regarding scale direction;  Scaled values are dependent on [pos] and/or [transformations]
+    Size2DNew GetSize() const;
+    //IMPORTANT: Does not return data regarding scale direction;  Scaled values are dependent on [pos] and/or [transformations]
+    double GetWidth() const;
+    //IMPORTANT: Does not return data regarding scale direction;  Scaled values are dependent on [pos] and/or [transformations]
+    double GetHeight() const;
 
 
     //---- Centering/Offset Functions ----
-
+    /*
     Offset2DNew GetUnscaledOffset() const;
     double GetUnscaledOffsetX() const;
     double GetUnscaledOffsetY() const;
@@ -572,54 +603,137 @@ struct RectangleNewest : Plane
     double GetScaledOffsetX() const;
     //IMPORTANT!!!: Does not account for [height_radian_offset] in calculation (may produce potentially unexpected results in some cases). For more information, look at function body.
     double GetScaledOffsetY() const;
+    */
 };
 
 
 
 
 // -----------------   REFERENCE   -----------------
-struct RefRectangleNewest
+struct RefRectangleNewest : RefPlane
 {
-    RefPoint2DNewest pos;
     Size2DNew unscaled_size;
     Centering2DNew centering;
-    RefTransformations transformations;
 
 
-    RefRectangleNewest(const RefRectangleNewest* const reference_rectangle, const Point2DNew non_ref_pos = {}, const Size2DNew i_unscaled_size = {}, const Centering2DNew i_centering = {}, const Transformations non_ref_transformations = {});
-    //Recommended
-    RefRectangleNewest(const RefPoint2DNewest* const reference_point, const RefTransformations* const reference_transformations, const Point2DNew non_ref_pos = {}, const Size2DNew i_unscaled_size = {}, const Centering2DNew i_centering = {}, const Transformations non_ref_transformations = {});
-    //Non-recommended (full-explicit constructor)
-    RefRectangleNewest(const RefPoint2DNewest i_pos = {}, const Size2DNew i_unscaled_size = {}, const Centering2DNew i_centering = {}, const RefTransformations i_transformations = {});
-    //Non-recommended
+    RefRectangleNewest(const RefPlane i_ref_plane = {}, const Size2DNew i_unscaled_size = {}, const Centering2DNew i_centering = {});
+    //This conversion leaves [pos.reference_point], [pos.reference_transformations] and [transformations.reference_transformations] as nullptr
     RefRectangleNewest(const RectangleNewest& non_ref_rectangle);
 
 
-    RectangleNewest GetUniValue() const;
+    //Returns this rectangle without its plane transformations or position
+    RefRectangleNewest GetUnscaled() const;
+
+
+    //
     RectangleNewest GetDepthValue(const unsigned int depth_index) const;
+    //
+    RectangleNewest GetUniValue() const;
+    //Unscaled values are independent from [pos] and [transformations]
+    RectangleNewest GetDepthUnscaledValue(const unsigned int depth_index) const;
+    //Unscaled values are independent from [pos] and [transformations]
+    RectangleNewest GetUniUnscaledValue() const;
 
-    Quad GetUniQuad() const;
-    Quad GetDepthQuad(const unsigned int depth_index) const;
 
-    Point2DNew GetUniCorner(const CornerEnum corner) const;
+
+
+    //---- SIZE-RELATED METHODS ----
+
+    //IMPORTANT!!!: Does not return data regarding scale direction
+    Size2DNew GetSize() const;
+    //IMPORTANT!!!: Does not return data regarding scale direction
+    double GetWidth() const;
+    //IMPORTANT!!!: Does not return data regarding scale direction
+    double GetHeight() const;
+
+    //
+    Size2DNew GetDepthSize(const unsigned int depth_index) const;
+    //IMPORTANT: Just as slow as [GetDepthSize(...)]. Essentially just GetDepthSize(...).width. (It isn't faster because of code formatting complications)
+    double GetDepthWidth(const unsigned int depth_index) const;
+    //IMPORTANT: Just as slow as [GetDepthSize(...)]. Essentially just GetDepthSize(...).height. (It isn't faster because of code formatting complications)
+    double GetDepthHeight(const unsigned int depth_index) const;
+    //
+    Size2DNew GetUniSize() const;
+    //IMPORTANT: Just as slow as [GetUniSize()]. Essentially just GetUniSize().width. (It isn't faster because of code formatting complications)
+    double GetUniWidth() const;
+    //IMPORTANT: Just as slow as [GetUniSize()]. Essentially just GetUniSize().height. (It isn't faster because of code formatting complications)
+    double GetUniHeight() const;
+
+    //Unscaled values are independent from [pos] and [transformations]
+    Size2DNew GetDepthUnscaledSize(const unsigned int depth_index) const;
+    //IMPORTANT: Just as slow as [GetDepthUnscaledSize(...)]. Essentially just GetDepthUnscaledSize(...).width. (It isn't faster because of code formatting complications);  Unscaled values are independent from [pos] and [transformations]
+    double GetDepthUnscaledWidth(const unsigned int depth_index) const;
+    //IMPORTANT: Just as slow as [GetDepthUnscaledSize(...)]. Essentially just GetDepthUnscaledSize(...).height. (It isn't faster because of code formatting complications);  Unscaled values are independent from [pos] and [transformations]
+    double GetDepthUnscaledHeight(const unsigned int depth_index) const;
+    //Unscaled values are independent from [pos] and [transformations]
+    Size2DNew GetUniUnscaledSize() const;
+    //IMPORTANT: Just as slow as [GetUniUnscaledSize()]. Essentially just GetUniUnscaledSize().width. (It isn't faster because of code formatting complications);  Unscaled values are independent from [pos] and [transformations]
+    double GetUniUnscaledWidth() const;
+    //IMPORTANT: Just as slow as [GetUniUnscaledSize()]. Essentially just GetUniUnscaledSize().height. (It isn't faster because of code formatting complications);  Unscaled values are independent from [pos] and [transformations]
+    double GetUniUnscaledHeight() const;
+
+
+
+
+    //---- CORNER-RELATED METHODS ----
+
+    //
+    Point2DNew GetCorner(const CornerEnum corner) const;
+    //Unscaled values are independent from [pos] and [transformations]
+    Point2DNew GetUnscaledCorner(const CornerEnum corner) const;
+
+    //
     Point2DNew GetDepthCorner(const CornerEnum corner, const unsigned int depth_index) const;
+    //
+    Point2DNew GetUniCorner(const CornerEnum corner) const;
+    //Unscaled values are independent from [pos] and [transformations]
+    Point2DNew GetDepthUnscaledCorner(const CornerEnum corner, const unsigned int depth_index) const;
+    //Unscaled values are independent from [pos] and [transformations]
+    Point2DNew GetUniUnscaledCorner(const CornerEnum corner) const;
 
+
+
+
+    //---- QUAD-RELATED METHODS ----
+    
+    //
+    Quad GetQuad() const;
+    //Unscaled values are independent from [pos] and [transformations]
+    Quad GetUnscaledQuad() const;
+    //Shouldn't really ever need to be used...
+    Quad GetScreenQuad(const CameraNew* const camera) const;
+
+    //
+    Quad GetDepthQuad(const unsigned int depth_index) const;
+    //
+    Quad GetUniQuad() const;
+    //Unscaled values are independent from [pos] and [transformations]
+    Quad GetDepthUnscaledQuad(const unsigned int depth_index) const;
+    //Unscaled values are independent from [pos] and [transformations]
+    Quad GetUniUnscaledQuad() const;
+    //Shouldn't really ever need to be used...
+    Quad GetDepthScreenQuad(const unsigned int depth_index, const CameraNew* const camera) const;
+    //
+    Quad GetUniScreenQuad(const CameraNew* const camera) const;
+
+
+
+
+    /*
     void SetPosToFitCurrentPlanePointToDepthPoint(const Point2DNew depth_point, const Point2DNew current_plane_point, const unsigned int depth_index);
 
     void SetDepthCorner(const Point2DNew depth_corner, const CornerEnum corner_identity, const unsigned int depth_index);
     void SetUniCorner(const Point2DNew uni_corner, const CornerEnum corner_identity);
+    */
+};
 
 
-    Size2DNew GetScaledSize() const;
-    double GetScaledWidth() const;
-    double GetScaledHeight() const;
-
-    void SetScaledSize(const Size2DNew scaled_size);
-    void SetScaledWidth(const double scaled_width);
-    void SetScaledHeight(const double scaled_height);
 
 
-    void SetReference(const RefRectangleNewest* const reference_rectangle);
+// -----------------   CAMERA   -----------------
+
+struct CameraNew {
+    RectangleNewest rect;
 };
 
 

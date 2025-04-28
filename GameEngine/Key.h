@@ -2,10 +2,13 @@
 
 struct Key
 {
-	bool pressed;
-	bool previous_frame_pressed;
-	bool first_frame_pressed;
-	bool first_frame_released;
+	bool pressed = false;
+	bool previous_frame_pressed = false;
+	bool first_frame_pressed = false;
+	bool first_frame_released = false;
 
-	Key();
+	char primary_char = 0;
+	char secondary_char = 0;
+
+	Key(const char i_primary_char = 0, const char i_secondary_char = 0);
 };

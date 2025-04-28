@@ -316,6 +316,14 @@ TextPortion* CoursePath::GetCurrentPortion()
 
 
 
+DisplayClick::DisplayClick(const Point2DNew i_pos) : pos(i_pos) {}
+
+DisplayRectangle::DisplayRectangle(const unsigned int color_id) : color(static_cast<float>(color_id) * (5.f / 3.f), 0.85f, 0.85f) {}
+
+
+
+
+
 void Program::SetCurrentTextPortionTextBoxProgression(const double target_visable_char_progression)
 {
 	current_visable_char_progression = target_visable_char_progression;
@@ -2385,12 +2393,14 @@ void Program::DrawScene6()
 	e->DrawTextureWithRefRectangleNewest(&test_rect_new, nullptr, nullptr, nullptr, nullptr);
 	e->DrawTextureWithRefRectangleNewest(&test_rect_new_two, nullptr, nullptr, nullptr, nullptr);
 
+	/*
 	const Point2DNew temp_referenced_point = test_rect_new_three.pos.GetReferenced(&test_rect_new.pos, &test_rect_new.transformations);
 	const Transformations temp_referenced_transformations = test_rect_new_three.transformations.GetReferenced(&test_rect_new.transformations);
-	const RectangleNewest temp_referenced_rectangle = RectangleNewest(temp_referenced_point, {}, {}, temp_referenced_transformations);
+	const RectangleNewest temp_referenced_rectangle = RectangleNewest(Plane(temp_referenced_point, temp_referenced_transformations), Size2DNew(), Centering2DNew());
 	const Quad temp_referenced_quad = temp_referenced_rectangle.GetQuad();
 
 	e->DrawTexturedQuad(&temp_referenced_quad, nullptr, nullptr, nullptr);
+	*/
 
 	//e->DrawTextureWithRefRectangleNewest(&test_rect_new_three, nullptr, nullptr, nullptr, nullptr);
 
@@ -2478,22 +2488,651 @@ void Program::SetScene9()
 }
 void Program::EndScene9()
 {
-
+	display_clicks.clear();
 }
 void Program::RunScene9()
 {
+	if (e->input.mouse_left.first_frame_pressed)
+	{
+		const Point2DNew uni_mouse_pos = Point2DNew(static_cast<double>(e->input.mouse_x) - (DEFAULT_WINDOW_WIDTH / 2.0), (DEFAULT_WINDOW_HEIGHT / 2.0) - static_cast<double>(e->input.mouse_y));
 
+		for (size_t i = display_rectangles.size() - 1; i != numeric_limits<size_t>::max(); i--)
+		{
+			const RectangleNewest uni_rectangle = display_rectangles[i]->rect.GetUniValue();
+
+			const Point2DNew referenced_mouse_pos = uni_mouse_pos.GetReferenced(&uni_rectangle.pos, &uni_rectangle.transformations);
+
+			if ((referenced_mouse_pos.x >= (uni_rectangle.unscaled_size.width * -0.5))
+				&& (referenced_mouse_pos.x <= (uni_rectangle.unscaled_size.width * 0.5))
+				&& (referenced_mouse_pos.y >= (uni_rectangle.unscaled_size.height * -0.5))
+				&& (referenced_mouse_pos.y <= (uni_rectangle.unscaled_size.height * 0.5)))
+			{
+				if (e->input.left_control.pressed)
+				{
+					selected_rectangle->reference_rect = display_rectangles[i];
+					selected_rectangle->rect.pos.reference_point = &display_rectangles[i]->rect.pos;
+					selected_rectangle->rect.pos.reference_transformations = &display_rectangles[i]->rect.transformations;
+					selected_rectangle->rect.transformations.reference_transformations = selected_rectangle->rect.pos.reference_transformations;
+				}
+				else
+				{
+					selection_anim_counter = 0;
+					selected_rectangle = display_rectangles[i];
+				}
+				break;
+			}
+
+			if (i == 0)
+			{
+				selected_rectangle = nullptr;
+			}
+		}
+	}
+
+
+
+	if (e->input.zero.first_frame_released)
+	{
+		if (e->input.left_control.pressed)
+		{
+			selected_rectangle = new DisplayRectangle();
+		}
+		else
+		{
+			selection_anim_counter = 0;
+			selected_rectangle = new DisplayRectangle(color_id_count);
+			color_id_count++;
+		}
+
+		display_rectangles.push_back(selected_rectangle);
+	}
+	if (selected_rectangle && e->input.nine.first_frame_released)
+	{
+		for (size_t i = 0; i < display_rectangles.size(); i++)
+		{
+			if (display_rectangles[i]->reference_rect == selected_rectangle)
+			{
+				display_rectangles[i]->reference_rect = selected_rectangle->reference_rect;
+				display_rectangles[i]->rect.pos.reference_point = selected_rectangle->rect.pos.reference_point;
+				display_rectangles[i]->rect.pos.reference_transformations = selected_rectangle->rect.pos.reference_transformations;
+				display_rectangles[i]->rect.transformations.reference_transformations = selected_rectangle->rect.transformations.reference_transformations;
+			}
+		}
+
+		//ChatGPT-ahh code {
+		auto it = find(display_rectangles.begin(), display_rectangles.end(), selected_rectangle);
+		if (it != display_rectangles.end())
+		{
+			display_rectangles.erase(it);
+		}
+
+		delete selected_rectangle;
+		selected_rectangle = nullptr;
+		//}
+	}
+
+
+	constexpr double move_speed = 2.0;
+	constexpr double rotation_speed = M_PI * 0.005;
+	constexpr double scale_speed = 0.025;
+	constexpr double size_speed = 2.0;
+
+	if (selected_rectangle)
+	{
+		if (e->input.f.first_frame_pressed && e->input.left_control.pressed)
+		{
+			switch (selected_rectangle->rect.transformations.op_rules)
+			{
+			case OpRules::NO_OPTIMIZATION:
+				selected_rectangle->rect.transformations.scale.width_radian_offset = 0.0;
+				selected_rectangle->rect.transformations.scale.height_radian_offset = 0.0;
+				selected_rectangle->rect.transformations.op_rules = OpRules::NO_SKEW;
+				break;
+			case OpRules::NO_SKEW:
+				selected_rectangle->rect.transformations.scale = Scale2DNew();
+				selected_rectangle->rect.transformations.op_rules = OpRules::NO_SCALE;
+				break;
+			case OpRules::NO_SCALE:
+				selected_rectangle->rect.transformations.scale.width_radian_offset = 0.0;
+				selected_rectangle->rect.transformations.scale.height_radian_offset = 0.0;
+
+				selected_rectangle->rect.transformations.rotation = Rotation2DNew(Rotation90(selected_rectangle->rect.transformations.rotation).val);
+				selected_rectangle->rect.transformations.op_rules = OpRules::ROTATION90;
+				break;
+			case OpRules::ROTATION90:
+				selected_rectangle->rect.transformations.scale = Scale2DNew();
+
+				selected_rectangle->rect.transformations.rotation = Rotation2DNew(Rotation90(selected_rectangle->rect.transformations.rotation).val);
+				selected_rectangle->rect.transformations.op_rules = OpRules::ROTATION90_NO_SCALE;
+				break;
+			case OpRules::ROTATION90_NO_SCALE:
+				selected_rectangle->rect.transformations.scale = Scale2DNew();
+				selected_rectangle->rect.transformations.rotation.radians = 0.0;
+				selected_rectangle->rect.transformations.op_rules = OpRules::NO_TRANSFORMATIONS;
+				break;
+			case OpRules::NO_TRANSFORMATIONS:
+				selected_rectangle->rect.transformations.op_rules = OpRules::NO_OPTIMIZATION;
+				break;
+			}
+		}
+		if (e->input.f.pressed && (!e->input.left_control.pressed))
+		{
+			selected_rectangle->color.h += 0.01;
+			selected_rectangle->color.SetHToBaseH();
+		}
+		const OpRules c_op = selected_rectangle->rect.transformations.op_rules;
+
+
+
+		if (e->input.w.pressed)
+		{
+			selected_rectangle->rect.pos.y += move_speed;
+		}
+		if (e->input.a.pressed)
+		{
+			selected_rectangle->rect.pos.x -= move_speed;
+		}
+		if (e->input.s.pressed)
+		{
+			selected_rectangle->rect.pos.y -= move_speed;
+		}
+		if (e->input.d.pressed)
+		{
+			selected_rectangle->rect.pos.x += move_speed;
+		}
+
+
+		if (e->input.q.pressed)
+		{
+			if ((c_op == OpRules::NO_OPTIMIZATION) || (c_op == OpRules::NO_SKEW) || (c_op == OpRules::NO_SCALE))
+			{
+				selected_rectangle->rect.transformations.rotation.radians += rotation_speed;
+			}
+			if ((c_op == OpRules::ROTATION90) || (c_op == OpRules::ROTATION90_NO_SCALE))
+			{
+				selected_rectangle->rect.transformations.rotation.RotateCounterclockwise90(true);
+			}
+		}
+		if (e->input.e.pressed)
+		{
+			if ((c_op == OpRules::NO_OPTIMIZATION) || (c_op == OpRules::NO_SKEW) || (c_op == OpRules::NO_SCALE))
+			{
+				selected_rectangle->rect.transformations.rotation.radians -= rotation_speed;
+			}
+			if ((c_op == OpRules::ROTATION90) || (c_op == OpRules::ROTATION90_NO_SCALE))
+			{
+				selected_rectangle->rect.transformations.rotation.RotateClockwise90(true);
+			}
+		}
+
+
+		if (e->input.j.pressed && (c_op != OpRules::NO_TRANSFORMATIONS) && (c_op != OpRules::NO_SCALE) && (c_op != OpRules::ROTATION90_NO_SCALE))
+		{
+			//Doesn't work when flipping (fix later?)
+			if (abs(selected_rectangle->rect.transformations.scale.width_scale) >= abs(selected_rectangle->rect.transformations.scale.height_scale))
+			{
+				const double temp_scale_ratio = (selected_rectangle->rect.transformations.scale.height_scale / selected_rectangle->rect.transformations.scale.width_scale);
+				selected_rectangle->rect.transformations.scale.width_scale += signbit(selected_rectangle->rect.transformations.scale.width_scale) ? -scale_speed : scale_speed;
+				selected_rectangle->rect.transformations.scale.height_scale = selected_rectangle->rect.transformations.scale.width_scale * temp_scale_ratio;
+			}
+			else
+			{
+				const double temp_scale_ratio = (selected_rectangle->rect.transformations.scale.width_scale / selected_rectangle->rect.transformations.scale.height_scale);
+				selected_rectangle->rect.transformations.scale.height_scale += signbit(selected_rectangle->rect.transformations.scale.height_scale) ? -scale_speed : scale_speed;
+				selected_rectangle->rect.transformations.scale.width_scale = selected_rectangle->rect.transformations.scale.height_scale * temp_scale_ratio;
+			}
+		}
+		if (e->input.k.pressed && (c_op != OpRules::NO_TRANSFORMATIONS) && (c_op != OpRules::NO_SCALE) && (c_op != OpRules::ROTATION90_NO_SCALE))
+		{
+			//Doesn't work when flipping (fix later?)
+			if (abs(selected_rectangle->rect.transformations.scale.width_scale) >= abs(selected_rectangle->rect.transformations.scale.height_scale))
+			{
+				const double temp_scale_ratio = (selected_rectangle->rect.transformations.scale.height_scale / selected_rectangle->rect.transformations.scale.width_scale);
+				selected_rectangle->rect.transformations.scale.width_scale += signbit(selected_rectangle->rect.transformations.scale.width_scale) ? scale_speed : -scale_speed;
+				selected_rectangle->rect.transformations.scale.height_scale = selected_rectangle->rect.transformations.scale.width_scale * temp_scale_ratio;
+			}
+			else
+			{
+				const double temp_scale_ratio = (selected_rectangle->rect.transformations.scale.width_scale / selected_rectangle->rect.transformations.scale.height_scale);
+				selected_rectangle->rect.transformations.scale.height_scale += signbit(selected_rectangle->rect.transformations.scale.height_scale) ? scale_speed : -scale_speed;
+				selected_rectangle->rect.transformations.scale.width_scale = selected_rectangle->rect.transformations.scale.height_scale * temp_scale_ratio;
+			}
+		}
+		if (e->input.u.pressed && (c_op != OpRules::NO_TRANSFORMATIONS) && (c_op != OpRules::NO_SCALE) && (c_op != OpRules::ROTATION90_NO_SCALE))
+		{
+			selected_rectangle->rect.transformations.scale.width_scale += scale_speed;
+		}
+		if (e->input.i.pressed && (c_op != OpRules::NO_TRANSFORMATIONS) && (c_op != OpRules::NO_SCALE) && (c_op != OpRules::ROTATION90_NO_SCALE))
+		{
+			selected_rectangle->rect.transformations.scale.width_scale -= scale_speed;
+		}
+		if (e->input.m.pressed && (c_op != OpRules::NO_TRANSFORMATIONS) && (c_op != OpRules::NO_SCALE) && (c_op != OpRules::ROTATION90_NO_SCALE))
+		{
+			selected_rectangle->rect.transformations.scale.height_scale += scale_speed;
+		}
+		if (e->input.comma.pressed && (c_op != OpRules::NO_TRANSFORMATIONS) && (c_op != OpRules::NO_SCALE) && (c_op != OpRules::ROTATION90_NO_SCALE))
+		{
+			selected_rectangle->rect.transformations.scale.height_scale -= scale_speed;
+		}
+
+
+		if (e->input.l.pressed)
+		{
+			//Doesn't work when flipping (fix later?)
+			if (abs(selected_rectangle->rect.unscaled_size.width) >= abs(selected_rectangle->rect.unscaled_size.height))
+			{
+				const double temp_scale_ratio = (selected_rectangle->rect.unscaled_size.height / selected_rectangle->rect.unscaled_size.width);
+				selected_rectangle->rect.unscaled_size.width += signbit(selected_rectangle->rect.unscaled_size.width) ? -size_speed : size_speed;
+				selected_rectangle->rect.unscaled_size.height = selected_rectangle->rect.unscaled_size.width * temp_scale_ratio;
+			}
+			else
+			{
+				const double temp_scale_ratio = (selected_rectangle->rect.unscaled_size.width / selected_rectangle->rect.unscaled_size.height);
+				selected_rectangle->rect.unscaled_size.height += signbit(selected_rectangle->rect.unscaled_size.height) ? -size_speed : size_speed;
+				selected_rectangle->rect.unscaled_size.width = selected_rectangle->rect.unscaled_size.height * temp_scale_ratio;
+			}
+		}
+		if (e->input.semicolon.pressed)
+		{
+			//Doesn't work when flipping (fix later?)
+			if (abs(selected_rectangle->rect.unscaled_size.width) >= abs(selected_rectangle->rect.unscaled_size.height))
+			{
+				const double temp_scale_ratio = (selected_rectangle->rect.unscaled_size.height / selected_rectangle->rect.unscaled_size.width);
+				selected_rectangle->rect.unscaled_size.width += signbit(selected_rectangle->rect.unscaled_size.width) ? size_speed : -size_speed;
+				selected_rectangle->rect.unscaled_size.height = selected_rectangle->rect.unscaled_size.width * temp_scale_ratio;
+			}
+			else
+			{
+				const double temp_scale_ratio = (selected_rectangle->rect.unscaled_size.width / selected_rectangle->rect.unscaled_size.height);
+				selected_rectangle->rect.unscaled_size.height += signbit(selected_rectangle->rect.unscaled_size.height) ? size_speed : -size_speed;
+				selected_rectangle->rect.unscaled_size.width = selected_rectangle->rect.unscaled_size.height * temp_scale_ratio;
+			}
+		}
+		if (e->input.o.pressed)
+		{
+			selected_rectangle->rect.unscaled_size.width += size_speed;
+		}
+		if (e->input.p.pressed)
+		{
+			selected_rectangle->rect.unscaled_size.width -= size_speed;
+		}
+		if (e->input.period.pressed)
+		{
+			selected_rectangle->rect.unscaled_size.height += size_speed;
+		}
+		if (e->input.slash.pressed)
+		{
+			selected_rectangle->rect.unscaled_size.height -= size_speed;
+		}
+	}
 }
 void Program::DrawScene9()
 {
+	for (size_t i = 0; i < display_rectangles.size(); i++)
+	{
+		const Quad temp_screen_quad = display_rectangles[i]->rect.GetUniQuad();
 
+		if (selected_rectangle == display_rectangles[i])
+		{
+			HSVA temp_color_0 = display_rectangles[i]->color;
+
+			const double multiplication_factor = ((cos(static_cast<double>(selection_anim_counter) * (M_PI / 50.0)) * -0.5) + 0.5);
+			temp_color_0.s = 1.0 - ((1.0 - temp_color_0.GetBaseS()) * multiplication_factor);
+			temp_color_0.v = 1.0 - ((1.0 - temp_color_0.GetBaseV()) * multiplication_factor);
+
+			const GLColor temp_color_1 = GLColor(temp_color_0);
+
+			e->DrawScreenQuad(&temp_screen_quad, &temp_color_1, false);
+		}
+		else
+		{
+			const GLColor temp_color_1 = GLColor(display_rectangles[i]->color);
+
+			e->DrawScreenQuad(&temp_screen_quad, &temp_color_1, false);
+		}
+
+		if (display_rectangles[i]->reference_rect)
+		{
+			RefRectangleNewest reference_color_rect = display_rectangles[i]->rect;
+			reference_color_rect.unscaled_size.width = reference_color_rect.unscaled_size.width * 0.25;
+			reference_color_rect.unscaled_size.height = reference_color_rect.unscaled_size.height * 0.25;
+
+			const Quad temp_screen_quad = reference_color_rect.GetUniQuad();
+
+			if (selected_rectangle == display_rectangles[i])
+			{
+				HSVA temp_color_0 = display_rectangles[i]->reference_rect->color;
+
+				const double multiplication_factor = ((cos(static_cast<double>(selection_anim_counter) * (M_PI / 50.0)) * -0.5) + 0.5);
+				temp_color_0.s = 1.0 - ((1.0 - temp_color_0.GetBaseS()) * multiplication_factor);
+				temp_color_0.v = 1.0 - ((1.0 - temp_color_0.GetBaseV()) * multiplication_factor);
+
+				const GLColor temp_color_1 = GLColor(temp_color_0);
+
+				e->DrawScreenQuad(&temp_screen_quad, &temp_color_1, false);
+			}
+			else
+			{
+				const GLColor temp_color_1 = GLColor(display_rectangles[i]->reference_rect->color);
+
+				e->DrawScreenQuad(&temp_screen_quad, &temp_color_1, false);
+			}
+		}
+	}
+
+	selection_anim_counter++;
+	if (selection_anim_counter > 100)
+	{
+		selection_anim_counter = 0;
+	}
+
+	
+
+	//click
+	{
+		if (e->input.mouse_left.first_frame_pressed)
+		{
+			Mix_PlayChannel(-1, e->click_press_sound, 0);
+
+			display_clicks.push_back(DisplayClick({ static_cast<double>(e->input.mouse_x) - (DEFAULT_WINDOW_WIDTH / 2.0), (DEFAULT_WINDOW_HEIGHT / 2.0) - static_cast<double>(e->input.mouse_y) }));
+		}
+	}
+
+
+
+
+
+
+	RectangleNewest temp_rect = RectangleNewest(Plane(Point2DNew(), Transformations(Scale2DNew(4.0, 4.0))), Size2DNew(32.0, 34.0));
+
+	//add key
+	{
+		if (e->input.zero.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.zero.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew((DEFAULT_WINDOW_WIDTH / 2.0) - 72.0, (DEFAULT_WINDOW_HEIGHT / 2.0) - 76.0);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.zero.pressed ? add_down_t : add_up_t, nullptr, false);
+	}
+
+	//subtract key
+	{
+		if (e->input.nine.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.nine.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew((DEFAULT_WINDOW_WIDTH / 2.0) - 208.0, (DEFAULT_WINDOW_HEIGHT / 2.0) - 76.0);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.nine.pressed ? subtract_down_t : subtract_up_t, nullptr, false);
+	}
+
+
+
+	temp_rect.unscaled_size = Size2DNew(11.0, 12.0);
+
+	constexpr double ctrl_x = (DEFAULT_WINDOW_WIDTH / -2.0) + 30.0;
+	constexpr double ctrl_y = (DEFAULT_WINDOW_HEIGHT / -2.0) + 32.0;
+
+	constexpr double x_interval = 48.0;
+	constexpr double y_interval = 52.0;
+
+	//q key
+	{
+		if (e->input.q.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.q.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + x_interval, ctrl_y + (2.0 * y_interval));
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.q.pressed ? q_down_t : q_up_t, nullptr, false);
+	}
+
+	//w key
+	{
+		if (e->input.w.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.w.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (2.0 * x_interval), ctrl_y + (2.0 * y_interval));
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.w.pressed ? w_down_t : w_up_t, nullptr, false);
+	}
+
+	//e key
+	{
+		if (e->input.e.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.e.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (3.0 * x_interval), ctrl_y + (2.0 * y_interval));
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.e.pressed ? e_down_t : e_up_t, nullptr, false);
+	}
+
+	//u key
+	{
+		if (e->input.u.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.u.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (6.0 * x_interval), ctrl_y + (2.0 * y_interval));
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.u.pressed ? u_down_t : u_up_t, nullptr, false);
+	}
+
+	//i key
+	{
+		if (e->input.i.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.i.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (7.0 * x_interval), ctrl_y + (2.0 * y_interval));
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.i.pressed ? i_down_t : i_up_t, nullptr, false);
+	}
+
+	//o key
+	{
+		if (e->input.o.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.o.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (8.0 * x_interval), ctrl_y + (2.0 * y_interval));
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.o.pressed ? o_down_t : o_up_t, nullptr, false);
+	}
+
+	//p key
+	{
+		if (e->input.p.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.p.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (9.0 * x_interval), ctrl_y + (2.0 * y_interval));
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.p.pressed ? p_down_t : p_up_t, nullptr, false);
+	}
+
+	//a key
+	{
+		if (e->input.a.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.a.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + x_interval, ctrl_y + y_interval);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.a.pressed ? a_down_t : a_up_t, nullptr, false);
+	}
+
+	//s key
+	{
+		if (e->input.s.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.s.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (2.0 * x_interval), ctrl_y + y_interval);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.s.pressed ? s_down_t : s_up_t, nullptr, false);
+	}
+
+	//d key
+	{
+		if (e->input.d.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.d.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (3.0 * x_interval), ctrl_y + y_interval);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.d.pressed ? d_down_t : d_up_t, nullptr, false);
+	}
+
+	//f key
+	{
+		if (e->input.f.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.f.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (4.0 * x_interval), ctrl_y + y_interval);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.f.pressed ? f_down_t : f_up_t, nullptr, false);
+	}
+
+	//j key
+	{
+		if (e->input.j.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.j.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (6.0 * x_interval), ctrl_y + y_interval);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.j.pressed ? j_down_t : j_up_t, nullptr, false);
+	}
+
+	//k key
+	{
+		if (e->input.k.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.k.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (7.0 * x_interval), ctrl_y + y_interval);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.k.pressed ? k_down_t : k_up_t, nullptr, false);
+	}
+
+	//l key
+	{
+		if (e->input.l.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.l.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (8.0 * x_interval), ctrl_y + y_interval);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.l.pressed ? l_down_t : l_up_t, nullptr, false);
+	}
+
+	//semicolon key
+	{
+		if (e->input.semicolon .first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.semicolon.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (9.0 * x_interval), ctrl_y + y_interval);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.semicolon.pressed ? semicolon_down_t : semicolon_up_t, nullptr, false);
+	}
+
+	//ctrl key
+	{
+		if (e->input.left_control.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.left_control.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x, ctrl_y);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.left_control.pressed ? ctrl_down_t : ctrl_up_t, nullptr, false);
+	}
+
+	//m key
+	{
+		if (e->input.m.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.m.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (6.0 * x_interval), ctrl_y);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.m.pressed ? m_down_t : m_up_t, nullptr, false);
+	}
+
+	//comma key
+	{
+		if (e->input.comma.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.comma.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (7.0 * x_interval), ctrl_y);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.comma.pressed ? comma_down_t : comma_up_t, nullptr, false);
+	}
+
+	//period key
+	{
+		if (e->input.period.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.period.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (8.0 * x_interval), ctrl_y);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.period.pressed ? period_down_t : period_up_t, nullptr, false);
+	}
+
+	//slash key
+	{
+		if (e->input.slash.first_frame_pressed) { Mix_PlayChannel(-1, e->click_press_sound, 0); }
+		if (e->input.slash.first_frame_released) { Mix_PlayChannel(-1, e->click_release_sound, 0); }
+
+		temp_rect.pos = Point2DNew(ctrl_x + (9.0 * x_interval), ctrl_y);
+		const Quad temp_screen_quad = temp_rect.GetQuad();
+		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.slash.pressed ? slash_down_t : slash_up_t, nullptr, false);
+	}
+
+
+
+	//op_rules display
+	{
+		if (selected_rectangle)
+		{
+			switch (selected_rectangle->rect.transformations.op_rules)
+			{
+			case OpRules::NO_OPTIMIZATION:
+				e->DrawTexturedScreenQuad(&op_rules_display_quad, no_optimization_t, nullptr, false);
+				break;
+			case OpRules::NO_SKEW:
+				e->DrawTexturedScreenQuad(&op_rules_display_quad, no_skew_t, nullptr, false);
+				break;
+			case OpRules::NO_SCALE:
+				e->DrawTexturedScreenQuad(&op_rules_display_quad, no_scale_t, nullptr, false);
+				break;
+			case OpRules::ROTATION90:
+				e->DrawTexturedScreenQuad(&op_rules_display_quad, rotation90_t, nullptr, false);
+				break;
+			case OpRules::ROTATION90_NO_SCALE:
+				e->DrawTexturedScreenQuad(&op_rules_display_quad, rotation90_no_scale_t, nullptr, false);
+				break;
+			case OpRules::NO_ROTATION:
+				e->DrawTexturedScreenQuad(&op_rules_display_quad, no_rotation_t, nullptr, false);
+				break;
+			case OpRules::NO_TRANSFORMATIONS:
+				e->DrawTexturedScreenQuad(&op_rules_display_quad, no_transformations_t, nullptr, false);
+				break;
+			}
+		}
+	}
+
+
+
+	if ((display_clicks.size() != 0) && (display_clicks[0].timer >= 125))
+	{
+		display_clicks.erase(display_clicks.begin());
+	}
+
+	for (size_t i = 0; i < display_clicks.size(); i++)
+	{
+		const double temp_half_size = 24.0 * pow(50.0 / static_cast<double>(display_clicks[i].timer + 50), 2.5);
+		const GLColor temp_color = GLColor(1.0, 1.0, 1.0, 1.0 - (static_cast<double>(display_clicks[i].timer) / 125.0));
+
+		const Quad temp_screen_quad = Quad(display_clicks[i].pos.x + temp_half_size, display_clicks[i].pos.y - temp_half_size, display_clicks[i].pos.x - temp_half_size, display_clicks[i].pos.y + temp_half_size);
+		e->DrawTexturedScreenQuad(&temp_screen_quad, click_circle_t, &temp_color, false);
+
+		display_clicks[i].timer += 1;
+	}
+	
 }
 void Program::PostDrawRunScene9()
 {
 
 }
 
-Program::Program() : e(nullptr), example1_font("default_white_basic", "png", LineParameters(7.0, 1.0, 1.0, numeric_limits<double>::max(), { 0.0, 0.0 }, false, true)), example1_text_box(&example1_font, RefRectangleNewest({ 0.0, 0.0 }, { 100.0, 25.0 }, { 0.0, 0.0 }, RefTransformations(Scale2DNew(4.0, 4.0), Rotation2DNew())))
+Program::Program() : e(nullptr), example1_font("default_white_basic", "png", LineParameters(7.0, 1.0, 1.0, numeric_limits<double>::max(), { 0.0, 0.0 }, false, true)), example1_text_box(&example1_font, RefRectangleNewest(RefPlane(Point2DNew(), Transformations(Scale2DNew(4.0, 4.0), Rotation2DNew(), OpRules::NO_ROTATION)), { 100.0, 25.0 }, { 0.0, 0.0 }))
 {
 	e = new Engine();
 
@@ -2889,9 +3528,12 @@ Program::Program() : e(nullptr), example1_font("default_white_basic", "png", Lin
 	test_rect_new_two.pos = { -100.0, 50.0 };
 	test_rect_new_two.unscaled_size = { 50.0, 25.0 };
 	test_rect_new_two.transformations.op_rules = OpRules::ROTATION90;
-	test_rect_new_two.SetReference(&test_rect_new);
+	test_rect_new_two.pos.reference_point = &test_rect_new.pos;
+	test_rect_new_two.pos.reference_transformations = &test_rect_new.transformations;
+	test_rect_new_two.transformations.reference_transformations = &test_rect_new.transformations;
+	//test_rect_new_two.SetReferences(static_cast<RefPlane>(test_rect_new));
 
-	test_rect_new_three.transformations.op_rules = OpRules::ROTATION90;
+	//test_rect_new_three.transformations.op_rules = OpRules::ROTATION90;
 
 	//test_rect_new_three.pos = { 80.0, 60.0 };
 	//test_rect_new_three.unscaled_size = { 25.0, 50.0 };
@@ -2945,9 +3587,130 @@ Program::Program() : e(nullptr), example1_font("default_white_basic", "png", Lin
 	beans_transformations_one.op_rules = OpRules::NO_OPTIMIZATION;
 	beans_transformations_one.scale.width_scale = 2.0;
 	beans_transformations_one.scale.height_scale = 2.0;
+
+
+
+
+
+
+	// ----------- RECTANGLE DISPLAY STUFF -----------
+
+	//Load all the rectangle display key textures:
+	{
+		click_circle_t->LoadTexture("images/program/rectangle_display_keys/click_circle.png");
+
+		op_rules_display_quad = Quad(DEFAULT_WINDOW_WIDTH * 0.5, DEFAULT_WINDOW_HEIGHT * -0.5, (DEFAULT_WINDOW_WIDTH * 0.5) - 56.0, (DEFAULT_WINDOW_HEIGHT * -0.5) + 56.0);
+		no_optimization_t->LoadTexture("images/program/rectangle_display_keys/no_optimization.png");
+		no_skew_t->LoadTexture("images/program/rectangle_display_keys/no_skew.png");
+		no_scale_t->LoadTexture("images/program/rectangle_display_keys/no_scale.png");
+		rotation90_t->LoadTexture("images/program/rectangle_display_keys/rotation90.png");
+		rotation90_no_scale_t->LoadTexture("images/program/rectangle_display_keys/rotation90_no_scale.png");
+		no_rotation_t->LoadTexture("images/program/rectangle_display_keys/no_rotation.png");
+		no_transformations_t->LoadTexture("images/program/rectangle_display_keys/no_transformations.png");
+
+		add_up_t->LoadTexture("images/program/rectangle_display_keys/add_up.png");
+		add_down_t->LoadTexture("images/program/rectangle_display_keys/add_down.png");
+		subtract_up_t->LoadTexture("images/program/rectangle_display_keys/subtract_up.png");
+		subtract_down_t->LoadTexture("images/program/rectangle_display_keys/subtract_down.png");
+
+		ctrl_up_t->LoadTexture("images/program/rectangle_display_keys/ctrl_up.png");
+		ctrl_down_t->LoadTexture("images/program/rectangle_display_keys/ctrl_down.png");
+
+		w_up_t->LoadTexture("images/program/rectangle_display_keys/w_up.png");
+		w_down_t->LoadTexture("images/program/rectangle_display_keys/w_down.png");
+		a_up_t->LoadTexture("images/program/rectangle_display_keys/a_up.png");
+		a_down_t->LoadTexture("images/program/rectangle_display_keys/a_down.png");
+		s_up_t->LoadTexture("images/program/rectangle_display_keys/s_up.png");
+		s_down_t->LoadTexture("images/program/rectangle_display_keys/s_down.png");
+		d_up_t->LoadTexture("images/program/rectangle_display_keys/d_up.png");
+		d_down_t->LoadTexture("images/program/rectangle_display_keys/d_down.png");
+
+		q_up_t->LoadTexture("images/program/rectangle_display_keys/q_up.png");
+		q_down_t->LoadTexture("images/program/rectangle_display_keys/q_down.png");
+		e_up_t->LoadTexture("images/program/rectangle_display_keys/e_up.png");
+		e_down_t->LoadTexture("images/program/rectangle_display_keys/e_down.png");
+
+		f_up_t->LoadTexture("images/program/rectangle_display_keys/f_up.png");
+		f_down_t->LoadTexture("images/program/rectangle_display_keys/f_down.png");
+
+		u_up_t->LoadTexture("images/program/rectangle_display_keys/u_up.png");
+		u_down_t->LoadTexture("images/program/rectangle_display_keys/u_down.png");
+		i_up_t->LoadTexture("images/program/rectangle_display_keys/i_up.png");
+		i_down_t->LoadTexture("images/program/rectangle_display_keys/i_down.png");
+		j_up_t->LoadTexture("images/program/rectangle_display_keys/j_up.png");
+		j_down_t->LoadTexture("images/program/rectangle_display_keys/j_down.png");
+		k_up_t->LoadTexture("images/program/rectangle_display_keys/k_up.png");
+		k_down_t->LoadTexture("images/program/rectangle_display_keys/k_down.png");
+		m_up_t->LoadTexture("images/program/rectangle_display_keys/m_up.png");
+		m_down_t->LoadTexture("images/program/rectangle_display_keys/m_down.png");
+		comma_up_t->LoadTexture("images/program/rectangle_display_keys/comma_up.png");
+		comma_down_t->LoadTexture("images/program/rectangle_display_keys/comma_down.png");
+
+		o_up_t->LoadTexture("images/program/rectangle_display_keys/o_up.png");
+		o_down_t->LoadTexture("images/program/rectangle_display_keys/o_down.png");
+		p_up_t->LoadTexture("images/program/rectangle_display_keys/p_up.png");
+		p_down_t->LoadTexture("images/program/rectangle_display_keys/p_down.png");
+		l_up_t->LoadTexture("images/program/rectangle_display_keys/l_up.png");
+		l_down_t->LoadTexture("images/program/rectangle_display_keys/l_down.png");
+		semicolon_up_t->LoadTexture("images/program/rectangle_display_keys/semicolon_up.png");
+		semicolon_down_t->LoadTexture("images/program/rectangle_display_keys/semicolon_down.png");
+		period_up_t->LoadTexture("images/program/rectangle_display_keys/period_up.png");
+		period_down_t->LoadTexture("images/program/rectangle_display_keys/period_down.png");
+		slash_up_t->LoadTexture("images/program/rectangle_display_keys/slash_up.png");
+		slash_down_t->LoadTexture("images/program/rectangle_display_keys/slash_down.png");
+	}
 }
 Program::~Program()
 {
+	//Delete all the rectangle display key textures:
+	{
+		delete ctrl_up_t;
+		delete ctrl_down_t;
+
+		delete w_up_t;
+		delete w_down_t;
+		delete a_up_t;
+		delete a_down_t;
+		delete s_up_t;
+		delete s_down_t;
+		delete d_up_t;
+		delete d_down_t;
+
+		delete q_up_t;
+		delete q_down_t;
+		delete e_up_t;
+		delete e_down_t;
+
+		delete f_up_t;
+		delete f_down_t;
+
+		delete u_up_t;
+		delete u_down_t;
+		delete i_up_t;
+		delete i_down_t;
+		delete j_up_t;
+		delete j_down_t;
+		delete k_up_t;
+		delete k_down_t;
+		delete m_up_t;
+		delete m_down_t;
+		delete comma_up_t;
+		delete comma_down_t;
+
+		delete o_up_t;
+		delete o_down_t;
+		delete p_up_t;
+		delete p_down_t;
+		delete l_up_t;
+		delete l_down_t;
+		delete semicolon_up_t;
+		delete semicolon_down_t;
+		delete period_up_t;
+		delete period_down_t;
+		delete slash_up_t;
+		delete slash_down_t;
+	}
+
 	delete e;
 
 	DestroySounds();

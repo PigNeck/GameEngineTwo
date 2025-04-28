@@ -416,87 +416,175 @@ Point2DNew Point2DNew::GetDereferenced(const Point2DNew* const reference_point, 
     {
         ASSERT_MSG(reference_transformations->DebugAssertion(), "reference_transformations->OpRules were broken! Make sure member vars are set to their EXACT legal values.");
 
-
-        switch (reference_transformations->op_rules)
+        if (reference_point)
         {
-        case OpRules::NO_TRANSFORMATIONS: return Point2DNew(x + reference_point->x, y + reference_point->y);
-
-
-        case OpRules::NO_ROTATION: return Point2DNew((x * reference_transformations->scale.width_scale) + reference_point->x, (y * reference_transformations->scale.height_scale) + reference_point->y);
-
-
-        case OpRules::ROTATION90_NO_SCALE:
-            switch (reference_transformations->GetRotation90().val)
+            switch (reference_transformations->op_rules)
             {
-            case RotationEnum::DEGREES_0: return Point2DNew(x + reference_point->x, y + reference_point->y);
-            case RotationEnum::DEGREES_90: return Point2DNew(reference_point->x - y, x + reference_point->y);
-            case RotationEnum::DEGREES_180: return Point2DNew(reference_point->x - x, reference_point->y - y);
-            case RotationEnum::DEGREES_270: return Point2DNew(y + reference_point->x, reference_point->y - x);
+            case OpRules::NO_TRANSFORMATIONS: return Point2DNew(x + reference_point->x, y + reference_point->y);
+
+
+            case OpRules::NO_ROTATION: return Point2DNew((x * reference_transformations->scale.width_scale) + reference_point->x, (y * reference_transformations->scale.height_scale) + reference_point->y);
+
+
+            case OpRules::ROTATION90_NO_SCALE:
+                switch (reference_transformations->GetRotation90().val)
+                {
+                case RotationEnum::DEGREES_0: return Point2DNew(x + reference_point->x, y + reference_point->y);
+                case RotationEnum::DEGREES_90: return Point2DNew(reference_point->x - y, x + reference_point->y);
+                case RotationEnum::DEGREES_180: return Point2DNew(reference_point->x - x, reference_point->y - y);
+                case RotationEnum::DEGREES_270: return Point2DNew(y + reference_point->x, reference_point->y - x);
+                }
+
+
+            case OpRules::ROTATION90:
+                switch (reference_transformations->GetRotation90().val)
+                {
+                case RotationEnum::DEGREES_0: return Point2DNew((x * reference_transformations->scale.width_scale) + reference_point->x, (y * reference_transformations->scale.height_scale) + reference_point->y);
+                case RotationEnum::DEGREES_90: return Point2DNew(reference_point->x - (y * reference_transformations->scale.height_scale), (x * reference_transformations->scale.width_scale) + reference_point->y);
+                case RotationEnum::DEGREES_180: return Point2DNew(reference_point->x - (x * reference_transformations->scale.width_scale), reference_point->y - (y * reference_transformations->scale.height_scale));
+                case RotationEnum::DEGREES_270: return Point2DNew((y * reference_transformations->scale.height_scale) + reference_point->x, reference_point->y - (x * reference_transformations->scale.width_scale));
+                }
+
+
+            case OpRules::NO_SCALE:
+            {
+                const double new_radians = atan2(y, x) + reference_transformations->rotation.radians;
+                const double distance = GetDistanceFrom({ 0.0, 0.0 });
+
+                return Point2DNew(
+                    reference_point->x + (cos(new_radians) * distance),
+                    reference_point->y + (sin(new_radians) * distance)
+                );
             }
 
 
-        case OpRules::ROTATION90:
-            switch (reference_transformations->GetRotation90().val)
+            case OpRules::NO_SKEW:
             {
-            case RotationEnum::DEGREES_0: return Point2DNew((x * reference_transformations->scale.width_scale) + reference_point->x, (y * reference_transformations->scale.height_scale) + reference_point->y);
-            case RotationEnum::DEGREES_90: return Point2DNew(reference_point->x - (y * reference_transformations->scale.height_scale), (x * reference_transformations->scale.width_scale) + reference_point->y);
-            case RotationEnum::DEGREES_180: return Point2DNew(reference_point->x - (x * reference_transformations->scale.width_scale), reference_point->y - (y * reference_transformations->scale.height_scale));
-            case RotationEnum::DEGREES_270: return Point2DNew((y * reference_transformations->scale.height_scale) + reference_point->x, reference_point->y - (x * reference_transformations->scale.width_scale));
+                const double width_cosine = cos(reference_transformations->rotation.radians);
+                const double height_cosine = cos(reference_transformations->rotation.radians + (0.5 * M_PI));
+
+
+                const double x_x_component = width_cosine * reference_transformations->scale.width_scale;
+                const double y_x_component = height_cosine * reference_transformations->scale.height_scale;
+
+                const double x_y_component = (-height_cosine) * reference_transformations->scale.width_scale;
+                const double y_y_component = (width_cosine)*reference_transformations->scale.height_scale;
+
+                return Point2DNew(
+                    reference_point->x + (x * x_x_component) + (y * y_x_component),
+                    reference_point->y + (x * x_y_component) + (y * y_y_component)
+                );
             }
 
 
-        case OpRules::NO_SCALE:
-        {
-            const double new_radians = atan2(y, x) + reference_transformations->rotation.radians;
-            const double distance = GetDistanceFrom({ 0.0, 0.0 });
+            case OpRules::NO_OPTIMIZATION:
+            {
+                const double combined_width_direction = reference_transformations->rotation.radians + reference_transformations->scale.width_radian_offset;
+                const double combined_height_direction = reference_transformations->rotation.radians + reference_transformations->scale.height_radian_offset + (0.5 * M_PI);
 
-            return Point2DNew(
-                reference_point->x + (cos(new_radians) * distance),
-                reference_point->y + (sin(new_radians) * distance)
-            );
+                const double x_x_component = cos(combined_width_direction) * reference_transformations->scale.width_scale;
+                const double y_x_component = cos(combined_height_direction) * reference_transformations->scale.height_scale;
+
+                const double x_y_component = sin(combined_width_direction) * reference_transformations->scale.width_scale;
+                const double y_y_component = sin(combined_height_direction) * reference_transformations->scale.height_scale;
+
+                return Point2DNew(
+                    reference_point->x + (x * x_x_component) + (y * y_x_component),
+                    reference_point->y + (x * x_y_component) + (y * y_y_component)
+                );
+            }
+            }
         }
-
-
-        case OpRules::NO_SKEW:
+        else
         {
-            const double width_cosine = cos(reference_transformations->rotation.radians);
-            const double height_cosine = cos(reference_transformations->rotation.radians + (0.5 * M_PI));
+            switch (reference_transformations->op_rules)
+            {
+            case OpRules::NO_TRANSFORMATIONS: return *this;
 
 
-            const double x_x_component = width_cosine * reference_transformations->scale.width_scale;
-            const double y_x_component = height_cosine * reference_transformations->scale.height_scale;
-
-            const double x_y_component = (-height_cosine) * reference_transformations->scale.width_scale;
-            const double y_y_component = (width_cosine) * reference_transformations->scale.height_scale;
-
-            return Point2DNew(
-                reference_point->x + (x * x_x_component) + (y * y_x_component),
-                reference_point->y + (x * x_y_component) + (y * y_y_component)
-            );
-        }
+            case OpRules::NO_ROTATION: return Point2DNew(x * reference_transformations->scale.width_scale, y * reference_transformations->scale.height_scale);
 
 
-        case OpRules::NO_OPTIMIZATION:
-        {
-            const double combined_width_direction = reference_transformations->rotation.radians + reference_transformations->scale.width_radian_offset;
-            const double combined_height_direction = reference_transformations->rotation.radians + reference_transformations->scale.height_radian_offset + (0.5 * M_PI);
+            case OpRules::ROTATION90_NO_SCALE:
+                switch (reference_transformations->GetRotation90().val)
+                {
+                case RotationEnum::DEGREES_0: return Point2DNew(x, y);
+                case RotationEnum::DEGREES_90: return Point2DNew(-y, x);
+                case RotationEnum::DEGREES_180: return Point2DNew(-x, -y);
+                case RotationEnum::DEGREES_270: return Point2DNew(y, -x);
+                }
 
-            const double x_x_component = cos(combined_width_direction) * reference_transformations->scale.width_scale;
-            const double y_x_component = cos(combined_height_direction) * reference_transformations->scale.height_scale;
 
-            const double x_y_component = sin(combined_width_direction) * reference_transformations->scale.width_scale;
-            const double y_y_component = sin(combined_height_direction) * reference_transformations->scale.height_scale;
+            case OpRules::ROTATION90:
+                switch (reference_transformations->GetRotation90().val)
+                {
+                case RotationEnum::DEGREES_0: return Point2DNew(x * reference_transformations->scale.width_scale, y * reference_transformations->scale.height_scale);
+                case RotationEnum::DEGREES_90: return Point2DNew(-(y * reference_transformations->scale.height_scale), x * reference_transformations->scale.width_scale);
+                case RotationEnum::DEGREES_180: return Point2DNew(-(x * reference_transformations->scale.width_scale), -(y * reference_transformations->scale.height_scale));
+                case RotationEnum::DEGREES_270: return Point2DNew(y * reference_transformations->scale.height_scale, -(x * reference_transformations->scale.width_scale));
+                }
 
-            return Point2DNew(
-                reference_point->x + (x * x_x_component) + (y * y_x_component),
-                reference_point->y + (x * x_y_component) + (y * y_y_component)
-            );
-        }
+
+            case OpRules::NO_SCALE:
+            {
+                const double new_radians = atan2(y, x) + reference_transformations->rotation.radians;
+                const double distance = GetDistanceFrom({ 0.0, 0.0 });
+
+                return Point2DNew(
+                    cos(new_radians) * distance,
+                    sin(new_radians) * distance
+                );
+            }
+
+
+            case OpRules::NO_SKEW:
+            {
+                const double width_cosine = cos(reference_transformations->rotation.radians);
+                const double height_cosine = cos(reference_transformations->rotation.radians + (0.5 * M_PI));
+
+
+                const double x_x_component = width_cosine * reference_transformations->scale.width_scale;
+                const double y_x_component = height_cosine * reference_transformations->scale.height_scale;
+
+                const double x_y_component = (-height_cosine) * reference_transformations->scale.width_scale;
+                const double y_y_component = (width_cosine)*reference_transformations->scale.height_scale;
+
+                return Point2DNew(
+                    (x * x_x_component) + (y * y_x_component),
+                    (x * x_y_component) + (y * y_y_component)
+                );
+            }
+
+
+            case OpRules::NO_OPTIMIZATION:
+            {
+                const double combined_width_direction = reference_transformations->rotation.radians + reference_transformations->scale.width_radian_offset;
+                const double combined_height_direction = reference_transformations->rotation.radians + reference_transformations->scale.height_radian_offset + (0.5 * M_PI);
+
+                const double x_x_component = cos(combined_width_direction) * reference_transformations->scale.width_scale;
+                const double y_x_component = cos(combined_height_direction) * reference_transformations->scale.height_scale;
+
+                const double x_y_component = sin(combined_width_direction) * reference_transformations->scale.width_scale;
+                const double y_y_component = sin(combined_height_direction) * reference_transformations->scale.height_scale;
+
+                return Point2DNew(
+                    (x * x_x_component) + (y * y_x_component),
+                    (x * x_y_component) + (y * y_y_component)
+                );
+            }
+            }
         }
     }
     else
     {
-        return Point2DNew(x + reference_point->x, y + reference_point->y);
+        if (reference_point)
+        {
+            return Point2DNew(x + reference_point->x, y + reference_point->y);
+        }
+        else
+        {
+            return *this;
+        }
     }
 }
 Point2DNew Point2DNew::GetReferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const
@@ -505,88 +593,177 @@ Point2DNew Point2DNew::GetReferenced(const Point2DNew* const reference_point, co
     {
         ASSERT_MSG(reference_transformations->DebugAssertion(), "reference_transformations->OpRules were broken! Make sure member vars are set to their EXACT legal values.");
 
-
-        switch (reference_transformations->op_rules)
+        if (reference_point)
         {
-        case OpRules::NO_TRANSFORMATIONS: return Point2DNew(x - reference_point->x, y - reference_point->y);
-
-
-        case OpRules::NO_ROTATION: return Point2DNew((x - reference_point->x) / reference_transformations->scale.width_scale, (y - reference_point->y) / reference_transformations->scale.height_scale);
-
-
-        case OpRules::ROTATION90_NO_SCALE:
-            switch (reference_transformations->GetRotation90().val)
+            switch (reference_transformations->op_rules)
             {
-            case RotationEnum::DEGREES_0: return Point2DNew(x - reference_point->x, y - reference_point->y);
-            case RotationEnum::DEGREES_90: return Point2DNew(x - reference_point->y, reference_point->x - y);
-            case RotationEnum::DEGREES_180: return Point2DNew(reference_point->x - x, reference_point->y - y);
-            case RotationEnum::DEGREES_270: return Point2DNew(reference_point->y - x, y - reference_point->x);
+            case OpRules::NO_TRANSFORMATIONS: return Point2DNew(x - reference_point->x, y - reference_point->y);
+
+
+            case OpRules::NO_ROTATION: return Point2DNew((x - reference_point->x) / reference_transformations->scale.width_scale, (y - reference_point->y) / reference_transformations->scale.height_scale);
+
+
+            case OpRules::ROTATION90_NO_SCALE:
+                switch (reference_transformations->GetRotation90().val)
+                {
+                case RotationEnum::DEGREES_0: return Point2DNew(x - reference_point->x, y - reference_point->y);
+                case RotationEnum::DEGREES_90: return Point2DNew(x - reference_point->y, reference_point->x - y);
+                case RotationEnum::DEGREES_180: return Point2DNew(reference_point->x - x, reference_point->y - y);
+                case RotationEnum::DEGREES_270: return Point2DNew(reference_point->y - x, y - reference_point->x);
+                }
+
+
+            case OpRules::ROTATION90:
+                switch (reference_transformations->GetRotation90().val)
+                {
+                case RotationEnum::DEGREES_0: return Point2DNew((x - reference_point->x) / reference_transformations->scale.width_scale, (y - reference_point->y) / reference_transformations->scale.height_scale);
+                case RotationEnum::DEGREES_90: return Point2DNew((x - reference_point->y) / reference_transformations->scale.width_scale, (reference_point->x - y) / reference_transformations->scale.height_scale);
+                case RotationEnum::DEGREES_180: return Point2DNew((reference_point->x - x) / reference_transformations->scale.width_scale, (reference_point->y - y) / reference_transformations->scale.height_scale);
+                case RotationEnum::DEGREES_270: return Point2DNew((reference_point->y - x) / reference_transformations->scale.width_scale, (y - reference_point->x) / reference_transformations->scale.height_scale);
+                }
+
+
+            case OpRules::NO_SCALE:
+            {
+
+                const double new_radians = atan2(y - reference_point->y, x - reference_point->x) - reference_transformations->rotation.radians;
+                const double distance = GetDistanceFrom({ reference_point->x, reference_point->y });
+
+                return Point2DNew(
+                    cos(new_radians) * distance,
+                    sin(new_radians) * distance
+                );
             }
 
 
-        case OpRules::ROTATION90:
-            switch (reference_transformations->GetRotation90().val)
+            case OpRules::NO_SKEW:
             {
-            case RotationEnum::DEGREES_0: return Point2DNew((x - reference_point->x) / reference_transformations->scale.width_scale, (y - reference_point->y) / reference_transformations->scale.height_scale);
-            case RotationEnum::DEGREES_90: return Point2DNew((x - reference_point->y) / reference_transformations->scale.width_scale, (reference_point->x - y) / reference_transformations->scale.height_scale);
-            case RotationEnum::DEGREES_180: return Point2DNew((reference_point->x - x) / reference_transformations->scale.width_scale, (reference_point->y - y) / reference_transformations->scale.height_scale);
-            case RotationEnum::DEGREES_270: return Point2DNew((reference_point->y - x) / reference_transformations->scale.width_scale, (y - reference_point->x) / reference_transformations->scale.height_scale);
+                const double width_cosine = cos(reference_transformations->rotation.radians);
+                const double height_cosine = cos(reference_transformations->rotation.radians + (0.5 * M_PI));
+
+
+                const double x_x_component = width_cosine / reference_transformations->scale.width_scale;
+                const double y_x_component = height_cosine / reference_transformations->scale.height_scale;
+
+                const double x_y_component = (-height_cosine) / reference_transformations->scale.width_scale;
+                const double y_y_component = (width_cosine) / reference_transformations->scale.height_scale;
+
+                return Point2DNew(
+                    ((x - reference_point->x) * x_x_component) + ((y - reference_point->y) * x_y_component),
+                    ((x - reference_point->x) * y_x_component) + ((y - reference_point->y) * y_y_component)
+                );
             }
 
 
-        case OpRules::NO_SCALE:
-        {
+            case OpRules::NO_OPTIMIZATION:
+            {
+                const double combined_width_direction = reference_transformations->rotation.radians + reference_transformations->scale.width_radian_offset;
+                const double combined_height_direction = reference_transformations->rotation.radians + reference_transformations->scale.height_radian_offset + (0.5 * M_PI);
 
-            const double new_radians = atan2(y - reference_point->y, x - reference_point->x) - reference_transformations->rotation.radians;
-            const double distance = GetDistanceFrom({ reference_point->x, reference_point->y });
+                const double x_x_component = cos(combined_width_direction) / reference_transformations->scale.width_scale;
+                const double y_x_component = cos(combined_height_direction) / reference_transformations->scale.height_scale;
 
-            return Point2DNew(
-                cos(new_radians) * distance,
-                sin(new_radians) * distance
-            );
+                const double x_y_component = sin(combined_width_direction) / reference_transformations->scale.width_scale;
+                const double y_y_component = sin(combined_height_direction) / reference_transformations->scale.height_scale;
+
+                return Point2DNew(
+                    ((x - reference_point->x) * x_x_component) + ((y - reference_point->y) * x_y_component),
+                    ((x - reference_point->x) * y_x_component) + ((y - reference_point->y) * y_y_component)
+                );
+            }
+            }
         }
-
-
-        case OpRules::NO_SKEW:
+        else
         {
-            const double width_cosine = cos(reference_transformations->rotation.radians);
-            const double height_cosine = cos(reference_transformations->rotation.radians + (0.5 * M_PI));
+            switch (reference_transformations->op_rules)
+            {
+            case OpRules::NO_TRANSFORMATIONS: return *this;
 
 
-            const double x_x_component = width_cosine / reference_transformations->scale.width_scale;
-            const double y_x_component = height_cosine / reference_transformations->scale.height_scale;
-
-            const double x_y_component = (-height_cosine) / reference_transformations->scale.width_scale;
-            const double y_y_component = (width_cosine) / reference_transformations->scale.height_scale;
-
-            return Point2DNew(
-                ((x - reference_point->x) * x_x_component) + ((y - reference_point->y) * x_y_component),
-                ((x - reference_point->x) * y_x_component) + ((y - reference_point->y) * y_y_component)
-            );
-        }
+            case OpRules::NO_ROTATION: return Point2DNew(x / reference_transformations->scale.width_scale, y / reference_transformations->scale.height_scale);
 
 
-        case OpRules::NO_OPTIMIZATION:
-        {
-            const double combined_width_direction = reference_transformations->rotation.radians + reference_transformations->scale.width_radian_offset;
-            const double combined_height_direction = reference_transformations->rotation.radians + reference_transformations->scale.height_radian_offset + (0.5 * M_PI);
+            case OpRules::ROTATION90_NO_SCALE:
+                switch (reference_transformations->GetRotation90().val)
+                {
+                case RotationEnum::DEGREES_0: return Point2DNew(x, y);
+                case RotationEnum::DEGREES_90: return Point2DNew(x, -y);
+                case RotationEnum::DEGREES_180: return Point2DNew(-x, -y);
+                case RotationEnum::DEGREES_270: return Point2DNew(-x, y);
+                }
 
-            const double x_x_component = cos(combined_width_direction) / reference_transformations->scale.width_scale;
-            const double y_x_component = cos(combined_height_direction) / reference_transformations->scale.height_scale;
 
-            const double x_y_component = sin(combined_width_direction) / reference_transformations->scale.width_scale;
-            const double y_y_component = sin(combined_height_direction) / reference_transformations->scale.height_scale;
+            case OpRules::ROTATION90:
+                switch (reference_transformations->GetRotation90().val)
+                {
+                case RotationEnum::DEGREES_0: return Point2DNew(x / reference_transformations->scale.width_scale, y / reference_transformations->scale.height_scale);
+                case RotationEnum::DEGREES_90: return Point2DNew(x / reference_transformations->scale.width_scale, (-y) / reference_transformations->scale.height_scale);
+                case RotationEnum::DEGREES_180: return Point2DNew((-x) / reference_transformations->scale.width_scale, (-y) / reference_transformations->scale.height_scale);
+                case RotationEnum::DEGREES_270: return Point2DNew((-x) / reference_transformations->scale.width_scale, y / reference_transformations->scale.height_scale);
+                }
 
-            return Point2DNew(
-                ((x - reference_point->x) * x_x_component) + ((y - reference_point->y) * x_y_component),
-                ((x - reference_point->x) * y_x_component) + ((y - reference_point->y) * y_y_component)
-            );
-        }
+
+            case OpRules::NO_SCALE:
+            {
+
+                const double new_radians = atan2(y, x) - reference_transformations->rotation.radians;
+                const double distance = GetDistanceFrom({ 0.0, 0.0 });
+
+                return Point2DNew(
+                    cos(new_radians) * distance,
+                    sin(new_radians) * distance
+                );
+            }
+
+
+            case OpRules::NO_SKEW:
+            {
+                const double width_cosine = cos(reference_transformations->rotation.radians);
+                const double height_cosine = cos(reference_transformations->rotation.radians + (0.5 * M_PI));
+
+
+                const double x_x_component = width_cosine / reference_transformations->scale.width_scale;
+                const double y_x_component = height_cosine / reference_transformations->scale.height_scale;
+
+                const double x_y_component = (-height_cosine) / reference_transformations->scale.width_scale;
+                const double y_y_component = (width_cosine) / reference_transformations->scale.height_scale;
+
+                return Point2DNew(
+                    (x * x_x_component) + (y * x_y_component),
+                    (x * y_x_component) + (y * y_y_component)
+                );
+            }
+
+
+            case OpRules::NO_OPTIMIZATION:
+            {
+                const double combined_width_direction = reference_transformations->rotation.radians + reference_transformations->scale.width_radian_offset;
+                const double combined_height_direction = reference_transformations->rotation.radians + reference_transformations->scale.height_radian_offset + (0.5 * M_PI);
+
+                const double x_x_component = cos(combined_width_direction) / reference_transformations->scale.width_scale;
+                const double y_x_component = cos(combined_height_direction) / reference_transformations->scale.height_scale;
+
+                const double x_y_component = sin(combined_width_direction) / reference_transformations->scale.width_scale;
+                const double y_y_component = sin(combined_height_direction) / reference_transformations->scale.height_scale;
+
+                return Point2DNew(
+                    (x * x_x_component) + (y * x_y_component),
+                    (x * y_x_component) + (y * y_y_component)
+                );
+            }
+            }
         }
     }
     else
     {
-        return Point2DNew(x - reference_point->x, y - reference_point->y);
+        if (reference_point)
+        {
+            return Point2DNew(x - reference_point->x, y - reference_point->y);
+        }
+        else
+        {
+            return *this;
+        }
     }
 }
 
@@ -616,6 +793,11 @@ RefPoint2DNewest::RefPoint2DNewest(const Point2DNew& non_ref_point, const RefPoi
     reference_point(i_reference_point),
     reference_transformations(i_reference_transformations) {}
 
+RefPoint2DNewest RefPoint2DNewest::GetUnscaled() const
+{
+    return RefPoint2DNewest(0.0, 0.0, reference_point, reference_transformations);
+}
+
 void RefPoint2DNewest::SetReference(const RefRectangleNewest* const reference_rectangle)
 {
     reference_point = &reference_rectangle->pos;
@@ -625,24 +807,40 @@ void RefPoint2DNewest::SetReference(const RefRectangleNewest* const reference_re
 
 Point2DNew RefPoint2DNewest::GetDepthValue(const unsigned int depth_index) const
 {
-    if ((!reference_point) || (depth_index == 0))
+    if (depth_index != 0)
     {
-        return *this;
-    }
-    else
-    {
-        const Point2DNew temp_point = reference_point->GetDepthValue(depth_index - 1);
-
-        if (reference_transformations)
+        if (reference_point)
         {
-            const Transformations temp_transformations = reference_transformations->GetDepthValue(depth_index - 1);
+            const Point2DNew temp_point = reference_point->GetDepthValue(depth_index - 1);
 
-            return GetDereferenced(&temp_point, &temp_transformations);
+            if (reference_transformations)
+            {
+                const Transformations temp_transformations = reference_transformations->GetDepthValue(depth_index - 1);
+
+                return GetDereferenced(&temp_point, &temp_transformations);
+            }
+            else
+            {
+                return GetDereferenced(&temp_point, nullptr);
+            }
         }
         else
         {
-            return GetDereferenced(&temp_point);
+            if (reference_transformations)
+            {
+                const Transformations temp_transformations = reference_transformations->GetDepthValue(depth_index - 1);
+
+                return GetDereferenced(nullptr, &temp_transformations);
+            }
+            else
+            {
+                return static_cast<Point2DNew>(*this);
+            }
         }
+    }
+    else
+    {
+        return static_cast<Point2DNew>(*this);
     }
 
 
@@ -1344,7 +1542,7 @@ bool Transformations::DebugAssertion() const
 
 Rotation90 Transformations::GetRotation90() const
 {
-    if ((op_rules == OpRules::ROTATION90) || (op_rules == OpRules::NO_ROTATION) || (op_rules == OpRules::NO_TRANSFORMATIONS))
+    if ((op_rules == OpRules::ROTATION90) || (op_rules == OpRules::ROTATION90_NO_SCALE) || (op_rules == OpRules::NO_ROTATION) || (op_rules == OpRules::NO_TRANSFORMATIONS))
     {
         ASSERT_MSG(DebugAssertion(), "OpRules were broken! Make sure member vars are set to their EXACT legal values.");
 
@@ -1687,7 +1885,7 @@ Transformations Transformations::GetReferenced(const Transformations* const refe
 
 
 
-
+        //TO-DO: Optimize with function similar to "SetCartesianPlaneStuff".
 
         const double x0_x1_component = 1.0 / (cos(rotation.radians + scale.width_radian_offset) * scale.width_scale);
         const double x0_y1_component = 1.0 / (sin(rotation.radians + scale.width_radian_offset) * scale.width_scale);
@@ -1986,12 +2184,17 @@ void Transformations::SetCartesianPlaneStuffIdk(double& x_x0_component, double& 
 
 
 
-RefTransformations::RefTransformations(const Scale2DNew i_scale, const Rotation2DNew i_rotation, const RefTransformations* const i_reference_transformations)
-    : Transformations(i_scale, i_rotation),
+RefTransformations::RefTransformations(const Scale2DNew i_scale, const Rotation2DNew i_rotation, const OpRules i_op_rules, const RefTransformations* const i_reference_transformations)
+    : Transformations(i_scale, i_rotation, i_op_rules),
     reference_transformations(i_reference_transformations) {}
 RefTransformations::RefTransformations(const Transformations& non_ref_transformations, const RefTransformations* const i_reference_transformations)
     : Transformations(non_ref_transformations),
     reference_transformations(i_reference_transformations) {}
+
+RefTransformations RefTransformations::GetUnscaled() const
+{
+    return RefTransformations(Scale2DNew(), Rotation2DNew(), OpRules::NO_TRANSFORMATIONS, reference_transformations);
+}
 
 Transformations RefTransformations::GetDepthValue(const unsigned int depth_index) const
 {
@@ -2081,16 +2284,71 @@ Plane::Plane(const RefPlane& ref_plane)
     : pos(static_cast<Point2DNew>(ref_plane.pos)),
     transformations(static_cast<Transformations>(ref_plane.transformations)) {}
 
+Plane Plane::GetDereferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const
+{
+    //TO-DO: Somehow "combine" [pos.GetDereferenced(...) and transformations.GetDereferenced(...)]
 
-RefPlane::RefPlane(const RefPoint2DNewest i_pos = {}, const RefTransformations i_transformations = {})
+    return Plane(
+        pos.GetDereferenced(reference_point, reference_transformations),
+        transformations.GetDereferenced(reference_transformations)
+    );
+}
+Plane Plane::GetReferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const
+{
+    //TO-DO: Somehow "combine" [pos.GetReferenced(...) and transformations.GetReferenced(...)]
+
+    return Plane(
+        pos.GetReferenced(reference_point, reference_transformations),
+        transformations.GetReferenced(reference_transformations)
+    );
+}
+
+
+RefPlane::RefPlane(const RefPoint2DNewest i_pos, const RefTransformations i_transformations)
     : pos(i_pos),
     transformations(i_transformations) {}
 RefPlane::RefPlane(const Point2DNew i_non_ref_pos, const Transformations i_non_ref_transformations, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations)
     : pos(i_non_ref_pos.x, i_non_ref_pos.y, i_reference_point, i_reference_transformations),
-    transformations(i_non_ref_transformations.scale, i_non_ref_transformations.rotation, i_reference_transformations) {}
-RefPlane::RefPlane(const RefPlane& non_ref_plane, const RefPoint2DNewest* const i_reference_point = nullptr, const RefTransformations* const i_reference_transformations = nullptr)
+    transformations(i_non_ref_transformations.scale, i_non_ref_transformations.rotation, i_non_ref_transformations.op_rules, i_reference_transformations) {}
+RefPlane::RefPlane(const Plane& non_ref_plane, const RefPoint2DNewest* const i_reference_point, const RefTransformations* const i_reference_transformations)
     : pos(non_ref_plane.pos.x, non_ref_plane.pos.y, i_reference_point, i_reference_transformations),
-    transformations(non_ref_plane.transformations.scale, non_ref_plane.transformations.rotation, i_reference_transformations) {}
+    transformations(non_ref_plane.transformations.scale, non_ref_plane.transformations.rotation, non_ref_plane.transformations.op_rules, i_reference_transformations) {}
+
+
+RefPlane RefPlane::GetUnscaled() const
+{
+    return RefPlane(RefPoint2DNewest(0.0, 0.0, pos.reference_point, pos.reference_transformations), RefTransformations(Scale2DNew(), Rotation2DNew(), OpRules::NO_TRANSFORMATIONS, transformations.reference_transformations));
+}
+
+void RefPlane::SetReferences(const RefPlane& reference)
+{
+    pos.reference_point = &reference.pos;
+    pos.reference_transformations = &reference.transformations;
+
+    transformations.reference_transformations = pos.reference_transformations;
+}
+void RefPlane::SetReferences(const RefPoint2DNewest* const reference_point, const RefTransformations* const reference_transformations)
+{
+    pos.reference_point = reference_point;
+    pos.reference_transformations = reference_transformations;
+
+    transformations.reference_transformations = reference_transformations;
+}
+
+Plane RefPlane::GetDepthValue(const unsigned int depth) const
+{
+    return Plane(
+        pos.GetDepthValue(depth),
+        transformations.GetDepthValue(depth)
+    );
+}
+Plane RefPlane::GetUniValue() const
+{
+    return Plane(
+        pos.GetUniValue(),
+        transformations.GetUniValue()
+    );
+}
 
 
 
@@ -2138,20 +2396,90 @@ void Quad::Align90(const unsigned int WILL_BE_SCALED_accepted_epsilon_difference
 
 // ----------------------------------   R E C T A N G L E   ----------------------------------
 
+
 // -----------------   NON-REFERENCE   -----------------
-RectangleNewest::RectangleNewest(const Point2DNew i_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering, const Transformations& i_transformations)
-    : pos(i_pos),
+
+RectangleNewest::RectangleNewest(const Plane i_plane, const Size2DNew i_unscaled_size, const Centering2DNew i_centering)
+    : Plane(i_plane),
     unscaled_size(i_unscaled_size),
-    centering(i_centering),
-    transformations(i_transformations) {}
+    centering(i_centering) {}
 RectangleNewest::RectangleNewest(const RefRectangleNewest& i_ref_rect)
-    : pos(static_cast<Point2DNew>(i_ref_rect.pos)), unscaled_size(i_ref_rect.unscaled_size),
-    centering(i_ref_rect.centering),
-    transformations(static_cast<Transformations>(i_ref_rect.transformations)) {}
+    : Plane(static_cast<const RefPlane&>(i_ref_rect)),
+    unscaled_size(i_ref_rect.unscaled_size),
+    centering(i_ref_rect.centering) {}
+
+
+RectangleNewest RectangleNewest::GetUnscaled() const
+{
+    return RectangleNewest(Plane({}, Transformations({}, {}, OpRules::NO_TRANSFORMATIONS)), unscaled_size, centering);
+}
+
+
+RectangleNewest RectangleNewest::GetDereferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const
+{
+    return RectangleNewest(
+        Plane::GetDereferenced(reference_point, reference_transformations),
+        unscaled_size,
+        centering
+    );
+}
+RectangleNewest RectangleNewest::GetReferenced(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const
+{
+    return RectangleNewest(
+        Plane::GetReferenced(reference_point, reference_transformations),
+        unscaled_size,
+        centering
+    );
+}
+RectangleNewest RectangleNewest::GetDereferencedUnscaled(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const
+{
+    return RectangleNewest(Plane(*reference_point, *reference_transformations), unscaled_size, centering);
+}
+RectangleNewest RectangleNewest::GetReferencedUnscaled(const Point2DNew* const reference_point, const Transformations* const reference_transformations) const
+{
+    return GetUnscaled().GetReferenced(reference_point, reference_transformations);
+}
+
+
+Point2DNew RectangleNewest::GetCorner(const CornerEnum corner) const
+{
+    return (GetUnscaledCorner(corner).GetDereferenced(&pos, &transformations));
+}
+Point2DNew RectangleNewest::GetUnscaledCorner(const CornerEnum corner) const
+{
+    switch (corner)
+    {
+    case CornerEnum::TOP_RIGHT:
+        return Point2DNew(
+            unscaled_size.width * ((centering.x_centering + 1.0) / 2.0),
+            unscaled_size.height * ((centering.y_centering + 1.0) / 2.0)
+        );
+    case CornerEnum::BOTTOM_RIGHT:
+        return Point2DNew(
+            unscaled_size.width * ((centering.x_centering + 1.0) / 2.0),
+            unscaled_size.height * ((centering.y_centering - 1.0) / 2.0)
+        );
+    case CornerEnum::BOTTOM_LEFT:
+        return Point2DNew(
+            unscaled_size.width * ((centering.x_centering - 1.0) / 2.0),
+            unscaled_size.height * ((centering.y_centering - 1.0) / 2.0)
+        );
+    case CornerEnum::TOP_LEFT:
+        return Point2DNew(
+            unscaled_size.width * ((centering.x_centering - 1.0) / 2.0),
+            unscaled_size.height * ((centering.y_centering + 1.0) / 2.0)
+        );
+    default:
+        cerr << "Illegal CornerEnum value!";
+        throw;
+    }
+}
 
 
 Quad RectangleNewest::GetQuad() const
 {
+    //TO-DO: Optimize?
+
     return Quad(
         GetCorner(CornerEnum::TOP_RIGHT),
         GetCorner(CornerEnum::BOTTOM_RIGHT),
@@ -2159,42 +2487,32 @@ Quad RectangleNewest::GetQuad() const
         GetCorner(CornerEnum::TOP_LEFT)
     );
 }
+Quad RectangleNewest::GetUnscaledQuad() const
+{
+    //TO-DO: Optimize?
+
+    return Quad(
+        GetUnscaledCorner(CornerEnum::TOP_RIGHT),
+        GetUnscaledCorner(CornerEnum::BOTTOM_RIGHT),
+        GetUnscaledCorner(CornerEnum::BOTTOM_LEFT),
+        GetUnscaledCorner(CornerEnum::TOP_LEFT)
+    );
+}
 Quad RectangleNewest::GetScreenQuad(const CameraNew* const camera) const
 {
-    
-}
-
-Point2DNew RectangleNewest::GetCorner(const CornerEnum corner) const
-{
-    Point2DNew temp_point;
-    switch (corner)
+    if (camera)
     {
-    case CornerEnum::TOP_RIGHT:
-        temp_point.x = unscaled_size.width * ((centering.x_centering + 1.0) / 2.0);
-        temp_point.y = unscaled_size.height * ((centering.y_centering + 1.0) / 2.0);
-        break;
-    case CornerEnum::BOTTOM_RIGHT:
-        temp_point.x = unscaled_size.width * ((centering.x_centering + 1.0) / 2.0);
-        temp_point.y = unscaled_size.height * ((centering.y_centering - 1.0) / 2.0);
-        break;
-    case CornerEnum::BOTTOM_LEFT:
-        temp_point.x = unscaled_size.width * ((centering.x_centering - 1.0) / 2.0);
-        temp_point.y = unscaled_size.height * ((centering.y_centering - 1.0) / 2.0);
-        break;
-    case CornerEnum::TOP_LEFT:
-        temp_point.x = unscaled_size.width * ((centering.x_centering - 1.0) / 2.0);
-        temp_point.y = unscaled_size.height * ((centering.y_centering + 1.0) / 2.0);
-        break;
+        return GetReferenced(&camera->rect.pos, &camera->rect.transformations).GetQuad();
     }
-
-    const RefRectangleNewest temp_rect(*this);
-    const RefPoint2DNewest temp_ref_point(temp_point.x, temp_point.y, &temp_rect.pos, &temp_rect.transformations);
-    return temp_ref_point.GetUniValue();
+    else
+    {
+        return GetQuad();
+    }
 }
 
 
 //---- Edge Functions ----
-
+/*
 Line2D RectangleNewest::GetEdge(const DirectionEnum edge) const
 {
     switch (edge)
@@ -2212,26 +2530,27 @@ Line2D RectangleNewest::GetEdge(const DirectionEnum edge) const
         throw;
     }
 }
+*/
 
 
 //---- Scale Functions ----
 
-Size2DNew RectangleNewest::GetScaledSize() const
+Size2DNew RectangleNewest::GetSize() const
 {
     return Size2DNew(unscaled_size.width * transformations.scale.width_scale, unscaled_size.height * transformations.scale.height_scale);
 }
-double RectangleNewest::GetScaledWidth() const
+double RectangleNewest::GetWidth() const
 {
     return (unscaled_size.width * transformations.scale.width_scale);
 }
-double RectangleNewest::GetScaledHeight() const
+double RectangleNewest::GetHeight() const
 {
     return (unscaled_size.height * transformations.scale.height_scale);
 }
 
 
 //---- Centering/Offset Functions ----
-
+/*
 Offset2DNew RectangleNewest::GetUnscaledOffset() const
 {
     return Offset2DNew(centering.x_centering * unscaled_size.width, centering.y_centering * unscaled_size.height);
@@ -2257,60 +2576,304 @@ double RectangleNewest::GetScaledOffsetY() const
 {
     return (centering.y_centering * unscaled_size.height * transformations.scale.height_scale);
 }
+*/
+
+
+
+
 
 
 
 
 // -----------------   REFERENCE   -----------------
 
-// -------------  RefRectangleNewest  -------------
-
-RefRectangleNewest::RefRectangleNewest(const RefRectangleNewest* const reference_rectangle, const Point2DNew non_ref_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering, const Transformations non_ref_transformations)
-    : pos(non_ref_pos, reference_rectangle ? &reference_rectangle->pos : nullptr, reference_rectangle ? &reference_rectangle->transformations : nullptr),
-    unscaled_size(i_unscaled_size),
-    centering(i_centering),
-    transformations(non_ref_transformations, reference_rectangle ? &reference_rectangle->transformations : nullptr) {}
-RefRectangleNewest::RefRectangleNewest(const RefPoint2DNewest* const reference_point, const RefTransformations* const reference_transformations, const Point2DNew non_ref_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering, const Transformations non_ref_transformations)
-    : pos(non_ref_pos, reference_point, reference_transformations),
-    unscaled_size(i_unscaled_size),
-    centering(i_centering),
-    transformations(non_ref_transformations, reference_transformations) {}
-RefRectangleNewest::RefRectangleNewest(const RefPoint2DNewest i_pos, const Size2DNew i_unscaled_size, const Centering2DNew i_centering, const RefTransformations i_transformations)
-    : pos(i_pos),
-    transformations(i_transformations),
+RefRectangleNewest::RefRectangleNewest(const RefPlane i_ref_plane, const Size2DNew i_unscaled_size, const Centering2DNew i_centering)
+    : RefPlane(i_ref_plane),
     unscaled_size(i_unscaled_size),
     centering(i_centering) {}
 RefRectangleNewest::RefRectangleNewest(const RectangleNewest& non_ref_rectangle)
-    : pos(non_ref_rectangle.pos),
-    transformations(non_ref_rectangle.transformations),
+    : RefPlane(static_cast<const Plane&>(non_ref_rectangle)),
     unscaled_size(non_ref_rectangle.unscaled_size),
     centering(non_ref_rectangle.centering) {}
 
 
+//Returns this rectangle without its plane transformations or position
+RefRectangleNewest RefRectangleNewest::GetUnscaled() const
+{
+    return RefRectangleNewest(RefPlane::GetUnscaled(), unscaled_size, centering);
+}
+
+
+RectangleNewest RefRectangleNewest::GetDepthValue(const unsigned int depth_index) const
+{
+    return RectangleNewest(
+        RefPlane::GetDepthValue(depth_index),
+        unscaled_size,
+        centering
+    );
+}
 RectangleNewest RefRectangleNewest::GetUniValue() const
 {
     return GetDepthValue(numeric_limits<unsigned int>::max());
 }
-RectangleNewest RefRectangleNewest::GetDepthValue(const unsigned int depth_index) const
+RectangleNewest RefRectangleNewest::GetDepthUnscaledValue(const unsigned int depth_index) const
 {
-    if (depth_index == 0)
+    return GetUnscaled().GetDepthValue(depth_index);
+}
+RectangleNewest RefRectangleNewest::GetUniUnscaledValue() const
+{
+    return GetUnscaled().GetUniValue();
+}
+
+
+
+
+//---- SIZE-RELATED METHODS ----
+
+Size2DNew RefRectangleNewest::GetSize() const
+{
+    return static_cast<RectangleNewest>(*this).GetSize();
+}
+double RefRectangleNewest::GetWidth() const
+{
+    return static_cast<RectangleNewest>(*this).GetWidth();
+}
+double RefRectangleNewest::GetHeight() const
+{
+    return static_cast<RectangleNewest>(*this).GetHeight();
+}
+
+Size2DNew RefRectangleNewest::GetDepthSize(const unsigned int depth_index) const
+{
+    const Transformations temp_transformations = transformations.GetDepthValue(depth_index);
+
+    return Size2DNew(
+        unscaled_size.width * temp_transformations.scale.width_scale,
+        unscaled_size.height * temp_transformations.scale.height_scale
+    );
+}
+double RefRectangleNewest::GetDepthWidth(const unsigned int depth_index) const
+{
+    const Transformations temp_transformations = transformations.GetDepthValue(depth_index);
+
+    return (unscaled_size.width * temp_transformations.scale.width_scale);
+}
+double RefRectangleNewest::GetDepthHeight(const unsigned int depth_index) const
+{
+    const Transformations temp_transformations = transformations.GetDepthValue(depth_index);
+
+    return (unscaled_size.height * temp_transformations.scale.height_scale);
+}
+Size2DNew RefRectangleNewest::GetUniSize() const
+{
+    return GetDepthSize(numeric_limits<unsigned int>::max());
+}
+double RefRectangleNewest::GetUniWidth() const
+{
+    return GetDepthWidth(numeric_limits<unsigned int>::max());
+}
+double RefRectangleNewest::GetUniHeight() const
+{
+    return GetDepthHeight(numeric_limits<unsigned int>::max());
+}
+
+Size2DNew RefRectangleNewest::GetDepthUnscaledSize(const unsigned int depth_index) const
+{
+    if (transformations.reference_transformations && (depth_index != 0))
     {
-        return {
-            { pos.x, pos.y },
-            unscaled_size,
-            centering,
-            { transformations.scale, transformations.rotation }
-        };
+        const Transformations temp_transformations = transformations.reference_transformations->GetDepthValue(depth_index - 1);
+
+        return Size2DNew(
+            unscaled_size.width * temp_transformations.scale.width_scale,
+            unscaled_size.height * temp_transformations.scale.height_scale
+        );
     }
     else
     {
-        return {
-            pos.GetDepthValue(depth_index),
-            unscaled_size,
-            centering,
-            transformations.GetDepthValue(depth_index)
-        };
+        return unscaled_size;
     }
+}
+double RefRectangleNewest::GetDepthUnscaledWidth(const unsigned int depth_index) const
+{
+    if (transformations.reference_transformations && (depth_index != 0))
+    {
+        const Transformations temp_transformations = transformations.reference_transformations->GetDepthValue(depth_index - 1);
+
+        return (unscaled_size.width * temp_transformations.scale.width_scale);
+    }
+    else
+    {
+        return unscaled_size.width;
+    }
+}
+double RefRectangleNewest::GetDepthUnscaledHeight(const unsigned int depth_index) const
+{
+    if (transformations.reference_transformations && (depth_index != 0))
+    {
+        const Transformations temp_transformations = transformations.reference_transformations->GetDepthValue(depth_index - 1);
+
+        return (unscaled_size.height * temp_transformations.scale.height_scale);
+    }
+    else
+    {
+        return unscaled_size.height;
+    }
+}
+Size2DNew RefRectangleNewest::GetUniUnscaledSize() const
+{
+    return GetDepthUnscaledSize(numeric_limits<unsigned int>::max());
+}
+double RefRectangleNewest::GetUniUnscaledWidth() const
+{
+    return GetDepthUnscaledWidth(numeric_limits<unsigned int>::max());
+}
+double RefRectangleNewest::GetUniUnscaledHeight() const
+{
+    return GetDepthUnscaledHeight(numeric_limits<unsigned int>::max());
+}
+
+
+
+
+//---- CORNER-RELATED METHODS ----
+
+Point2DNew RefRectangleNewest::GetCorner(const CornerEnum corner) const
+{
+    return static_cast<RectangleNewest>(*this).GetCorner(corner);
+}
+Point2DNew RefRectangleNewest::GetUnscaledCorner(const CornerEnum corner) const
+{
+    return static_cast<RectangleNewest>(*this).GetUnscaledCorner(corner);
+}
+
+Point2DNew RefRectangleNewest::GetDepthCorner(const CornerEnum corner, const unsigned int depth_index) const
+{
+    const Point2DNew unscaled_corner = GetUnscaledCorner(corner);
+
+    if (depth_index == numeric_limits<unsigned int>::max())
+    {
+        return RefPoint2DNewest(unscaled_corner, &pos, &transformations).GetDepthValue(depth_index);
+    }
+    else
+    {
+        return RefPoint2DNewest(unscaled_corner, &pos, &transformations).GetDepthValue(depth_index + 1);
+    }
+}
+Point2DNew RefRectangleNewest::GetUniCorner(const CornerEnum corner) const
+{
+    return GetDepthCorner(corner, numeric_limits<unsigned int>::max());
+}
+Point2DNew RefRectangleNewest::GetDepthUnscaledCorner(const CornerEnum corner, const unsigned int depth_index) const
+{
+    if (depth_index != 0)
+    {
+        const Point2DNew unscaled_corner = GetUnscaledCorner(corner);
+
+        return RefPoint2DNewest(unscaled_corner, pos.reference_point, transformations.reference_transformations).GetDepthValue(depth_index);
+    }
+    else
+    {
+        return GetUnscaledCorner(corner);
+    }
+}
+Point2DNew RefRectangleNewest::GetUniUnscaledCorner(const CornerEnum corner) const
+{
+    return GetDepthUnscaledCorner(corner, numeric_limits<unsigned int>::max());
+}
+
+
+
+
+//---- QUAD-RELATED METHODS ----
+
+Quad RefRectangleNewest::GetQuad() const
+{
+    return static_cast<RectangleNewest>(*this).GetQuad();
+}
+Quad RefRectangleNewest::GetUnscaledQuad() const
+{
+    return static_cast<RectangleNewest>(*this).GetUnscaledQuad();
+}
+Quad RefRectangleNewest::GetScreenQuad(const CameraNew* const camera) const
+{
+    return static_cast<RectangleNewest>(*this).GetScreenQuad(camera);
+}
+
+Quad RefRectangleNewest::GetDepthQuad(const unsigned int depth_index) const
+{
+    return GetDepthValue(depth_index).GetQuad();
+}
+Quad RefRectangleNewest::GetUniQuad() const
+{
+    return GetUniValue().GetQuad();
+}
+Quad RefRectangleNewest::GetDepthUnscaledQuad(const unsigned int depth_index) const
+{
+    return GetDepthUnscaledValue(depth_index).GetQuad();
+}
+Quad RefRectangleNewest::GetUniUnscaledQuad() const
+{
+    return GetUniUnscaledValue().GetQuad();
+}
+Quad RefRectangleNewest::GetDepthScreenQuad(const unsigned int depth_index, const CameraNew* const camera) const
+{
+    return GetDepthValue(depth_index).GetScreenQuad(camera);
+}
+Quad RefRectangleNewest::GetUniScreenQuad(const CameraNew* const camera) const
+{
+    return GetUniValue().GetScreenQuad(camera);
+}
+
+
+
+
+
+
+
+
+
+
+/*
+Point2DNew RefRectangleNewest::GetDepthUnscaledCorner(const CornerEnum corner, const unsigned int depth_index) const
+{
+    switch (corner)
+    {
+    case CornerEnum::TOP_RIGHT:
+        return Point2DNew(
+            unscaled_size.width * ((centering.x_centering + 1.0) / 2.0),
+            unscaled_size.height * ((centering.y_centering + 1.0) / 2.0)
+        );
+    case CornerEnum::BOTTOM_RIGHT:
+        return Point2DNew(
+            unscaled_size.width * ((centering.x_centering + 1.0) / 2.0),
+            unscaled_size.height * ((centering.y_centering - 1.0) / 2.0)
+        );
+    case CornerEnum::BOTTOM_LEFT:
+        return Point2DNew(
+            unscaled_size.width * ((centering.x_centering - 1.0) / 2.0),
+            unscaled_size.height * ((centering.y_centering - 1.0) / 2.0)
+        );
+    case CornerEnum::TOP_LEFT:
+        return Point2DNew(
+            unscaled_size.width * ((centering.x_centering - 1.0) / 2.0),
+            unscaled_size.height * ((centering.y_centering + 1.0) / 2.0)
+        );
+    default:
+        cerr << "Illegal CornerEnum value!";
+        throw;
+    }
+}
+Point2DNew RefRectangleNewest::GetUniUnscaledCorner(const CornerEnum corner) const
+{
+
+}
+Point2DNew RefRectangleNewest::GetDepthScaledCorner(const CornerEnum corner, const unsigned int depth_index) const
+{
+
+}
+Point2DNew RefRectangleNewest::GetUniScaledCorner(const CornerEnum corner) const
+{
+
 }
 
 Quad RefRectangleNewest::GetUniQuad() const
@@ -2446,7 +3009,7 @@ void RefRectangleNewest::SetReference(const RefRectangleNewest* const reference_
 
     transformations.reference_transformations = &reference_rectangle->transformations;
 }
-
+*/
 
 
 

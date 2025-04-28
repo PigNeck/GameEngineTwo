@@ -1,9 +1,5 @@
 #include "Key.h"
 
-Key::Key()
-{
-	pressed = 0;
-	previous_frame_pressed = 0;
-	first_frame_pressed = 0;
-	first_frame_released = 0;
-}
+Key::Key(const char i_primary_char, const char i_secondary_char)
+	: primary_char(i_primary_char),
+	secondary_char(i_secondary_char) {}

@@ -332,6 +332,12 @@ char Input::KeyIndexToCharValue(int index, bool primary)
 
 void Input::FormatKeys()
 {
+	all_keys.push_back(&left_control);
+	all_keys.push_back(&semicolon);
+	all_keys.push_back(&comma);
+	all_keys.push_back(&period);
+	all_keys.push_back(&slash);
+
 	all_keys.push_back(&a);
 	all_keys.push_back(&b);
 	all_keys.push_back(&c);

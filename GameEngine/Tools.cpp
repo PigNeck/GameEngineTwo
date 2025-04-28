@@ -396,15 +396,11 @@ Point2DNew UniPointToScreenPoint(const Point2DNew uni_point, const CameraNew* co
 {
 	if (camera)
 	{
-		return uni_point.GetReferenced()
-
-		const RefPoint2DNewest temp_point(*uni_point, &camera->rect.pos, &camera->rect.transformations);
-		//TO-DO: make this "temp_point.SetUniValue(...), return temp_point.x, temp_point.y";
-		return temp_point.GetUniValue();
+		return uni_point.GetReferenced(&camera->rect.pos, &camera->rect.transformations);
 	}
 	else
 	{
-		return (*uni_point);
+		return uni_point;
 	}
 }
 
@@ -413,10 +409,10 @@ Quad UniQuadToScreenQuad(const Quad* const uni_quad, const CameraNew* const came
 	if (camera)
 	{
 		return Quad(
-			UniPointToScreenPoint(&uni_quad->top_right, camera),
-			UniPointToScreenPoint(&uni_quad->bottom_right, camera),
-			UniPointToScreenPoint(&uni_quad->bottom_left, camera),
-			UniPointToScreenPoint(&uni_quad->top_left, camera)
+			UniPointToScreenPoint(uni_quad->top_right, camera),
+			UniPointToScreenPoint(uni_quad->bottom_right, camera),
+			UniPointToScreenPoint(uni_quad->bottom_left, camera),
+			UniPointToScreenPoint(uni_quad->top_left, camera)
 		);
 	}
 	else

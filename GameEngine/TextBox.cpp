@@ -934,11 +934,10 @@ void BasicTextBox::GenerateLineSizes()
 				//Append a BasicLine with the appropriate properties to [lines].
 				lines.push_back(BasicLine(
 					RefRectangleNewest(
-						&rect,
-						{ 0.0, 0.0 },
-						{ saved_line_length_prog,
-						current_line_parameters->scale_height_with_highest_char_scale ? (GetHighestCharHeightScale(temp_begin_index, saved_char_index) * current_line_parameters->pixel_height) : current_line_parameters->pixel_height },
-						{ 1.0, -1.0 }
+						RefPlane(Point2DNew(), Transformations(), &rect.pos, &rect.transformations),
+						Size2DNew(saved_line_length_prog,
+						current_line_parameters->scale_height_with_highest_char_scale ? (GetHighestCharHeightScale(temp_begin_index, saved_char_index) * current_line_parameters->pixel_height) : current_line_parameters->pixel_height),
+						Centering2DNew(1.0, -1.0)
 					),
 					temp_begin_index,
 					saved_char_index,
@@ -981,11 +980,10 @@ void BasicTextBox::GenerateLineSizes()
 					//Append a BasicLine with the appropriate properties to [lines].
 					lines.push_back(BasicLine(
 						RefRectangleNewest(
-							&rect,
-							{ 0.0, 0.0 },
-							{ saved_line_length_prog,
-							current_line_parameters->scale_height_with_highest_char_scale ? (GetHighestCharHeightScale(temp_begin_index, saved_char_index) * current_line_parameters->pixel_height) : current_line_parameters->pixel_height },
-							{ 1.0, -1.0 }
+							RefPlane(Point2DNew(), Transformations(), &rect.pos, &rect.transformations),
+							Size2DNew(saved_line_length_prog,
+								current_line_parameters->scale_height_with_highest_char_scale ? (GetHighestCharHeightScale(temp_begin_index, saved_char_index) * current_line_parameters->pixel_height) : current_line_parameters->pixel_height),
+							Centering2DNew(1.0, -1.0)
 						),
 						temp_begin_index,
 						saved_char_index,
@@ -1066,7 +1064,7 @@ void BasicTextBox::GenerateCharRects()
 
 			chars[j].rect.transformations.scale = Scale2DNew(chars[j].scale);
 
-			chars[j].rect.SetReference(&lines[i].rect);
+			chars[j].rect.SetReferences(static_cast<RefPlane>(lines[i].rect));
 
 			chars[j].rect.pos.y = -lines[i].rect.unscaled_size.height;
 
@@ -1333,22 +1331,30 @@ RefRectangleNewest BasicTextBox::GetTextBinding(const bool p_include_ending_spac
 	if (lines.size() == size_t(0))
 	{
 		return RefRectangleNewest(
-			&rect,
-			{
-				(rect.unscaled_size.width * (rect.centering.x_centering + text_centering.x_centering) / 2.0),
-				(rect.unscaled_size.height * (rect.centering.y_centering + text_centering.y_centering) / 2.0)
-			},
-			{ 0.0, 0.0 },
-			{ 1.0, -1.0 }
+			RefPlane(
+				Point2DNew(
+					(rect.unscaled_size.width * (rect.centering.x_centering + text_centering.x_centering) / 2.0),
+					(rect.unscaled_size.height * (rect.centering.y_centering + text_centering.y_centering) / 2.0)
+				),
+				Transformations(),
+				&rect.pos,
+				&rect.transformations
+			),
+			Size2DNew(0.0, 0.0),
+			Centering2DNew(1.0, -1.0)
 		);
 	}
 	else
 	{
 		return RefRectangleNewest(
-			&rect,
-			{ lines[0].rect.pos.x, lines[0].rect.pos.y },
-			{ GetTextBindingWidth(p_include_ending_spaces), GetTextBindingHeight() },
-			{ 1.0, -1.0 }
+			RefPlane(
+				Point2DNew(lines[0].rect.pos.x, lines[0].rect.pos.y),
+				Transformations(),
+				&rect.pos,
+				&rect.transformations
+			),
+			Size2DNew(GetTextBindingWidth(p_include_ending_spaces), GetTextBindingHeight()),
+			Centering2DNew(1.0, -1.0)
 		);
 	}
 }

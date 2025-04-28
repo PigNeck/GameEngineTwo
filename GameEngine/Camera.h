@@ -10,6 +10,3 @@ struct Camera {
 	DebugDataContainer debug_data_container;
 };
 
-struct CameraNew {
-	RectangleNewest rect;
-};

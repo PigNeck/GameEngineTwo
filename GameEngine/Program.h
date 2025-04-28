@@ -192,6 +192,24 @@ struct RectStructOnePlusHovering
 	bool pressed = 0;
 };
 
+struct DisplayClick
+{
+	Point2DNew pos;
+	unsigned int timer = 0;
+
+	DisplayClick(const Point2DNew i_pos = {});
+};
+
+struct DisplayRectangle
+{
+	RefRectangleNewest rect = RefRectangleNewest(RefPlane(RefPoint2DNewest(), RefTransformations(Scale2DNew(), Rotation2DNew(), OpRules::NO_OPTIMIZATION)), Size2DNew(), Centering2DNew());
+	HSVA color;
+
+	DisplayRectangle* reference_rect = nullptr;
+
+	DisplayRectangle(const unsigned int color_id = 0);
+};
+
 struct Program : RunDrawAndPostDrawRunMethods
 {
 	Engine* e = nullptr;
@@ -539,4 +557,79 @@ struct Program : RunDrawAndPostDrawRunMethods
 	Point2DNew beans_point_two;
 
 	Transformations beans_transformations_one;
+
+
+
+
+	// ----------- RECTANGLE DISPLAY STUFF -----------
+
+	vector<DisplayClick> display_clicks;
+
+	unsigned int color_id_count = 0;
+	unsigned int selection_anim_counter = 0;
+
+	DisplayRectangle* selected_rectangle = nullptr;
+	vector<DisplayRectangle*> display_rectangles;
+
+	Texture* click_circle_t = new Texture();
+
+	Quad op_rules_display_quad;
+	Texture* no_optimization_t = new Texture();
+	Texture* no_skew_t = new Texture();
+	Texture* no_scale_t = new Texture();
+	Texture* rotation90_t = new Texture();
+	Texture* rotation90_no_scale_t = new Texture();
+	Texture* no_rotation_t = new Texture();
+	Texture* no_transformations_t = new Texture();
+
+	Texture* add_up_t = new Texture();
+	Texture* add_down_t = new Texture();
+	Texture* subtract_up_t = new Texture();
+	Texture* subtract_down_t = new Texture();
+
+	Texture* ctrl_up_t = new Texture();
+	Texture* ctrl_down_t = new Texture();
+
+	Texture* w_up_t = new Texture();
+	Texture* w_down_t = new Texture();
+	Texture* a_up_t = new Texture();
+	Texture* a_down_t = new Texture();
+	Texture* s_up_t = new Texture();
+	Texture* s_down_t = new Texture();
+	Texture* d_up_t = new Texture();
+	Texture* d_down_t = new Texture();
+
+	Texture* q_up_t = new Texture();
+	Texture* q_down_t = new Texture();
+	Texture* e_up_t = new Texture();
+	Texture* e_down_t = new Texture();
+
+	Texture* f_up_t = new Texture();
+	Texture* f_down_t = new Texture();
+
+	Texture* u_up_t = new Texture();
+	Texture* u_down_t = new Texture();
+	Texture* i_up_t = new Texture();
+	Texture* i_down_t = new Texture();
+	Texture* j_up_t = new Texture();
+	Texture* j_down_t = new Texture();
+	Texture* k_up_t = new Texture();
+	Texture* k_down_t = new Texture();
+	Texture* m_up_t = new Texture();
+	Texture* m_down_t = new Texture();
+	Texture* comma_up_t = new Texture();
+	Texture* comma_down_t = new Texture();
+
+	Texture* o_up_t = new Texture();
+	Texture* o_down_t = new Texture();
+	Texture* p_up_t = new Texture();
+	Texture* p_down_t = new Texture();
+	Texture* l_up_t = new Texture();
+	Texture* l_down_t = new Texture();
+	Texture* semicolon_up_t = new Texture();
+	Texture* semicolon_down_t = new Texture();
+	Texture* period_up_t = new Texture();
+	Texture* period_down_t = new Texture();
+	Texture* slash_up_t = new Texture();
+	Texture* slash_down_t = new Texture();
 };

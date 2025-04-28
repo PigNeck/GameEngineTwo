@@ -1,13 +1,17 @@
 KEYWORDS:
 - "FIX LATER"
 - "WARNING"
+- "TO-DO"
 
 
 TODO:
 - Polish textboxes //
 - Add camera names //
 - Finish buttons //
-- Finish rectangles (add rotation support, make flip of type SDL_RendererFlip, make single white pixel to accomplish this)
+- Finish rectangles /
+- Optimize the order in which Point2DNews and Transformations are defererenced/referenced
+- Add "GetScreenValue(const Camera* const)" to various classes in 'RectangleNew.h'
+- Figure out how to optionally bind pos to reference centering?
 
 - Make camera.rect private (because changing camera pos or size should also update camera.mouse_pos) (I don't think I'm doing this anymore)
 - Make text_box text centering in relation to parent_rect offset more intuitive

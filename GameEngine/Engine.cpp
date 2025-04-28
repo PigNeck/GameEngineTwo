@@ -2717,7 +2717,7 @@ void Engine::DrawScreen()
 
 void Engine::UpdateInput()
 {
-    for (int i = 0; i < input.all_keys.size(); i++)
+    for (size_t i = 0; i < input.all_keys.size(); i++)
     {
         input.all_keys[i]->previous_frame_pressed = input.all_keys[i]->pressed;
         input.all_keys[i]->first_frame_pressed = 0;
@@ -2726,7 +2726,6 @@ void Engine::UpdateInput()
     input.mouse_scroll_x = 0;
     input.mouse_scroll_y = 0;
 
-    int previous_mouse_scroll_x = 0, previous_mouse_scroll_y = 0;
     while (SDL_PollEvent(&sdl_event)) {
         switch (sdl_event.type)
         {
@@ -2743,23 +2742,18 @@ void Engine::UpdateInput()
             {
             case SDL_BUTTON_LEFT:
                 input.mouse_left.pressed = 1;
-                input.mouse_left.first_frame_pressed = 1;
                 break;
             case SDL_BUTTON_RIGHT:
                 input.mouse_right.pressed = 1;
-                input.mouse_right.first_frame_pressed = 1;
                 break;
             case SDL_BUTTON_MIDDLE:
                 input.mouse_middle.pressed = 1;
-                input.mouse_middle.first_frame_pressed = 1;
                 break;
             case SDL_BUTTON_X1:
                 input.mouse_extra_one.pressed = 1;
-                input.mouse_extra_one.first_frame_pressed = 1;
                 break;
             case SDL_BUTTON_X2:
                 input.mouse_extra_two.pressed = 1;
-                input.mouse_extra_two.first_frame_pressed = 1;
                 break;
             }
             break;
@@ -2768,360 +2762,307 @@ void Engine::UpdateInput()
             {
             case SDL_BUTTON_LEFT:
                 input.mouse_left.pressed = 0;
-                input.mouse_left.first_frame_released = 1;
                 break;
             case SDL_BUTTON_RIGHT:
                 input.mouse_right.pressed = 0;
-                input.mouse_right.first_frame_released = 1;
                 break;
             case SDL_BUTTON_MIDDLE:
                 input.mouse_middle.pressed = 0;
-                input.mouse_middle.first_frame_released = 1;
                 break;
             case SDL_BUTTON_X1:
                 input.mouse_extra_one.pressed = 0;
-                input.mouse_extra_one.first_frame_released = 1;
                 break;
             case SDL_BUTTON_X2:
                 input.mouse_extra_two.pressed = 0;
-                input.mouse_extra_two.first_frame_released = 1;
                 break;
             }
             break;
         case SDL_KEYDOWN:
             switch (sdl_event.key.keysym.sym) 
             {
+            case SDLK_LCTRL:
+                input.left_control.pressed = 1;
+                break;
+            case SDLK_SEMICOLON:
+                input.semicolon.pressed = 1;
+                break;
+            case SDLK_COMMA:
+                input.comma.pressed = 1;
+                break;
+            case SDLK_PERIOD:
+                input.period.pressed = 1;
+                break;
+            case SDLK_SLASH:
+                input.slash.pressed = 1;
+                break;
+
             case SDLK_a:
                 input.a.pressed = 1;
-                input.a.first_frame_pressed = 1;
                 break;
             case SDLK_b:
                 input.b.pressed = 1;
-                input.b.first_frame_pressed = 1;
                 break;
             case SDLK_c:
                 input.c.pressed = 1;
-                input.c.first_frame_pressed = 1;
                 break;
             case SDLK_d:
                 input.d.pressed = 1;
-                input.d.first_frame_pressed = 1;
                 break;
             case SDLK_e:
                 input.e.pressed = 1;
-                input.e.first_frame_pressed = 1;
                 break;
             case SDLK_f:
                 input.f.pressed = 1;
-                input.f.first_frame_pressed = 1;
                 break;
             case SDLK_g:
                 input.g.pressed = 1;
-                input.g.first_frame_pressed = 1;
                 break;
             case SDLK_h:
                 input.h.pressed = 1;
-                input.h.first_frame_pressed = 1;
                 break;
             case SDLK_i:
                 input.i.pressed = 1;
-                input.i.first_frame_pressed = 1;
                 break;
             case SDLK_j:
                 input.j.pressed = 1;
-                input.j.first_frame_pressed = 1;
                 break;
             case SDLK_k:
                 input.k.pressed = 1;
-                input.k.first_frame_pressed = 1;
                 break;
             case SDLK_l:
                 input.l.pressed = 1;
-                input.l.first_frame_pressed = 1;
                 break;
             case SDLK_m:
                 input.m.pressed = 1;
-                input.m.first_frame_pressed = 1;
                 break;
             case SDLK_n:
                 input.n.pressed = 1;
-                input.n.first_frame_pressed = 1;
                 break;
             case SDLK_o:
                 input.o.pressed = 1;
-                input.o.first_frame_pressed = 1;
                 break;
             case SDLK_p:
                 input.p.pressed = 1;
-                input.p.first_frame_pressed = 1;
                 break;
             case SDLK_q:
                 input.q.pressed = 1;
-                input.q.first_frame_pressed = 1;
                 break;
             case SDLK_r:
                 input.r.pressed = 1;
-                input.r.first_frame_pressed = 1;
                 break;
             case SDLK_s:
                 input.s.pressed = 1;
-                input.s.first_frame_pressed = 1;
                 break;
             case SDLK_t:
                 input.t.pressed = 1;
-                input.t.first_frame_pressed = 1;
                 break;
             case SDLK_u:
                 input.u.pressed = 1;
-                input.u.first_frame_pressed = 1;
                 break;
             case SDLK_v:
                 input.v.pressed = 1;
-                input.v.first_frame_pressed = 1;
                 break;
             case SDLK_w:
                 input.w.pressed = 1;
-                input.w.first_frame_pressed = 1;
                 break;
             case SDLK_x:
                 input.x.pressed = 1;
-                input.x.first_frame_pressed = 1;
                 break;
             case SDLK_y:
                 input.y.pressed = 1;
-                input.y.first_frame_pressed = 1;
                 break;
             case SDLK_z:
                 input.z.pressed = 1;
-                input.z.first_frame_pressed = 1;
                 break;
 
 
             case SDLK_0:
                 input.zero.pressed = 1;
-                input.zero.first_frame_pressed = 1;
                 break;
             case SDLK_1:
                 input.one.pressed = 1;
-                input.one.first_frame_pressed = 1;
                 break;
             case SDLK_2:
                 input.two.pressed = 1;
-                input.two.first_frame_pressed = 1;
                 break;
             case SDLK_3:
                 input.three.pressed = 1;
-                input.three.first_frame_pressed = 1;
                 break;
             case SDLK_4:
                 input.four.pressed = 1;
-                input.four.first_frame_pressed = 1;
                 break;
             case SDLK_5:
                 input.five.pressed = 1;
-                input.five.first_frame_pressed = 1;
                 break;
             case SDLK_6:
                 input.six.pressed = 1;
-                input.six.first_frame_pressed = 1;
                 break;
             case SDLK_7:
                 input.seven.pressed = 1;
-                input.seven.first_frame_pressed = 1;
                 break;
             case SDLK_8:
                 input.eight.pressed = 1;
-                input.eight.first_frame_pressed = 1;
                 break;
             case SDLK_9:
                 input.nine.pressed = 1;
-                input.nine.first_frame_pressed = 1;
                 break;
 
 
             case SDLK_SPACE:
                 input.space.pressed = 1;
-                input.space.first_frame_pressed = 1;
                 break;
             case SDLK_BACKSPACE:
                 input.backspace.pressed = 1;
-                input.backspace.first_frame_pressed = 1;
                 break;
             case SDLK_LSHIFT:
                 input.left_shift.pressed = 1;
-                input.left_shift.first_frame_pressed = 1;
                 break;
             case SDLK_RSHIFT:
                 input.right_shift.pressed = 1;
-                input.right_shift.first_frame_pressed = 1;
                 break;
             }
             break;
         case SDL_KEYUP:
             switch (sdl_event.key.keysym.sym) {
+            case SDLK_LCTRL:
+                input.left_control.pressed = 0;
+                break;
+            case SDLK_SEMICOLON:
+                input.semicolon.pressed = 0;
+                break;
+            case SDLK_COMMA:
+                input.comma.pressed = 0;
+                break;
+            case SDLK_PERIOD:
+                input.period.pressed = 0;
+                break;
+            case SDLK_SLASH:
+                input.slash.pressed = 0;
+                break;
+
             case SDLK_a:
                 input.a.pressed = 0;
-                input.a.first_frame_released = 1;
                 break;
             case SDLK_b:
                 input.b.pressed = 0;
-                input.b.first_frame_released = 1;
                 break;
             case SDLK_c:
                 input.c.pressed = 0;
-                input.c.first_frame_released = 1;
                 break;
             case SDLK_d:
                 input.d.pressed = 0;
-                input.d.first_frame_released = 1;
                 break;
             case SDLK_e:
                 input.e.pressed = 0;
-                input.e.first_frame_released = 1;
                 break;
             case SDLK_f:
                 input.f.pressed = 0;
-                input.f.first_frame_released = 1;
                 break;
             case SDLK_g:
                 input.g.pressed = 0;
-                input.g.first_frame_released = 1;
                 break;
             case SDLK_h:
                 input.h.pressed = 0;
-                input.h.first_frame_released = 1;
                 break;
             case SDLK_i:
                 input.i.pressed = 0;
-                input.i.first_frame_released = 1;
                 break;
             case SDLK_j:
                 input.j.pressed = 0;
-                input.j.first_frame_released = 1;
                 break;
             case SDLK_k:
                 input.k.pressed = 0;
-                input.k.first_frame_released = 1;
                 break;
             case SDLK_l:
                 input.l.pressed = 0;
-                input.l.first_frame_released = 1;
                 break;
             case SDLK_m:
                 input.m.pressed = 0;
-                input.m.first_frame_released = 1;
                 break;
             case SDLK_n:
                 input.n.pressed = 0;
-                input.n.first_frame_released = 1;
                 break;
             case SDLK_o:
                 input.o.pressed = 0;
-                input.o.first_frame_released = 1;
                 break;
             case SDLK_p:
                 input.p.pressed = 0;
-                input.p.first_frame_released = 1;
                 break;
             case SDLK_q:
                 input.q.pressed = 0;
-                input.q.first_frame_released = 1;
                 break;
             case SDLK_r:
                 input.r.pressed = 0;
-                input.r.first_frame_released = 1;
                 break;
             case SDLK_s:
                 input.s.pressed = 0;
-                input.s.first_frame_released = 1;
                 break;
             case SDLK_t:
                 input.t.pressed = 0;
-                input.t.first_frame_released = 1;
                 break;
             case SDLK_u:
                 input.u.pressed = 0;
-                input.u.first_frame_released = 1;
                 break;
             case SDLK_v:
                 input.v.pressed = 0;
-                input.v.first_frame_released = 1;
                 break;
             case SDLK_w:
                 input.w.pressed = 0;
-                input.w.first_frame_released = 1;
                 break;
             case SDLK_x:
                 input.x.pressed = 0;
-                input.x.first_frame_released = 1;
                 break;
             case SDLK_y:
                 input.y.pressed = 0;
-                input.y.first_frame_released = 1;
                 break;
             case SDLK_z:
                 input.z.pressed = 0;
-                input.z.first_frame_released = 1;
                 break;
 
 
             case SDLK_0:
                 input.zero.pressed = 0;
-                input.zero.first_frame_released = 1;
                 break;
             case SDLK_1:
                 input.one.pressed = 0;
-                input.one.first_frame_released = 1;
                 break;
             case SDLK_2:
                 input.two.pressed = 0;
-                input.two.first_frame_released = 1;
                 break;
             case SDLK_3:
                 input.three.pressed = 0;
-                input.three.first_frame_released = 1;
                 break;
             case SDLK_4:
                 input.four.pressed = 0;
-                input.four.first_frame_released = 1;
                 break;
             case SDLK_5:
                 input.five.pressed = 0;
-                input.five.first_frame_released = 1;
                 break;
             case SDLK_6:
                 input.six.pressed = 0;
-                input.six.first_frame_released = 1;
                 break;
             case SDLK_7:
                 input.seven.pressed = 0;
-                input.seven.first_frame_released = 1;
                 break;
             case SDLK_8:
                 input.eight.pressed = 0;
-                input.eight.first_frame_released = 1;
                 break;
             case SDLK_9:
                 input.nine.pressed = 0;
-                input.nine.first_frame_released = 1;
                 break;
 
 
             case SDLK_SPACE:
                 input.space.pressed = 0;
-                input.space.first_frame_pressed = 0;
                 break;
             case SDLK_BACKSPACE:
                 input.backspace.pressed = 0;
-                input.backspace.first_frame_pressed = 0;
                 break;
             case SDLK_LSHIFT:
                 input.left_shift.pressed = 0;
-                input.left_shift.first_frame_pressed = 0;
                 break;
             case SDLK_RSHIFT:
                 input.right_shift.pressed = 0;
-                input.right_shift.first_frame_pressed = 0;
                 break;
             }
             break;
@@ -3129,6 +3070,12 @@ void Engine::UpdateInput()
     }
 
     SDL_GetMouseState(&input.mouse_x, &input.mouse_y);
+
+    for (size_t i = 0; i < input.all_keys.size(); i++)
+    {
+        input.all_keys[i]->first_frame_pressed = input.all_keys[i]->pressed && (!input.all_keys[i]->previous_frame_pressed);
+        input.all_keys[i]->first_frame_released = input.all_keys[i]->previous_frame_pressed && (!input.all_keys[i]->pressed);
+    }
 }
 
 void Engine::ActivateAllMouseLayers()
@@ -3158,7 +3105,7 @@ void Engine::Run()
 
         if (boundary_view_button.press_data.first_frame_released) { boundary_view = !boundary_view; }
 
-        if (input.p.first_frame_pressed) {debug_mode = !debug_mode;}
+        //if (input.p.first_frame_pressed) {debug_mode = !debug_mode;}
 
         if (debug_mode)
         {
@@ -3499,11 +3446,11 @@ void Engine::DrawTexturedQuad(const Quad* const quad, const Texture* const textu
 
 void Engine::DrawTextureWithRefRectangleNewest(const RefRectangleNewest* const rect, const Texture* const texture, const SDL_Rect* const source_rect, const SDL_Color* const color_and_alpha_mod, const CameraNew* const camera)
 {
-    const Quad temp_quad = rect->GetUniQuad();
-
+    const Quad temp_screen_quad = rect->GetUniScreenQuad(camera);
+    //const Quad temp_screen_quad = Quad();
     const GLColor* const temp_color_and_alpha_mod = SDLColorToGLColor(color_and_alpha_mod);
-    DrawTexturedQuad(&temp_quad, texture, SDLColorToGLColor(color_and_alpha_mod), camera);
-    delete temp_color_and_alpha_mod;
+
+    DrawTexturedScreenQuad(&temp_screen_quad, texture, temp_color_and_alpha_mod);
 }
 
 /*
