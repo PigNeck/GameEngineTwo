@@ -657,4 +657,7 @@ struct Program : RunDrawAndPostDrawRunMethods
 	Texture* slash_down_t = new Texture();
 
 	SmallDisplayKey small_display_keys[21];
+
+	private:
+		void DrawSmallDisplayKeys(const Size2DNew key_size, const double origin_x, const double origin_y, const double x_interval, const double y_interval);
 };

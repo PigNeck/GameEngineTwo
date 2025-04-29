@@ -2521,6 +2521,34 @@ namespace {
 	}
 }
 
+
+void Program::DrawSmallDisplayKeys(const Size2DNew key_size, const double origin_x, const double origin_y, const double x_interval, const double y_interval)
+{
+	for (unsigned int i = 0; i < 21; i++)
+	{
+		if (small_display_keys[i].target_input->first_frame_pressed) { PlayRandomClickPressSound(e); }
+		if (small_display_keys[i].target_input->first_frame_released) { PlayRandomClickReleaseSound(e); }
+
+		const Quad temp_screen_quad = RectangleNewest(
+			Plane(
+				Point2DNew(
+					origin_x + (small_display_keys[i].x * x_interval),
+					origin_y + (small_display_keys[i].y * y_interval)
+				),
+				Transformations(Scale2DNew(4.0, 4.0), Rotation2DNew(), OpRules::NO_ROTATION)
+			),
+			key_size,
+			Centering2DNew()
+		).GetQuad();
+
+		e->DrawTexturedScreenQuad(
+			&temp_screen_quad, 
+			small_display_keys[i].target_input->pressed ? small_display_keys[i].down_texture : small_display_keys[i].up_texture,
+			nullptr, false
+		);
+	}
+}
+
 void Program::SetScene9()
 {
 
@@ -2985,27 +3013,14 @@ void Program::DrawScene9()
 		e->DrawTexturedScreenQuad(&temp_screen_quad, e->input.minus_sign.pressed ? subtract_down_t : subtract_up_t, nullptr, false);
 	}
 
-
-
-	temp_rect.unscaled_size = Size2DNew(11.0, 12.0);
-
-	constexpr double ctrl_x = (DEFAULT_WINDOW_WIDTH / -2.0) + 30.0;
-	constexpr double ctrl_y = (DEFAULT_WINDOW_HEIGHT / -2.0) + 32.0;
-
-	constexpr double x_interval = 48.0;
-	constexpr double y_interval = 52.0;
-
-	//Draw and start sound effects for all the small display keys:
-	for (unsigned int i = 0; i < 21; i++)
-	{
-		if (small_display_keys[i].target_input->first_frame_pressed) { PlayRandomClickPressSound(e); }
-		if (small_display_keys[i].target_input->first_frame_released) { PlayRandomClickReleaseSound(e); }
-
-		//Position temp_rect according to the display key x and y values:
-		temp_rect.pos = Point2DNew(ctrl_x + (small_display_keys[i].x * x_interval), ctrl_y + (small_display_keys[i].y * y_interval));
-		const Quad temp_screen_quad = temp_rect.GetQuad();
-		e->DrawTexturedScreenQuad(&temp_screen_quad, small_display_keys[i].target_input->pressed ? small_display_keys[i].down_texture : small_display_keys[i].up_texture, nullptr, false);
-	}
+	//Draw and play sounds for the small display keys:
+	DrawSmallDisplayKeys(
+		Size2DNew(11.0, 12.0),
+		(DEFAULT_WINDOW_WIDTH / -2.0) + 30.0,
+		(DEFAULT_WINDOW_HEIGHT / -2.0) + 32.0,
+		48.0,
+		52.0
+	);
 
 
 
